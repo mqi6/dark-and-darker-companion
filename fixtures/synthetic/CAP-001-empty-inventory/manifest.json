@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "sampleId": "CAP-001-empty-inventory",
+  "purpose": "Validate an empty but complete inventory snapshot.",
+  "capturedAt": "2026-08-27T00:00:00.000Z",
+  "gameVersion": "synthetic-unknown",
+  "executableFingerprint": "synthetic-not-live",
+  "companionVersion": "0.1.0",
+  "captureSchemaVersion": 1,
+  "characterId": "character-fixture-a",
+  "screen": {
+    "width": 1920,
+    "height": 1080,
+    "windowsScalingPercent": 100,
+    "windowMode": "borderless"
+  },
+  "storageId": "inventory",
+  "captureSource": "synthetic-fixture",
+  "preconditions": ["No real game is required."],
+  "actions": ["Load the fixture through FixtureCaptureAdapter."],
+  "expectedResult": "A valid empty inventory snapshot is returned.",
+  "observedResult": "Synthetic expected result only; not live validated.",
+  "artifacts": ["snapshot.json"],
+  "knownOmissions": ["No raw capture or screenshot."],
+  "sanitized": true
+}

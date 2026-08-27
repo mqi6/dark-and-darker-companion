@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "snapshotId": "snapshot-empty-001",
+  "capturedAt": "2026-08-27T00:00:00.000Z",
+  "gameBuildFingerprint": "synthetic-not-live",
+  "characterId": "character-fixture-a",
+  "storageId": "inventory",
+  "grid": { "columns": 10, "rows": 5 },
+  "items": [],
+  "warnings": []
+}
