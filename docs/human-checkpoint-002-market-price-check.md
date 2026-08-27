@@ -1,5 +1,7 @@
 # Human Checkpoint 002 — DarkerDB Market and Price Check Samples
 
+**Status: completed on 2026-08-27.** The three sanitized fixtures validate five active listings, five recent inferred-sale listings, twelve Price Check sales, and twelve Price Check asks. Continue with `human-checkpoint-003-windows-game-baseline.md`.
+
 The uploaded localization catalog validates the merged bilingual artifact, but it does not expose the raw response records returned by Market or Price Check. Those record shapes are required before mapping live data into auction pricing and Gear Search domain models.
 
 No game installation or game capture is needed for this checkpoint.

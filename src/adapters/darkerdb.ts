@@ -1,5 +1,13 @@
 import { z } from "zod";
 import type { CanonicalId } from "../domain/models";
+import {
+  darkerDbFreshnessSchema,
+  darkerDbMarketListingSchema,
+  darkerDbPriceCheckBodySchema,
+  type DarkerDbFreshness,
+  type DarkerDbMarketListing,
+  type DarkerDbPriceCheckBody
+} from "./darkerdbContracts";
 
 export const PINNED_DARKERDB_API_VERSION = "2026-08-03";
 export const DARKERDB_MARKET_PAGE_LIMIT = 50;
@@ -11,7 +19,8 @@ const envelopeSchema = z.object({
       next: z.string().nullish(),
       total: z.number().int().nonnegative().optional(),
       page: z.number().int().positive().optional(),
-      num_pages: z.number().int().nonnegative().optional()
+      num_pages: z.number().int().nonnegative().optional(),
+      freshness: darkerDbFreshnessSchema.optional()
     })
     .passthrough()
     .optional()
@@ -30,6 +39,7 @@ export interface DarkerDbPage<T> {
   reportedTotal?: number;
   page?: number;
   numPages?: number;
+  freshness?: DarkerDbFreshness;
 }
 
 type QueryValue = string | number | boolean | undefined;
@@ -71,6 +81,18 @@ export interface MarketCollection<T> {
   retrievedCount: number;
   reportedTotal?: number;
   complete: boolean;
+  freshness?: DarkerDbFreshness;
+}
+
+export interface MarketPageSource<T> {
+  getMarket(query: MarketQuery): Promise<DarkerDbPage<T[]>>;
+}
+
+export interface MarketFamilyCollection<T> extends MarketCollection<T> {
+  families: readonly {
+    itemId: CanonicalId;
+    result: MarketCollection<T>;
+  }[];
 }
 
 export class DarkerDbClient {
@@ -106,7 +128,7 @@ export class DarkerDbClient {
     });
   }
 
-  async getMarket<T>(query: MarketQuery): Promise<DarkerDbPage<T>> {
+  async getMarket(query: MarketQuery): Promise<DarkerDbPage<DarkerDbMarketListing[]>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? DARKERDB_MARKET_PAGE_LIMIT;
     assertPositiveInteger(page, "Market page");
@@ -137,10 +159,10 @@ export class DarkerDbClient {
     };
     addBracketedParameters(parameters, "primary", query.primary);
     addBracketedParameters(parameters, "secondary", query.secondary);
-    return this.get<T>("/v2/market", parameters);
+    return this.get("/v2/market", parameters, z.array(darkerDbMarketListingSchema));
   }
 
-  async priceCheck<T>(parameters: PriceCheckQuery): Promise<DarkerDbPage<T>> {
+  async priceCheck(parameters: PriceCheckQuery): Promise<DarkerDbPage<DarkerDbPriceCheckBody>> {
     const query: Record<string, QueryValue> = {
       item_id: parameters.itemId,
       locale: parameters.locale
@@ -151,12 +173,13 @@ export class DarkerDbClient {
     for (const [socket, gem] of Object.entries(parameters.gems ?? {})) {
       query[`gems[${socket}]`] = gem;
     }
-    return this.get<T>("/v2/price-checks", query);
+    return this.get("/v2/price-checks", query, darkerDbPriceCheckBodySchema);
   }
 
   private async get<T>(
     path: string,
-    query: Readonly<Record<string, QueryValue>>
+    query: Readonly<Record<string, QueryValue>>,
+    bodySchema?: z.ZodType<T>
   ): Promise<DarkerDbPage<T>> {
     const url = new URL(path, this.baseUrl);
     for (const [key, value] of Object.entries(query)) {
@@ -178,7 +201,7 @@ export class DarkerDbClient {
 
     const parsed = envelopeSchema.parse(await response.json());
     return {
-      data: parsed.body as T,
+      data: bodySchema ? bodySchema.parse(parsed.body) : (parsed.body as T),
       ...(parsed.pagination?.next ? { nextCursor: parsed.pagination.next } : {}),
       ...(parsed.pagination?.total === undefined
         ? {}
@@ -186,13 +209,16 @@ export class DarkerDbClient {
       ...(parsed.pagination?.page === undefined ? {} : { page: parsed.pagination.page }),
       ...(parsed.pagination?.num_pages === undefined
         ? {}
-        : { numPages: parsed.pagination.num_pages })
+        : { numPages: parsed.pagination.num_pages }),
+      ...(parsed.pagination?.freshness === undefined
+        ? {}
+        : { freshness: parsed.pagination.freshness })
     };
   }
 }
 
 export async function collectMarketPages<T>(
-  client: DarkerDbClient,
+  client: MarketPageSource<T>,
   query: MarketQuery,
   options: { maxPages?: number } = {}
 ): Promise<MarketCollection<T>> {
@@ -206,13 +232,15 @@ export async function collectMarketPages<T>(
   let pagesFetched = 0;
   let reportedTotal: number | undefined;
   let complete = false;
+  let freshness: DarkerDbFreshness | undefined;
 
   while (pagesFetched < maxPages) {
     const requestedPage = firstPage + pagesFetched;
-    const page = await client.getMarket<T[]>({ ...query, page: requestedPage, limit });
+    const page = await client.getMarket({ ...query, page: requestedPage, limit });
     data.push(...page.data);
     pagesFetched += 1;
     if (page.reportedTotal !== undefined) reportedTotal = page.reportedTotal;
+    if (page.freshness !== undefined) freshness = page.freshness;
 
     const currentPage = page.page ?? requestedPage;
     if (
@@ -231,7 +259,52 @@ export async function collectMarketPages<T>(
     pagesFetched,
     retrievedCount: data.length,
     ...(reportedTotal === undefined ? {} : { reportedTotal }),
-    complete
+    complete,
+    ...(freshness === undefined ? {} : { freshness })
+  };
+}
+
+export async function collectMarketItemFamilies<T>(
+  client: MarketPageSource<T>,
+  itemIds: readonly CanonicalId[],
+  query: Omit<MarketQuery, "itemId" | "page">,
+  options: { maxPagesPerItem?: number } = {}
+): Promise<MarketFamilyCollection<T>> {
+  const uniqueItemIds = [...new Set(itemIds)];
+  if (uniqueItemIds.length === 0) {
+    throw new RangeError("At least one item ID is required.");
+  }
+
+  const families: { itemId: CanonicalId; result: MarketCollection<T> }[] = [];
+  for (const itemId of uniqueItemIds) {
+    const result = await collectMarketPages(
+      client,
+      { ...query, itemId },
+      options.maxPagesPerItem === undefined
+        ? {}
+        : { maxPages: options.maxPagesPerItem }
+    );
+    families.push({ itemId, result });
+  }
+
+  const data = families.flatMap((family) => family.result.data);
+  const hasEveryReportedTotal = families.every(
+    (family) => family.result.reportedTotal !== undefined
+  );
+  const reportedTotal = hasEveryReportedTotal
+    ? families.reduce((total, family) => total + (family.result.reportedTotal ?? 0), 0)
+    : undefined;
+
+  return {
+    data,
+    families,
+    pagesFetched: families.reduce(
+      (total, family) => total + family.result.pagesFetched,
+      0
+    ),
+    retrievedCount: data.length,
+    ...(reportedTotal === undefined ? {} : { reportedTotal }),
+    complete: families.every((family) => family.result.complete)
   };
 }
 
