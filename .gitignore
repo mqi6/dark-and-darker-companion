@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.env
+*.pcap
+*.pcapng
+*.bin
+fixtures/private/
+diagnostics/private/
+*.log
