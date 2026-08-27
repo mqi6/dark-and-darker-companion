@@ -1,9 +1,14 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import {
+  collectMarketItemFamilies,
   collectMarketPages,
   DarkerDbClient,
   DarkerDbHttpError,
-  PINNED_DARKERDB_API_VERSION
+  PINNED_DARKERDB_API_VERSION,
+  type MarketPageSource
 } from "../src/adapters/darkerdb";
 import { sanitizeDarkerDbSample } from "../src/adapters/darkerdbSample";
 
@@ -90,8 +95,15 @@ describe("DarkerDbClient", () => {
   });
 
   it("encodes attribute and gem price-check comparables", async () => {
+    const testRoot = path.dirname(fileURLToPath(import.meta.url));
+    const priceCheckFixture = JSON.parse(
+      await readFile(
+        path.resolve(testRoot, "../fixtures/darkerdb/live-samples/price-check.json"),
+        "utf8"
+      )
+    ) as { body: unknown };
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ body: { estimate: 100 } }), {
+      new Response(JSON.stringify({ body: priceCheckFixture.body }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       })
@@ -114,22 +126,17 @@ describe("DarkerDbClient", () => {
   });
 
   it("collects page-based market results and reports an intentional cap as incomplete", async () => {
-    const fetchImplementation = vi.fn<typeof fetch>().mockImplementation((input) => {
-      const page = Number(new URL(String(input)).searchParams.get("page"));
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            body: [{ id: `listing-${page}` }],
-            pagination: { page, num_pages: 3, total: 3 }
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
-        )
-      );
-    });
-    const client = new DarkerDbClient({
-      baseUrl: "https://example.test",
-      fetchImplementation
-    });
+    const client: MarketPageSource<{ id: string }> = {
+      getMarket: vi.fn((query) => {
+        const page = query.page ?? 1;
+        return Promise.resolve({
+          data: [{ id: `listing-${query.itemId}-${page}` }],
+          page,
+          numPages: 3,
+          reportedTotal: 3
+        });
+      })
+    };
 
     const capped = await collectMarketPages<{ id: string }>(
       client,
@@ -137,7 +144,10 @@ describe("DarkerDbClient", () => {
       { maxPages: 2 }
     );
     expect(capped).toEqual({
-      data: [{ id: "listing-1" }, { id: "listing-2" }],
+      data: [
+        { id: "listing-id.item.longbow-1" },
+        { id: "listing-id.item.longbow-2" }
+      ],
       pagesFetched: 2,
       retrievedCount: 2,
       reportedTotal: 3,
@@ -151,6 +161,31 @@ describe("DarkerDbClient", () => {
     );
     expect(complete.complete).toBe(true);
     expect(complete.retrievedCount).toBe(3);
+  });
+
+  it("collects multiple selected gear names and sums their completeness metadata", async () => {
+    const client: MarketPageSource<{ id: string }> = {
+      getMarket: vi.fn((query) =>
+        Promise.resolve({
+          data: [{ id: String(query.itemId) }],
+          page: 1,
+          numPages: 1,
+          reportedTotal: 1
+        })
+      )
+    };
+
+    const result = await collectMarketItemFamilies(
+      client,
+      ["id.item.robe", "id.item.frock", "id.item.robe"],
+      { locale: "en", limit: 50 }
+    );
+
+    expect(result.data).toEqual([{ id: "id.item.robe" }, { id: "id.item.frock" }]);
+    expect(result.retrievedCount).toBe(2);
+    expect(result.reportedTotal).toBe(2);
+    expect(result.complete).toBe(true);
+    expect(result.families).toHaveLength(2);
   });
 
   it("keeps authentication errors distinct from empty results", async () => {

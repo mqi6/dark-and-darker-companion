@@ -28,7 +28,7 @@ Never join by translated name. DarkerDB documents that punctuation may be return
 - Eight item IDs and two attribute IDs have neither an English nor Chinese name and are explicitly marked `missing`.
 - Missing display text renders its canonical ID rather than a blank label.
 
-Raw Market and Price Check record shapes still require the sanitized samples described in `human-checkpoint-002-market-price-check.md`.
+Raw Market and Price Check record shapes are validated by the sanitized fixtures in `fixtures/darkerdb/live-samples`. Their English canonical IDs join to this catalog; the application does not treat API display names as identifiers.
 
 ## Sources
 

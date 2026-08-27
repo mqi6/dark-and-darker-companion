@@ -24,6 +24,16 @@ UI pages
 
 The UI never performs HTTP, packet capture, process access, or input injection directly.
 
+## DarkerDB data flow
+
+1. Zod validates the live response envelope and Market or Price Check body.
+2. Canonical item and attribute IDs map API records into domain candidates and comparables.
+3. Price Check supplies recommended valuation and naturally possible roll metadata.
+4. Market disappearance records map to recent-sale samples while preserving inferred versus confirmed evidence.
+5. Local K-of-N evaluation runs after bounded retrieval and carries retrieved/reported/incomplete metadata to the UI.
+
+Captured fixtures contain public game/market data with player-identifying fields redacted. Live keys remain request-header-only and are never persisted.
+
 ## Core invariants
 
 - Display strings are not identifiers.

@@ -19,6 +19,10 @@
 - Validated real DarkerDB en/zh-Hans localization catalog with 2,430 items and 58 attributes.
 - Catalog schema, duplicate-ID checks, status-consistency checks, coverage reporting, and canonical-ID display fallback.
 - Documented page-based Market filters/metadata, a 50-row cap, bounded incomplete-result collection, gem-aware Price Check queries, and pinned API version `2026-08-03`.
+- Validated real Market and Price Check envelopes: active asks, inferred disappearances, freshness metadata, valuation, comparables, and possible roll ranges.
+- Mapped real Market rows into bilingual Gear Search candidates and recent-sale samples.
+- Wired multiple selected gear IDs, local K-of-N filtering, naturally impossible rolls, and retrieved/reported incomplete summaries across the API boundary.
+- Added a sanitized Windows BUILD-001 contract and collection helper for the next local-game checkpoint.
 
 ## Automated verification
 
@@ -29,8 +33,8 @@
 
 ## Current external checkpoint
 
-Localization checkpoint 001 is complete. Run `npm run darkerdb:samples` and return the three sanitized files described in `human-checkpoint-002-market-price-check.md`. They are needed to validate live Market and Price Check row shapes without sharing an API key.
+DarkerDB checkpoints 001 and 002 are complete. The next boundary is the actual Windows game. Collect BUILD-001 and CAP-001 through CAP-010 using `human-checkpoint-003-windows-game-baseline.md`.
 
 ## Later local-game blockers
 
-After DarkerDB integration, local work will require BUILD-001 and CAP-001 through CAP-010 evidence from the actual Windows game installation. No game-side validation has been claimed yet.
+No game-side validation has been claimed yet. Visual design in Figma also remains blocked until the Figma MCP quota resets or the plan is upgraded; no substitute design has been represented as a Figma artifact.

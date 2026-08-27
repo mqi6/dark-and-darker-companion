@@ -18,4 +18,4 @@ Pricing, K-of-N filtering, localization fallback, task transitions, and shell be
 
 See `docs/product-decisions.md`, `docs/architecture.md`, and `docs/localization.md`.
 
-The first live-data handoff is documented in `docs/human-checkpoint-001-darkerdb.md`. Current implementation status is in `docs/progress.md`.
+The completed DarkerDB handoffs are documented in checkpoints 001 and 002. The next local-game handoff is `docs/human-checkpoint-003-windows-game-baseline.md`. Current implementation status is in `docs/progress.md`.
