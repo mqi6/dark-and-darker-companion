@@ -45,7 +45,16 @@ export const localizedGameTextSchema = z
         message: "Missing records must have an empty English value."
       });
     }
-  });
+  })
+  .transform(
+    (value): LocalizedGameText => ({
+      id: value.id,
+      en: value.en,
+      zhStatus: value.zhStatus,
+      ...(value.zhCN === undefined ? {} : { zhCN: value.zhCN }),
+      ...(value.patch === undefined ? {} : { patch: value.patch })
+    })
+  );
 
 export const localizationCatalogSchema = z
   .object({
