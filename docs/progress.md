@@ -33,7 +33,7 @@
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002 are complete. The next boundary is the actual Windows game. Collect BUILD-001 and CAP-001 through CAP-010 using `human-checkpoint-003-windows-game-baseline.md`.
+DarkerDB checkpoints 001 and 002 are complete. The next boundary is the actual Windows game. Follow `development-and-recording-plan.md`: collect BUILD-001, then run only the NET-000 passive TCP/Protobuf smoke test. Do not collect the remaining visual/network matrix until that gate passes.
 
 ## Later local-game blockers
 
