@@ -3,7 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DarkerDbClient } from "../src/adapters/darkerdb";
 import {
+  localizationCatalogSchema,
   mergeLocalizedCatalog,
+  summarizeLocalizationCoverage,
+  VERIFIED_DARKERDB_SIMPLIFIED_CHINESE_LOCALE,
   type GameDataNameRecord
 } from "../src/domain/localizedCatalog";
 
@@ -21,7 +24,11 @@ if (!apiKey) {
   });
   const zhLocale =
     process.env.DARKERDB_ZH_LOCALE ??
-    (await detectSimplifiedChineseLocale(client, ["zh-CN", "zh-Hans", "zh"]));
+    (await detectSimplifiedChineseLocale(client, [
+      VERIFIED_DARKERDB_SIMPLIFIED_CHINESE_LOCALE,
+      "zh-CN",
+      "zh"
+    ]));
 
   const [itemsEn, itemsZh, attributesEn, attributesZh] = await Promise.all([
     fetchAll((cursor) => client.getItems<GameDataNameRecord[]>({ locale: "en", cursor, limit: 200 })),
@@ -36,28 +43,26 @@ if (!apiKey) {
   const outputRoot = path.join(projectRoot, "fixtures", "darkerdb", "localization");
   await mkdir(outputRoot, { recursive: true });
 
+  const catalog = localizationCatalogSchema.parse({
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    source: "DarkerDB",
+    englishLocale: "en",
+    simplifiedChineseLocale: zhLocale,
+    items,
+    attributes
+  });
+
   await writeFile(
     path.join(outputRoot, "catalog.json"),
-    JSON.stringify(
-      {
-        schemaVersion: 1,
-        generatedAt: new Date().toISOString(),
-        source: "DarkerDB",
-        englishLocale: "en",
-        simplifiedChineseLocale: zhLocale,
-        items,
-        attributes
-      },
-      null,
-      2
-    ) + "\n",
+    JSON.stringify(catalog, null, 2) + "\n",
     "utf8"
   );
 
-  const itemTranslated = items.filter((entry) => entry.zhStatus === "translated").length;
-  const attributeTranslated = attributes.filter((entry) => entry.zhStatus === "translated").length;
+  const itemCoverage = summarizeLocalizationCoverage(items);
+  const attributeCoverage = summarizeLocalizationCoverage(attributes);
   process.stdout.write(
-    `Localization catalog saved. Items: ${itemTranslated}/${items.length} translated; attributes: ${attributeTranslated}/${attributes.length} translated.\n`
+    `Localization catalog saved. Items: ${itemCoverage.translated}/${itemCoverage.total} translated, ${itemCoverage.missing} missing; attributes: ${attributeCoverage.translated}/${attributeCoverage.total} translated, ${attributeCoverage.missing} missing.\n`
   );
 }
 

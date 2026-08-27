@@ -16,6 +16,9 @@
 - Versioned snapshot and sample-manifest validation.
 - Fixture capture and dry-run game-interaction adapters.
 - Synthetic CAP-001 empty-inventory sample bundle and fixture validator.
+- Validated real DarkerDB en/zh-Hans localization catalog with 2,430 items and 58 attributes.
+- Catalog schema, duplicate-ID checks, status-consistency checks, coverage reporting, and canonical-ID display fallback.
+- Documented page-based Market filters/metadata, a 50-row cap, bounded incomplete-result collection, gem-aware Price Check queries, and pinned API version `2026-08-03`.
 
 ## Automated verification
 
@@ -24,9 +27,9 @@
 - 26 passing tests across pricing, search, reserved regions, task state, adapters, localization, DarkerDB contracts, snapshots, and UI shell.
 - Successful production renderer build.
 
-## Current external blocker
+## Current external checkpoint
 
-DarkerDB catalog endpoints require an API key. Complete `human-checkpoint-001-darkerdb.md` so live response shapes and Simplified Chinese coverage can be validated.
+Localization checkpoint 001 is complete. Run `npm run darkerdb:samples` and return the three sanitized files described in `human-checkpoint-002-market-price-check.md`. They are needed to validate live Market and Price Check row shapes without sharing an API key.
 
 ## Later local-game blockers
 

@@ -8,6 +8,8 @@ The repository owns `en-US` and `zh-CN` resource dictionaries. Components refere
 
 DarkerDB is the primary source. Its API documentation states that localized fields accept `?locale=<code>`, default to English, return the game's own strings, and fall back to English when a translation is missing. Items, Attributes, Price Check, and Market endpoints expose the locale parameter.
 
+The verified Simplified Chinese locale in the 2026-08-27 catalog is `zh-Hans`. The application locale remains `zh-CN`; canonical IDs bridge the API data to the UI without using display names as keys.
+
 The sync flow is:
 
 1. Fetch English catalog records.
@@ -19,12 +21,14 @@ The sync flow is:
 
 Never join by translated name. DarkerDB documents that punctuation may be returned verbatim and should not be rewritten for identity matching.
 
-## Human-in-the-loop verification still required
+## Verified catalog fixture
 
-- Obtain a DarkerDB API key with data/live scopes required by the product.
-- Confirm the accepted Simplified Chinese locale code; `zh-CN` is only the initial configured candidate.
-- Capture paired item and attribute responses and measure Chinese coverage.
-- Decide whether missing translations should remain English permanently or enter a reviewed local override table.
+- `fixtures/darkerdb/localization/catalog.json` contains 2,430 items and 58 attributes.
+- 2,422 item names and 56 attribute names have Simplified Chinese translations.
+- Eight item IDs and two attribute IDs have neither an English nor Chinese name and are explicitly marked `missing`.
+- Missing display text renders its canonical ID rather than a blank label.
+
+Raw Market and Price Check record shapes still require the sanitized samples described in `human-checkpoint-002-market-price-check.md`.
 
 ## Sources
 
