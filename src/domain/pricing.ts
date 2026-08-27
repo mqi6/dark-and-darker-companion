@@ -1,4 +1,5 @@
-export const DEFAULT_RECENT_SAMPLE_COUNT = 5;
+export const DEFAULT_RECENT_WINDOW_COUNT = 5;
+export const DEFAULT_LOWEST_DEAL_COUNT = 3;
 
 export interface RecentSaleSample {
   listingId: string;
@@ -8,7 +9,8 @@ export interface RecentSaleSample {
 }
 
 export interface RecentAveragePolicy {
-  requestedSampleCount: number;
+  recentWindowCount: number;
+  lowestDealCount: number;
   minimumUsableSamples: number;
 }
 
@@ -17,7 +19,9 @@ export type RecentAverageResult =
       status: "available";
       unitReference: number;
       samplesUsed: number;
-      samplesRequested: number;
+      dealsConsidered: number;
+      recentWindowRequested: number;
+      lowestDealsRequested: number;
       oldestSampleAt: string;
       newestSampleAt: string;
       includesInferredSamples: boolean;
@@ -26,7 +30,9 @@ export type RecentAverageResult =
       status: "unknown";
       reason: "no-usable-samples" | "below-minimum-samples";
       samplesUsed: number;
-      samplesRequested: number;
+      dealsConsidered: number;
+      recentWindowRequested: number;
+      lowestDealsRequested: number;
     };
 
 export type PriceAdjustment =
@@ -66,60 +72,85 @@ export function roundGoldHalfUp(value: number): number {
 export function averageRecentSales(
   samples: readonly RecentSaleSample[],
   policy: RecentAveragePolicy = {
-    requestedSampleCount: DEFAULT_RECENT_SAMPLE_COUNT,
+    recentWindowCount: DEFAULT_RECENT_WINDOW_COUNT,
+    lowestDealCount: DEFAULT_LOWEST_DEAL_COUNT,
     minimumUsableSamples: 1
   }
 ): RecentAverageResult {
-  if (!Number.isInteger(policy.requestedSampleCount) || policy.requestedSampleCount < 1) {
-    throw new RangeError("requestedSampleCount must be a positive integer.");
+  if (!Number.isInteger(policy.recentWindowCount) || policy.recentWindowCount < 1) {
+    throw new RangeError("recentWindowCount must be a positive integer.");
+  }
+  if (
+    !Number.isInteger(policy.lowestDealCount) ||
+    policy.lowestDealCount < 1 ||
+    policy.lowestDealCount > policy.recentWindowCount
+  ) {
+    throw new RangeError("lowestDealCount must be between 1 and recentWindowCount.");
   }
   if (
     !Number.isInteger(policy.minimumUsableSamples) ||
     policy.minimumUsableSamples < 1 ||
-    policy.minimumUsableSamples > policy.requestedSampleCount
+    policy.minimumUsableSamples > policy.lowestDealCount
   ) {
-    throw new RangeError("minimumUsableSamples must be between 1 and requestedSampleCount.");
+    throw new RangeError("minimumUsableSamples must be between 1 and lowestDealCount.");
   }
 
-  const usable = samples
+  const recentWindow = samples
     .filter((sample) => Number.isFinite(sample.unitPrice) && sample.unitPrice > 0)
     .filter((sample) => !Number.isNaN(Date.parse(sample.closedAt)))
     .sort((left, right) => Date.parse(right.closedAt) - Date.parse(left.closedAt))
-    .slice(0, policy.requestedSampleCount);
+    .slice(0, policy.recentWindowCount);
 
-  if (usable.length === 0) {
+  if (recentWindow.length === 0) {
     return {
       status: "unknown",
       reason: "no-usable-samples",
       samplesUsed: 0,
-      samplesRequested: policy.requestedSampleCount
+      dealsConsidered: 0,
+      recentWindowRequested: policy.recentWindowCount,
+      lowestDealsRequested: policy.lowestDealCount
     };
   }
 
-  if (usable.length < policy.minimumUsableSamples) {
+  if (recentWindow.length < policy.minimumUsableSamples) {
     return {
       status: "unknown",
       reason: "below-minimum-samples",
-      samplesUsed: usable.length,
-      samplesRequested: policy.requestedSampleCount
+      samplesUsed: recentWindow.length,
+      dealsConsidered: recentWindow.length,
+      recentWindowRequested: policy.recentWindowCount,
+      lowestDealsRequested: policy.lowestDealCount
     };
   }
 
-  const total = usable.reduce((sum, sample) => sum + sample.unitPrice, 0);
-  const newest = usable[0];
-  const oldest = usable[usable.length - 1];
+  const selected = [...recentWindow]
+    .sort(
+      (left, right) =>
+        left.unitPrice - right.unitPrice ||
+        Date.parse(right.closedAt) - Date.parse(left.closedAt) ||
+        left.listingId.localeCompare(right.listingId)
+    )
+    .slice(0, policy.lowestDealCount);
+  const total = selected.reduce((sum, sample) => sum + sample.unitPrice, 0);
+  const selectedByTime = [...selected].sort(
+    (left, right) => Date.parse(right.closedAt) - Date.parse(left.closedAt)
+  );
+  const newest = selectedByTime[0];
+  const oldest = selectedByTime[selectedByTime.length - 1];
   if (!newest || !oldest) {
     throw new Error("Usable sample calculation produced an impossible empty result.");
   }
 
   return {
     status: "available",
-    unitReference: total / usable.length,
-    samplesUsed: usable.length,
-    samplesRequested: policy.requestedSampleCount,
+    unitReference: total / selected.length,
+    samplesUsed: selected.length,
+    dealsConsidered: recentWindow.length,
+    recentWindowRequested: policy.recentWindowCount,
+    lowestDealsRequested: policy.lowestDealCount,
     newestSampleAt: newest.closedAt,
     oldestSampleAt: oldest.closedAt,
-    includesInferredSamples: usable.some(
+    includesInferredSamples: selected.some(
       (sample) => sample.confirmation === "inferred-disappearance"
     )
   };

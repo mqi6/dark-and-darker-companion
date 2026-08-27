@@ -6,7 +6,7 @@
 - English and Simplified Chinese UI dictionaries and runtime switching.
 - Canonical-ID game-data localization merge with English fallback.
 - DarkerDB HTTP adapter for Items, Attributes, Market, and Price Check.
-- Recent-K arithmetic mean and inferred-vs-confirmed comparable metadata.
+- Lowest-3-of-latest-5 recent-sale reference and inferred-vs-confirmed comparable metadata.
 - Stack pricing, percentage/fixed adjustment, half-up gold rounding, and blocking Price unknown result.
 - Local K-of-N evaluation across multiple item families.
 - Naturally impossible and missing rolls both evaluate false without excluding the whole item prematurely.

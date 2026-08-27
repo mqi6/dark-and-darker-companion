@@ -52,5 +52,5 @@ Localization catalog saved. Items: <translated>/<total> translated; attributes: 
 2. Lock the accepted Chinese locale code into a recorded fixture.
 3. Measure missing Chinese item and attribute names.
 4. Add real DarkerDB contract fixtures.
-5. Implement current-market retrieval and recent-K same-item averaging from real records.
+5. Implement current-market retrieval and lowest-3-of-latest-5 same-item pricing from real records.
 6. Continue Gear Search API integration before requesting game capture samples.
