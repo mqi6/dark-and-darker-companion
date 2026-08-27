@@ -19,7 +19,7 @@ Do not add maps, build recommendations, automatic purchasing, unattended monitor
 
 ## Stable product rules
 
-- Recent-sale reference: arithmetic mean of the latest configurable K usable samples; default K is 5.
+- Recent-sale reference: take the latest 5 usable deals, select the 3 lowest unit prices in that window, and average those 3. If fewer than 3 exist, use the available deals when the minimum-sample threshold is met.
 - Gold rounding: nearest integer, half upward.
 - Stack reference: per-unit reference multiplied by quantity, then apply the row adjustment and round.
 - Missing market price: no automatic fallback; raise Price unknown and leave the row blocked.

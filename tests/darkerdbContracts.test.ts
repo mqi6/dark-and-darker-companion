@@ -44,7 +44,7 @@ describe("real DarkerDB live response contracts", () => {
     );
   });
 
-  it("maps recent missing records into the exact recent-K arithmetic mean", async () => {
+  it("averages the lowest three prices from the latest five inferred deals", async () => {
     const recent = darkerDbMarketResponseSchema.parse(
       await fixture("market-recent-missing.json")
     );
@@ -55,16 +55,13 @@ describe("real DarkerDB live response contracts", () => {
       confirmation: "inferred-disappearance"
     });
 
-    expect(
-      averageDarkerDbRecentListings(recent.body, {
-        requestedSampleCount: 5,
-        minimumUsableSamples: 1
-      })
-    ).toMatchObject({
+    expect(averageDarkerDbRecentListings(recent.body)).toMatchObject({
       status: "available",
-      unitReference: 10659.4,
-      samplesUsed: 5,
-      samplesRequested: 5,
+      unitReference: 126,
+      samplesUsed: 3,
+      dealsConsidered: 5,
+      recentWindowRequested: 5,
+      lowestDealsRequested: 3,
       includesInferredSamples: true
     });
   });

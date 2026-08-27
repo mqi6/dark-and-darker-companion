@@ -2,7 +2,7 @@
 
 ## Pricing
 
-1. A no-roll recent-sale reference is the arithmetic mean of the most recent applicable `K` usable samples. `K` is configurable and defaults to 5.
+1. A no-roll recent-sale reference first takes the latest 5 applicable usable deals, then selects the 3 lowest unit prices from that recent window and uses their arithmetic mean. Both the recent-window size and selected-lowest count remain policy settings. If fewer than 3 deals exist, the engine uses the available deals when the configured minimum-sample threshold is met.
 2. A price is rounded to the nearest whole gold. An exact `.5` rounds upward.
 3. A stack starts with `per-unit reference × quantity`. The row-level percentage or fixed adjustment applies to that whole-stack reference, and the result is rounded.
 4. Missing market data never silently falls back to another source. The row enters `NeedsPrice` and the UI raises a blocking `Price unknown` alert. The user may refresh, choose another source, or enter a manual value.
@@ -27,4 +27,4 @@ English and Simplified Chinese are required. Application UI strings are reposito
 
 ## Open implementation policy
 
-When fewer than K usable recent-sale samples exist, the engine accepts the available samples as long as the configured minimum-sample threshold is met. The initial minimum is 1 and the UI always displays `used/requested`. This is isolated as a policy setting so it can be changed without rewriting pricing logic.
+The initial minimum usable count is 1. The UI must display both `deals considered / recent window` and `lowest deals used / requested` so the user can distinguish recency from price selection. This is isolated as a policy setting so it can be changed without rewriting pricing logic.

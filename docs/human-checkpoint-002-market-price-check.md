@@ -56,5 +56,5 @@ If any command returns 401 or 403, verify the key and its live-data scope locall
 
 1. Lock the real Market and Price Check response records into Zod schemas and contract tests.
 2. Map live asks and recent inferred/confirmed disappearance records into domain comparables.
-3. Connect recent-K arithmetic-mean pricing and incomplete-result metadata to the adapters.
+3. Connect lowest-3-of-latest-5 recent-sale pricing and incomplete-result metadata to the adapters.
 4. Continue offline integration until BUILD-001 and game capture evidence become necessary.
