@@ -1,5 +1,7 @@
 # Human Checkpoint 003 — Windows Game Baseline and Visual Samples
 
+> Protocol-first update: use `development-and-recording-plan.md` as the primary runbook. Do not collect the full screenshot matrix until NET-000 proves the passive TCP/Protobuf path on the current build. This document remains the detailed visual-calibration fallback and describes the screenshots that accompany sanitized network samples.
+
 The DarkerDB integration is fixture-validated. The next boundary is the installed Windows game: build identification, screen geometry, stash recognition, normal-UI movement, and Auction confirmation cannot be truthfully validated in the cloud workspace.
 
 This is a manual evidence-collection checkpoint. It does not request credentials, process-memory access, packet interception, anti-cheat changes, or automated game input.
