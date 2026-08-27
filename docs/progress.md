@@ -28,7 +28,7 @@
 
 - TypeScript strict type checking.
 - Synthetic fixture validation.
-- 26 passing tests across pricing, search, reserved regions, task state, adapters, localization, DarkerDB contracts, snapshots, and UI shell.
+- 39 passing tests across pricing, search, reserved regions, task state, adapters, localization, live DarkerDB contracts/mappings, Windows baseline validation, snapshots, and UI shell.
 - Successful production renderer build.
 
 ## Current external checkpoint
