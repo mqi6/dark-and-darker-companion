@@ -1,5 +1,7 @@
 # Human Checkpoint 001 — DarkerDB Data and Localization
 
+**Status: completed on 2026-08-27.** The accepted Simplified Chinese locale is `zh-Hans`. The fixture contains 2,430 items (2,422 translated, 8 missing) and 58 attributes (56 translated, 2 missing). Continue with `human-checkpoint-002-market-price-check.md`.
+
 This is the first point where live credentials are required. The repository can continue using mocks, but real API contracts, Chinese locale coverage, recent-sale records, and current market pagination cannot be validated without a DarkerDB key.
 
 ## What the developer must do
@@ -18,7 +20,7 @@ npm run localization:sync
 Remove-Item Env:DARKERDB_API_KEY
 ```
 
-If `DARKERDB_ZH_LOCALE` is not set, the tool probes `zh-CN`, `zh-Hans`, and `zh`, then selects the candidate that actually returns Han-character attribute names. To force a verified code:
+If `DARKERDB_ZH_LOCALE` is not set, the tool probes `zh-Hans`, `zh-CN`, and `zh`, then selects the candidate that actually returns Han-character attribute names. To force the verified code:
 
 ```powershell
 $env:DARKERDB_API_KEY = "YOUR_KEY_HERE"
