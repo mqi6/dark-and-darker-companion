@@ -37,7 +37,7 @@ Protocol game IDs and DarkerDB canonical IDs are distinct branded types. The bri
 
 The reducer selects the latest successful character response, validates a complete candidate before atomic replacement, increments versions monotonically, hashes canonical content deterministically, rejects duplicate aliases and invalid container ownership, and preserves stacks, ammo/content counts, properties, tradability, and permitted areas. Localization enrichment occurs after protocol-state validation.
 
-The schema and catalog do not prove item footprints, storage grid geometry, or slot-to-coordinate mapping. No spatial values were invented. NET-001 is the next recording boundary and requires explicit operator approval.
+The initial schema/localization-only review did not prove footprints or geometry. A later pinned DnDTools source review traced footprints to DarkerDB item metadata and identified 12x20 row-major storage placement as an upstream derivation. Private NET-000 cross-validation matched all 112 designs and placed all 384 storage items with zero overlap or out-of-bounds results. NET-001 through NET-007 are therefore optional diagnostics; VIS-001 is the next read-only human checkpoint. See `docs/dndtools-spatial-review-and-revised-plan.md`.
 
 ## Repository fixture boundary
 
