@@ -1,6 +1,8 @@
 # Protocol-First Development and Recording Plan
 
-Status: proposed local-game plan after reviewing `Beelzebub2/DnDTools` at commit `dbbb4d3ed547b510b780edcbfd013b91f25c74ee` (2026-08-24).
+Status: implemented through the accepted NET-000 baseline; the spatial/capture sequence was revised after a deeper pinned-source review.
+
+> **Revision notice (2026-08-28):** The mandatory NET-001 through NET-007 sequence is superseded by [DnDTools Spatial Model Review and Revised Development Plan](./dndtools-spatial-review-and-revised-plan.md). Those samples are retained below only as diagnostic fallbacks. The current checkpoint is VIS-001, followed later by ACT-001.
 
 This plan replaces a screenshot-only interpretation of CAP-001 through CAP-010. Network evidence is the primary runtime input. Screenshots and short videos are retained only as human-readable ground truth for placement, tooltip text, normal-UI coordinates, and visible confirmation.
 
@@ -204,9 +206,9 @@ For every sample, distinguish setup from recording:
 
 If the terminal cannot receive a marker while the game is foregrounded, use timestamps from a short recording and add markers immediately before and after the action. Sub-second precision is useful but not required when only one action occurs in the window.
 
-## 6. Exact recording matrix
+## 6. Legacy recording matrix (diagnostic fallback only)
 
-Coordinates use the top-left stash cell as `(0,0)`, x increasing right and y increasing down. Use one disposable test page called `stash-test-page` throughout. Do not buy items solely to satisfy a sample; record substitutions in the manifest.
+NET-001 through NET-007 are not scheduled. Use them individually only when the revised plan identifies a specific unresolved decoder or reducer defect. Coordinates use the top-left stash cell as `(0,0)`, x increasing right and y increasing down. Do not buy items solely to satisfy a diagnostic sample; record substitutions in the manifest.
 
 ### NET-000 — transport smoke
 
