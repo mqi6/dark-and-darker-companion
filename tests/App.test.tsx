@@ -10,5 +10,8 @@ describe("application shell", () => {
     expect(screen.getByRole("button", { name: "Auction" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gear Search" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("grid", { name: "12 by 20 logical stash preview" })).toBeInTheDocument();
+    expect(screen.getAllByRole("gridcell")).toHaveLength(240);
+    expect(screen.getByLabelText("reserved region 1")).toBeInTheDocument();
   });
 });
