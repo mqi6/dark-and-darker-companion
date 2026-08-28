@@ -1,0 +1,34 @@
+{
+  "reviewVersion": 1,
+  "checkpoint": "REFRESH-001",
+  "sanitized": true,
+  "containsRawPacketData": false,
+  "buildCompatibility": "pass",
+  "samples": {
+    "REF-001": { "method": "tab-0-to-tab-1", "validFrames": 57, "command44": 0, "command552": 0, "completeFreshStates": 0, "result": "ambiguous" },
+    "REF-002": { "method": "tab-1-to-tab-0", "validFrames": 58, "command44": 0, "command552": 0, "completeFreshStates": 0, "result": "ambiguous" },
+    "REF-003": { "method": "leave-and-reopen-stash", "validFrames": 36, "command44": 0, "command552": 0, "completeFreshStates": 0, "result": "ambiguous" },
+    "REF-004": {
+      "method": "same-character-reselection-and-open-stash",
+      "validFrames": 111,
+      "discardedBytes": 0,
+      "actionStartMilliseconds": 55079,
+      "command43": 0,
+      "command44": 2,
+      "command551": 0,
+      "command552": 0,
+      "completeFreshStates": 2,
+      "states": [
+        { "relativeTimestampMilliseconds": 63130, "result": 1 },
+        { "relativeTimestampMilliseconds": 77749, "result": 1 }
+      ],
+      "containerItemCounts": { "4": 72, "5": 240, "6": 39, "7": 46, "8": 28, "9": 100, "20": 129, "21": 144, "30": 97, "200": 51 },
+      "protocolStateResult": "complete-and-fresh",
+      "spatialValidation": { "status": "blocked", "unknownItemInstances": 11, "unknownGeometryContainers": 0, "identityCollisions": 0 }
+    }
+  },
+  "visibleTenTabInventoryIdSet": [4, 5, 6, 7, 8, 9, 20, 21, 30, 200],
+  "inventoryIdDerivation": "successful command-44 character storage container evidence",
+  "overallGate": "ambiguous-spatial-validation-blocked",
+  "intentionallyOmitted": ["packetPayloads", "rawItemUniqueIds", "accountAndCharacterIdentifiers", "networkAddresses", "completeStashLayouts", "unknownPersonalItemDesignIds"]
+}
