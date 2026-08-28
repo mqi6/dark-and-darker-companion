@@ -65,7 +65,12 @@ describe("DarkerDbClient", () => {
     });
 
     fetchImplementation.mockResolvedValueOnce(
-      new Response(JSON.stringify({ body: [{ id: "id.item.longbow", name: "Longbow", rarity: "common" }] }), {
+      new Response(JSON.stringify({ body: [{
+        id: "id.item.longbow",
+        name: "Longbow",
+        rarity: "common",
+        max_stack_size: 1
+      }] }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       })
