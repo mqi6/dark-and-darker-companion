@@ -54,8 +54,10 @@ Do not port these behaviors unchanged:
 3. Unknown item metadata defaults to footprint 1x1, rarity Common and stack size
    1. These fallbacks can create a dangerous sort plan. The companion must block
    spatial planning for unknown metadata.
-4. Items without a slot are assigned slot zero for previews. The companion must
-   keep `slotId` unknown and issue a diagnostic instead.
+4. Items without a slot are assigned slot zero for previews. In the pinned
+   proto3 scalar shape, decoding with defaults cannot distinguish an omitted
+   scalar from legitimate slot zero. The companion therefore validates bounds
+   and complete-container consistency, and does not claim presence detection.
 5. DnDTools mutates its in-memory grid before normal-UI movement and its pixel
    verifier accepts a change at either endpoint. The companion must not regard
    that as authoritative success.
@@ -99,8 +101,9 @@ facts left for the next visual checkpoint.
    - rarity;
    - slot/item/armor/weapon type where present;
    - patch, API version, generated timestamp and source hash.
-2. Fetch English and Simplified Chinese labels by canonical DarkerDB ID and join
-   them to the same metadata record.
+2. Keep the English and Simplified Chinese label catalog independent from
+   gameplay geometry, and join both by canonical DarkerDB ID at runtime so
+   localized text never participates in placement identity.
 3. Continue to bridge protocol game IDs to DarkerDB IDs explicitly. Preserve
    both IDs and surface unknown mappings.
 4. Validate positive integer dimensions and stack limits. Unknown or malformed
@@ -124,7 +127,7 @@ malformed/missing records fail closed in tests.
    - `y = floor(slotId / columns)`.
 4. Enrich protocol items with footprints only after the canonical reducer has
    accepted the packet state.
-5. Reject unknown geometry, missing slots, out-of-bounds footprints and overlap.
+5. Reject unknown geometry, invalid slots, out-of-bounds footprints and overlap.
    Diagnostics must include container ID and deterministic item alias, never raw
    unique IDs.
 
@@ -253,8 +256,9 @@ keyed through privacy-preserving runtime identity, and invalidate it whenever th
 available page set changes. Protocol inventory IDs remain authoritative container
 identity; tab indices are only current UI routing.
 
-NET-001 through NET-007 remain unnecessary. Continue P4A through P4D offline.
-The next human checkpoint is approval and recording of ACT-001 after the
-metadata catalog, logical geometry, preview and action correlator pass their
-offline gates.
+NET-001 through NET-007 remain unnecessary. P4A through P4D now have offline
+implementations and synthetic regression coverage. Refresh the pinned gameplay
+catalog and pass CI before proceeding. The next game-side human checkpoint is
+approval and recording of ACT-001; it remains one manual move and does not
+authorize sorting or marketplace submission.
 

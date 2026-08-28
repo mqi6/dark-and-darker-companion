@@ -48,6 +48,31 @@ describe("DarkerDbClient", () => {
     expect(calledHeaders.get("X-API-Key")).toBe("secret-test-key");
   });
 
+  it("validates gameplay dimensions instead of accepting incomplete item metadata", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ body: [{
+        id: "id.item.longbow",
+        name: "Longbow",
+        rarity: "common",
+        inventory_width: 2,
+        inventory_height: 3,
+        max_stack_size: 1
+      }] }), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+    await expect(client.getGameplayItems({ locale: "en" })).resolves.toMatchObject({
+      data: [{ id: "id.item.longbow", inventory_width: 2, inventory_height: 3 }]
+    });
+
+    fetchImplementation.mockResolvedValueOnce(
+      new Response(JSON.stringify({ body: [{ id: "id.item.longbow", name: "Longbow", rarity: "common" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    await expect(client.getGameplayItems({ locale: "en" })).rejects.toThrow();
+  });
+
   it("encodes documented market filters and enforces the 50-row page cap", async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ body: [], pagination: { page: 2, num_pages: 2, total: 0 } }), {

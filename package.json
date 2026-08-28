@@ -11,6 +11,7 @@
     "typecheck": "tsc -b --pretty false",
     "fixtures:validate": "node --import tsx tools/validate-fixtures.ts",
     "localization:sync": "node --import tsx tools/sync-localization.ts",
+    "gameplay:sync": "node --import tsx tools/sync-gameplay-catalog.ts",
     "darkerdb:samples": "node --import tsx tools/capture-darkerdb-live-samples.ts",
     "protocol:replay": "node --import tsx tools/replay-protocol-fixture.ts",
     "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
