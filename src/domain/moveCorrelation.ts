@@ -12,8 +12,11 @@ export interface MoveEvidence {
   matchingRequestCount: number;
   acknowledgementCount: number;
   explicitFailure?: string;
+  requestAtMilliseconds: number;
   beforeVersion: number;
+  beforeObservedAtMilliseconds: number;
   afterVersion?: number;
+  afterObservedAtMilliseconds?: number;
   beforeItems: readonly MoveItemState[];
   afterItems?: readonly MoveItemState[];
 }
@@ -24,8 +27,10 @@ export interface MoveCorrelation {
     | "explicit-failure"
     | "request-count-mismatch"
     | "pre-state-missing"
+    | "pre-state-not-before-request"
     | "post-state-missing"
     | "post-state-stale"
+    | "post-state-not-after-request"
     | "identity-transition-mismatch";
   detail: string;
 }
@@ -41,11 +46,17 @@ export function correlateMove(evidence: MoveEvidence): MoveCorrelation {
   if (before.length !== 1 || !sameLocation(before[0], evidence.intent.source)) {
     return { status: "ambiguous", reason: "pre-state-missing", detail: "A complete protocol pre-state at the intended source was not observed." };
   }
+  if (evidence.beforeObservedAtMilliseconds >= evidence.requestAtMilliseconds) {
+    return { status: "ambiguous", reason: "pre-state-not-before-request", detail: "The pre-state was not observed before the move request." };
+  }
   if (evidence.afterVersion === undefined || !evidence.afterItems) {
     return { status: "ambiguous", reason: "post-state-missing", detail: "An acknowledgement is not sufficient without a protocol post-state." };
   }
   if (evidence.afterVersion <= evidence.beforeVersion) {
     return { status: "ambiguous", reason: "post-state-stale", detail: "The observed post-state is not newer than the pre-state." };
+  }
+  if (evidence.afterObservedAtMilliseconds === undefined || evidence.afterObservedAtMilliseconds <= evidence.requestAtMilliseconds) {
+    return { status: "ambiguous", reason: "post-state-not-after-request", detail: "The candidate post-state was not observed after the move request." };
   }
   const after = evidence.afterItems.filter((item) => item.alias === evidence.intent.alias);
   const destinationMatches = after.length === 1 && sameLocation(after[0], evidence.intent.destination);
