@@ -18,5 +18,10 @@ describe("pinned semantic protocol", () => {
   it("rejects malformed semantic payload", () => { expect(() => decodeSemanticMessage(44, Uint8Array.from([0xff]))).toThrow(); });
   it("retains unknown-command fallback", () => { expect(new VersionedProtobufDecoder().decode(65535, new Uint8Array())).toMatchObject({ kind: "unknown-command", command: 65535 }); });
   it("sanitizes player fields and aliases unique IDs deterministically", async () => { const result = await snapshot(response({ CharacterItemList: [item({ itemUniqueId: 999 }), item({ itemUniqueId: 1000, slotId: 1 })] })); const serialized = JSON.stringify(result); expect(result.containers[0]!.items.map(value => value.alias)).toEqual(["item-001", "item-002"]); expect(serialized).not.toContain("private-account"); expect(serialized).not.toContain("private-name"); expect(serialized).not.toContain("private-character"); expect(serialized).not.toContain("999"); });
+  it("rejects an alias resolver that leaks or collides identities", async () => {
+    const value = roundTrip(response({ CharacterItemList: [item({ itemUniqueId: 999 }), item({ itemUniqueId: 1000, slotId: 1 })] }));
+    await expect(createSanitizedSemanticSnapshot(value, "test-schema", 100, 1, { aliasFor: (raw) => raw })).rejects.toThrow(/non-opaque/);
+    await expect(createSanitizedSemanticSnapshot(value, "test-schema", 100, 1, { aliasFor: () => "item-001" })).rejects.toThrow(/Duplicate item alias/);
+  });
   it("loads semantic types for prioritized inventory and marketplace commands", () => { for (const command of [44, 502, 504, 506, 507, 508, 552, 3513, 3514, 3533, 3534, 3560, 3565, 3566]) expect(semanticTypeForCommand(command)?.fullName).toMatch(/^\.DC\.Packet\.S/); });
 });

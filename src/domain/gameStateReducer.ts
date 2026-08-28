@@ -2,6 +2,7 @@ import type { LocalizationCatalog } from "./localizedCatalog";
 import { GameIdBridge, asGameDesignAttributeId, asGameDesignItemId, isIdBridgeDiagnostic, type DarkerDbCanonicalAttributeId, type DarkerDbCanonicalItemId, type GameDesignAttributeId, type GameDesignItemId, type IdBridgeDiagnostic } from "./gameIdBridge";
 import type { SemanticCharacterInfoResponse } from "../protocol/semanticDecoder";
 import { createSanitizedSemanticSnapshot, type SanitizedSemanticSnapshotV1 } from "../protocol/semanticSnapshot";
+import { SessionItemAliasRegistry } from "./sessionItemAliasRegistry";
 
 export interface CharacterSnapshotCandidate { relativeTimestampMs: number; response: SemanticCharacterInfoResponse }
 export interface EnrichedProtocolProperty { gameDesignAttributeId: GameDesignAttributeId; darkerDbCanonicalAttributeId?: DarkerDbCanonicalAttributeId; value: number; en?: string; zhCN?: string }
@@ -12,6 +13,7 @@ export class GameStateReducer {
   private version = 0;
   private currentState: ReducedGameState | undefined;
   private readonly bridge: GameIdBridge;
+  private readonly aliases = new SessionItemAliasRegistry();
   constructor(catalog: LocalizationCatalog, private readonly schemaVersion: string) { this.bridge = new GameIdBridge(catalog); }
   get current(): ReducedGameState | undefined { return this.currentState; }
 
@@ -19,7 +21,13 @@ export class GameStateReducer {
     const selected = [...candidates].filter(value => value.response.result === 1 && value.response.characterDataBase).sort((a, b) => a.relativeTimestampMs - b.relativeTimestampMs).at(-1);
     if (!selected) throw new Error("No successful character baseline is available");
     const nextVersion = this.version + 1;
-    const protocol = await createSanitizedSemanticSnapshot(selected.response, this.schemaVersion, selected.relativeTimestampMs, nextVersion);
+    const protocol = await createSanitizedSemanticSnapshot(
+      selected.response,
+      this.schemaVersion,
+      selected.relativeTimestampMs,
+      nextVersion,
+      { aliasFor: (rawUniqueId) => this.aliases.aliasFor(rawUniqueId) }
+    );
     validateProtocolSnapshot(protocol);
     const diagnostics: IdBridgeDiagnostic[] = [], items: EnrichedProtocolItem[] = [];
     for (const container of protocol.containers) for (const item of container.items) {

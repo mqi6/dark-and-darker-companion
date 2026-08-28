@@ -1,4 +1,5 @@
 import type { SemanticCharacterInfoResponse, SemanticItem, SemanticItemProperty } from "./semanticDecoder";
+import type { ItemAliasResolver } from "../domain/sessionItemAliasRegistry";
 
 export interface SanitizedProtocolProperty { propertyId: string; value: number }
 export interface SanitizedProtocolItem {
@@ -16,11 +17,23 @@ export async function createSanitizedSemanticSnapshot(
   response: SemanticCharacterInfoResponse,
   sourceSchemaVersion: string,
   relativeTimestampMs: number,
-  snapshotVersion: number
+  snapshotVersion: number,
+  options: { aliasFor?: ItemAliasResolver } = {}
 ): Promise<SanitizedSemanticSnapshotV1> {
   if (response.result !== 1 || !response.characterDataBase) throw new Error("Character snapshot result is not successful");
   const aliases = new Map<string, string>();
-  const aliasFor = (uniqueId: string) => { if (!aliases.has(uniqueId)) aliases.set(uniqueId, `item-${String(aliases.size + 1).padStart(3, "0")}`); return aliases.get(uniqueId)!; };
+  const rawIdByAlias = new Map<string, string>();
+  const aliasFor = (uniqueId: string) => {
+    const existing = aliases.get(uniqueId);
+    if (existing) return existing;
+    const alias = options.aliasFor?.(uniqueId) ?? `item-${String(aliases.size + 1).padStart(3, "0")}`;
+    if (!/^item-[0-9]{3,}$/.test(alias)) throw new Error("Item alias resolver returned a non-opaque alias");
+    const owner = rawIdByAlias.get(alias);
+    if (owner !== undefined && owner !== uniqueId) throw new Error(`Duplicate item alias: ${alias}`);
+    aliases.set(uniqueId, alias);
+    rawIdByAlias.set(alias, uniqueId);
+    return alias;
+  };
   const convert = (item: SemanticItem): SanitizedProtocolItem => ({
     alias: aliasFor(String(item.itemUniqueId)), gameDesignItemId: item.itemId, inventoryId: item.inventoryId,
     slotId: item.slotId, stackQuantity: item.itemCount, ammoCount: item.itemAmmoCount,
