@@ -20,7 +20,9 @@ export const enUS = {
   },
   stash: {
     title: "Stash workspace",
-    description: "Captured storage, reserved regions, sort rules, and preview will live here.",
+    description: "Logical storage preview uses protocol slots and validated item footprints; it does not use screen coordinates.",
+    previewSource: "Synthetic offline footprint fixture",
+    previewLabel: "12 by 20 logical stash preview",
     reservedTitle: "Reserved regions",
     reservedDescription: "Reserved cells and their items remain untouched by the planner."
   },
