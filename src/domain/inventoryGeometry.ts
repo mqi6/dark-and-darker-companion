@@ -7,7 +7,7 @@ import {
 
 export const STORAGE_GRID = Object.freeze({ columns: 12, rows: 20 });
 export const RECTANGULAR_STORAGE_INVENTORY_IDS = Object.freeze([
-  4, 5, 6, 7, 8, 9, 20, 21, 30
+  4, 5, 6, 7, 8, 9, 20, 21, 30, 200
 ] as const);
 
 export type InventoryGeometry =

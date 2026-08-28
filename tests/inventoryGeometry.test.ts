@@ -86,6 +86,7 @@ describe("inventory geometry projection", () => {
   });
 
   it("does not interpret unsupported inventories as rectangular storage", () => {
+    expect(geometryForInventoryId(200)).toEqual({ kind: "rectangular", columns: 12, rows: 20 });
     expect(geometryForInventoryId(2)).toEqual({ kind: "unverified" });
     expect(geometryForInventoryId(3)).toEqual({ kind: "equipment" });
   });

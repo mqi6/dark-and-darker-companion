@@ -1,0 +1,10 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "actionStartMilliseconds": 1000,
+  "states": [
+    { "command": 44, "relativeTimestampMilliseconds": 999, "result": 1, "complete": true },
+    { "command": 44, "relativeTimestampMilliseconds": 1100, "result": 1, "complete": true }
+  ],
+  "expectedFreshCompleteCount": 1
+}
