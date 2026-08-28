@@ -20,7 +20,9 @@ export const zhCN = {
   },
   stash: {
     title: "仓库工作区",
-    description: "这里将显示已捕获的仓库、固定区域、排序规则和预览。",
+    description: "逻辑仓库预览使用协议槽位和已验证的物品尺寸，不依赖屏幕像素坐标。",
+    previewSource: "离线合成尺寸样本",
+    previewLabel: "12 列 20 行逻辑仓库预览",
     reservedTitle: "固定区域",
     reservedDescription: "排序器不会移动固定区域中的物品，也不会使用其中的格子。"
   },
