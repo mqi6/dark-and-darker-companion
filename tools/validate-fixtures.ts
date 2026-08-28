@@ -11,6 +11,7 @@ import {
   darkerDbMarketResponseSchema,
   darkerDbPriceCheckResponseSchema
 } from "../src/adapters/darkerdbContracts";
+import { gameplayCatalogSchema } from "../src/domain/gameplayCatalog";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const syntheticRoot = path.join(projectRoot, "fixtures", "synthetic");
@@ -41,6 +42,15 @@ process.stdout.write(
   `Validated DarkerDB ${catalog.englishLocale}/${catalog.simplifiedChineseLocale} catalog: ` +
     `${itemCoverage.translated}/${itemCoverage.total} items translated, ${itemCoverage.missing} missing; ` +
     `${attributeCoverage.translated}/${attributeCoverage.total} attributes translated, ${attributeCoverage.missing} missing.\n`
+);
+
+const gameplayCatalogPath = path.join(projectRoot, "fixtures", "darkerdb", "gameplay", "catalog.json");
+const gameplayCatalog = gameplayCatalogSchema.parse(
+  JSON.parse(await readFile(gameplayCatalogPath, "utf8"))
+);
+process.stdout.write(
+  `Validated ${gameplayCatalog.items.length} gameplay metadata records and ` +
+    `${gameplayCatalog.omissions.length} explicit omissions from ${gameplayCatalog.source}.\n`
 );
 
 const liveSamplesRoot = path.join(projectRoot, "fixtures", "darkerdb", "live-samples");
