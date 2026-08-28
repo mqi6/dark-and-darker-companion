@@ -63,7 +63,7 @@ const request = moveRequests[0]?.value;
 const uniqueId = request?.srcInfo?.uniqueId;
 const intendedAlias = uniqueId === undefined ? undefined : alias(uniqueId);
 const preCandidates = updates.filter(value => value.at < actionStart && itemsFrom(value).some(item => String(item.itemUniqueId) === String(uniqueId)));
-const postCandidates = updates.filter(value => value.at > actionStart);
+const requestAt = moveRequests[0]?.at;\nconst postCandidates = requestAt === undefined ? [] : updates.filter(value => value.at > requestAt);
 const pre = preCandidates.at(-1), post = postCandidates.find(value => itemsFrom(value).some(item => String(item.itemUniqueId) === String(uniqueId)));
 const preItem = pre && itemsFrom(pre).find(item => String(item.itemUniqueId) === String(uniqueId));
 const postItem = post && itemsFrom(post).find(item => String(item.itemUniqueId) === String(uniqueId));
