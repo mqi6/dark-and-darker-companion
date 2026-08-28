@@ -2,7 +2,7 @@
 
 ## DnDTools
 
-The protocol command names, numeric command identifiers, schema provenance, and documented framing behavior in `src/protocol` were studied from DnDTools at commit `dbbb4d3ed547b510b780edcbfd013b91f25c74ee`. The TypeScript implementation is independent; this notice is retained because checked-in protocol metadata is derived from that project.
+The protocol command names, numeric command identifiers, schema provenance, documented framing behavior, and pinned `.proto` schema files in `src/protocol/schema/protos` come from DnDTools at commit `dbbb4d3ed547b510b780edcbfd013b91f25c74ee`. The TypeScript decoder and snapshot implementation are independent.
 
 MIT License
 

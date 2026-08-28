@@ -13,11 +13,14 @@
     "localization:sync": "node --import tsx tools/sync-localization.ts",
     "darkerdb:samples": "node --import tsx tools/capture-darkerdb-live-samples.ts",
     "protocol:replay": "node --import tsx tools/replay-protocol-fixture.ts",
+    "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
+    "protocol:replay-net000": "node --import tsx tools/replay-private-net000.ts",
     "protocol:powershell-test": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/tests/record-game-traffic.tests.ps1",
     "check": "npm run typecheck && npm run fixtures:validate && npm run test && npm run build"
   },
   "dependencies": {
     "i18next": "^25.0.0",
+    "protobufjs": "^7.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^16.0.0",

@@ -1,0 +1,20 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "containsCapturedInventory": false,
+  "description": "Minimal Phase 4 bridge/reducer regression that cannot reconstruct the NET-000 stash.",
+  "items": [
+    {
+      "gameDesignItemId": "DesignDataItem:Id_Item_AdventurerTunic_1001",
+      "expectedDarkerDbItemId": "id.item.adventurer_tunic_1001",
+      "stackQuantity": 2,
+      "primaryProperty": "MaxHealthAdd",
+      "secondaryProperty": "PhysicalWeaponDamage"
+    },
+    {
+      "gameDesignItemId": "DesignDataItem:Id_Item_PotionofWaterBreathing_4001",
+      "expectedDarkerDbItemId": "id.item.potion_of_water_breathing_4001",
+      "stackQuantity": 1
+    }
+  ]
+}

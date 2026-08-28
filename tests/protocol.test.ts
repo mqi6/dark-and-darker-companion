@@ -14,6 +14,7 @@ describe("application framing", () => {
   it("decodes multiple frames from one chunk", () => { const decoder = new FrameDecoder({ commands }); const one = frame(), both = new Uint8Array(one.byteLength * 2); both.set(one); both.set(one, one.byteLength); expect(decoder.push(both)).toHaveLength(2); });
   it("rejects invalid headers and resynchronizes", () => { const decoder = new FrameDecoder({ commands }); const input = new Uint8Array(3 + frame().byteLength); input.set([0xff, 0, 7]); input.set(frame(), 3); expect(decoder.push(input)).toHaveLength(1); expect(decoder.discardedBytes).toBe(3); });
   it("bounds malformed input memory", () => { const decoder = new FrameDecoder({ maxFrameLength: 16, maxResyncBytes: 8, commands }); expect(() => decoder.push(new Uint8Array(30).fill(255))).toThrow(/memory limit/); });
+  it("supports direction-specific outbound header counters with known commands", () => { const outbound = encodeFrame(507, Uint8Array.from([1]), 5); const decoder = new FrameDecoder({ commands, allowedPadding: value => value <= 0xffff }); expect(decoder.push(outbound)).toMatchObject([{ command: 507, padding: 5 }]); });
 });
 
 describe("TCP stream reassembly", () => {

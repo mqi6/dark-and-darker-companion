@@ -1,0 +1,70 @@
+{
+  "reviewVersion": 2,
+  "sampleId": "NET-000",
+  "sanitized": true,
+  "containsRawPacketData": false,
+  "characterInfo": {
+    "observed": 2,
+    "decoded": 2,
+    "failed": 0,
+    "successfulResultOne": 2,
+    "selected": "latest-successful-result-1"
+  },
+  "storagePages": 4,
+  "itemCountsByStorageOrInventory": {
+    "inventory:3": 11,
+    "storage:4": 35,
+    "storage:20": 122,
+    "storage:21": 130,
+    "storage:30": 97
+  },
+  "totalItemCount": 395,
+  "properties": {
+    "primary": 208,
+    "secondary": 113
+  },
+  "canonicalSnapshotHash": "7b8c8fbb230724b5b02404d1d4580d8fffe3051c43bc3f5e79ccfb19959f4377",
+  "intentionallyOmitted": [
+    "accountId",
+    "accountNickname",
+    "characterId",
+    "nickname",
+    "networkAddresses",
+    "rawItemUniqueIds",
+    "legacyCharacterStorageItemListWhenStorageInfosPresent"
+  ],
+  "idBridge": {
+    "distinctGameItemIds": 112,
+    "mappedDistinctItemIds": 112,
+    "distinctGameAttributeIds": 40,
+    "mappedDistinctAttributeIds": 40,
+    "unknownDiagnostics": 0
+  },
+  "phase4Reducer": {
+    "snapshotVersion": 1,
+    "containers": 5,
+    "items": 395,
+    "duplicateAliases": 0,
+    "containerOwnershipMismatches": 0,
+    "enrichmentOrder": "protocol-state-first",
+    "geometryStatus": "blocked-missing-footprints-grid-and-slot-coordinate-mapping"
+  },
+  "framing": {
+    "validFrames": 82,
+    "discardedBytes": 0,
+    "resynchronizationsBeforeFlowEstablished": 0,
+    "resynchronizationsAfterFlowEstablished": 0,
+    "diagnostics": [],
+    "invalidHeaderCandidates": []
+  },
+  "build": {
+    "shaMatchesPinnedSchema": true,
+    "versionMatchesPinnedSchema": true
+  },
+  "gates": {
+    "transportCapture": "pass",
+    "applicationFraming": "pass",
+    "schemaCompatibility": "pass",
+    "semanticStashDecoding": "pass"
+  }
+}

@@ -23,6 +23,16 @@
 - Mapped real Market rows into bilingual Gear Search candidates and recent-sale samples.
 - Wired multiple selected gear IDs, local K-of-N filtering, naturally impossible rolls, and retrieved/reported incomplete summaries across the API boundary.
 - Added a sanitized Windows BUILD-001 contract and collection helper for the next local-game checkpoint.
+- Completed NET-000 passive transport, bidirectional application framing, pinned semantic Protobuf decoding, and a sanitized Phase 4 baseline reducer. The accepted private replay contains five containers and 395 items; only aggregate evidence and synthetic regression data are repository-visible.
+- Added explicit `GameDesignItemId`/`GameDesignAttributeId` to DarkerDB canonical-ID bridges. Enrichment joins only by validated catalog IDs and preserves the original protocol IDs for diagnostics.
+
+## NET-000 framing count correction
+
+The initial review reported 52 frames because it applied DnDTools's inbound-only header validation (`padding` limited to `0` or `256`) to both directions. Outbound frames use the final header word as a changing counter: the rejected evidence included command 21 with counter 5 and command 3001 with counter 6. Rejecting those valid client frames caused 22 discarded bytes and three false resynchronizations. Direction-aware validation now retains the pinned `0/256` rule for server-to-client traffic and accepts outbound counter values only when the command belongs to the complete pinned `PacketCommand` enum. The deterministic replay consequently reports 82 valid frames, zero discarded bytes, and zero resynchronizations.
+
+## Phase 4 geometry boundary
+
+The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, properties, tradability, and permitted-area values. The extracted message schema and current DarkerDB localization catalog do not establish item footprint dimensions, storage grid geometry, or a slot-to-coordinate mapping. Phase 4 therefore stops before spatial validation; no dimensions or coordinates are inferred.
 
 ## Automated verification
 
@@ -33,7 +43,7 @@
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002 are complete. The next boundary is the actual Windows game. Follow `development-and-recording-plan.md`: collect BUILD-001, then run only the NET-000 passive TCP/Protobuf smoke test. Do not collect the remaining visual/network matrix until that gate passes.
+DarkerDB checkpoints 001 and 002 and all four NET-000 protocol gates are complete. NET-001 is the next approved recording boundary, but must not start without explicit operator approval.
 
 ## Later local-game blockers
 
