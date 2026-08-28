@@ -7,6 +7,22 @@ const canonicalIdSchema = z.custom<CanonicalId>(
 );
 const timestampSchema = z.iso.datetime();
 
+export const darkerDbGameplayItemSchema = z
+  .object({
+    id: canonicalIdSchema,
+    name: z.string(),
+    rarity: z.string().trim().min(1),
+    inventory_width: z.number().int().positive(),
+    inventory_height: z.number().int().positive(),
+    max_stack_size: z.number().int().positive(),
+    slot_type: z.string().trim().min(1).nullish(),
+    item_type: z.string().trim().min(1).nullish(),
+    armor_type: z.string().trim().min(1).nullish(),
+    weapon_type: z.string().trim().min(1).nullish(),
+    patch: z.string().trim().min(1).nullish()
+  })
+  .passthrough();
+
 export const darkerDbFreshnessSchema = z
   .object({
     archetype: canonicalIdSchema,
@@ -205,6 +221,7 @@ export const darkerDbPriceCheckResponseSchema = z
   .passthrough();
 
 export type DarkerDbFreshness = z.infer<typeof darkerDbFreshnessSchema>;
+export type DarkerDbGameplayItem = z.infer<typeof darkerDbGameplayItemSchema>;
 export type DarkerDbMarketListing = z.infer<typeof darkerDbMarketListingSchema>;
 export type DarkerDbMarketResponse = z.infer<typeof darkerDbMarketResponseSchema>;
 export type DarkerDbPriceCheckBody = z.infer<typeof darkerDbPriceCheckBodySchema>;
