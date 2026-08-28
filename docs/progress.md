@@ -38,6 +38,7 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 - Added a validated gameplay metadata catalog for DarkerDB dimensions, maximum stack, rarity and item classifications, with API version, timestamp and deterministic source hash.
 - Added a paginated `gameplay:sync` tool. It requires `DARKERDB_API_KEY`, never writes the key, and pins the existing API version.
+- Added a token-free reproducible import path for the pinned DnDTools asset. The committed catalog contains 2,428 spatial item records and explicitly omits the two non-spatial unarmed records; provenance pins repository commit `dbbb4d3ed547b510b780edcbfd013b91f25c74ee`, source blob `f2c1f0da0e68b50aeaed0b02e6a22fe21af70c53`, and the source-content SHA-256.
 - Added fail-closed spatial projection for storage inventories 4-9, 20, 21 and 30 using a 12x20 top-left row-major grid. Equipment remains non-rectangular and bag geometry remains unverified.
 - Missing ID mappings, missing metadata, invalid stacks, invalid slots, out-of-bounds footprints and overlaps block the affected container.
 - Added a character/build/page-set scoped stash-tab mapping; the VIS-001 mapping is test evidence, not a global default.
@@ -53,7 +54,7 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, and VIS-001 are complete. VIS-001 confirmed this character's visible mapping as tab 0 -> inventory 4, tab 1 -> 20, tab 2 -> 21 and tab 3 -> 30, plus a 12x20 top-left row-major grid. Other characters may have additional private pages, so tab mapping is account/character-local rather than global. The P4A-P4D offline implementation is ready for CI. After CI and a pinned gameplay-catalog refresh, ACT-001 is the next human and network checkpoint.
+DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, and VIS-001 are complete. VIS-001 confirmed this character's visible mapping as tab 0 -> inventory 4, tab 1 -> 20, tab 2 -> 21 and tab 3 -> 30, plus a 12x20 top-left row-major grid. Other characters may have additional private pages, so tab mapping is account/character-local rather than global. P4A-P4D and the pinned gameplay catalog are complete offline. After CI, ACT-001 is the next human and network checkpoint.
 
 ## Later local-game blockers
 
