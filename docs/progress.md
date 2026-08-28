@@ -43,7 +43,7 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002 and all four NET-000 protocol gates are complete. NET-001 through NET-007 are no longer mandatory. VIS-001 is the current read-only checkpoint: confirm the four visible stash-page signatures, tab order and grid orientation without packet capture or item movement. ACT-001 is the next required network recording after offline spatial implementation.
+DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, and VIS-001 are complete. VIS-001 confirmed this character's visible mapping as tab 0 -> inventory 4, tab 1 -> 20, tab 2 -> 21 and tab 3 -> 30, plus a 12x20 top-left row-major grid. Other characters may have additional private pages, so tab mapping is account/character-local rather than global. Continue P4A through P4D offline; ACT-001 is the next human and network checkpoint.
 
 ## Later local-game blockers
 
