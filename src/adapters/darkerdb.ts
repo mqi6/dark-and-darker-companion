@@ -2,9 +2,11 @@ import { z } from "zod";
 import type { CanonicalId } from "../domain/models";
 import {
   darkerDbFreshnessSchema,
+  darkerDbGameplayItemSchema,
   darkerDbMarketListingSchema,
   darkerDbPriceCheckBodySchema,
   type DarkerDbFreshness,
+  type DarkerDbGameplayItem,
   type DarkerDbMarketListing,
   type DarkerDbPriceCheckBody
 } from "./darkerdbContracts";
@@ -114,6 +116,18 @@ export class DarkerDbClient {
       cursor: parameters.cursor,
       limit: parameters.limit
     });
+  }
+
+  async getGameplayItems(parameters: {
+    locale?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<DarkerDbPage<DarkerDbGameplayItem[]>> {
+    return this.get("/v2/items", {
+      locale: parameters.locale ?? "en",
+      cursor: parameters.cursor,
+      limit: parameters.limit
+    }, z.array(darkerDbGameplayItemSchema));
   }
 
   async getAttributes<T>(parameters: {
