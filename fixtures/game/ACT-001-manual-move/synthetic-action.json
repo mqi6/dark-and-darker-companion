@@ -1,0 +1,13 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "intent": {
+    "alias": "item-001",
+    "source": { "inventoryId": 4, "slotId": 10 },
+    "destination": { "inventoryId": 4, "slotId": 20 },
+    "expectedQuantity": 1,
+    "expectedGameDesignItemId": "DesignDataItem:Id_Item_Synthetic_1001"
+  },
+  "before": [{ "alias": "item-001", "inventoryId": 4, "slotId": 10, "quantity": 1, "gameDesignItemId": "DesignDataItem:Id_Item_Synthetic_1001" }],
+  "after": [{ "alias": "item-001", "inventoryId": 4, "slotId": 20, "quantity": 1, "gameDesignItemId": "DesignDataItem:Id_Item_Synthetic_1001" }]
+}
