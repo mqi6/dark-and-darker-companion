@@ -1,5 +1,5 @@
 import type { LocalizationCatalog } from "./localizedCatalog";
-import { GameIdBridge, asGameDesignAttributeId, asGameDesignItemId, isIdBridgeDiagnostic, type DarkerDbCanonicalAttributeId, type DarkerDbCanonicalItemId, type GameDesignAttributeId, type GameDesignItemId, type IdBridgeDiagnostic } from "./gameIdBridge";
+import { GameIdBridge, asGameDesignAttributeId, asGameDesignItemId, canonicalItemIdForGameDesignId, isIdBridgeDiagnostic, type DarkerDbCanonicalAttributeId, type DarkerDbCanonicalItemId, type GameDesignAttributeId, type GameDesignItemId, type IdBridgeDiagnostic } from "./gameIdBridge";
 import type { SemanticCharacterInfoResponse } from "../protocol/semanticDecoder";
 import { createSanitizedSemanticSnapshot, type SanitizedSemanticSnapshotV1 } from "../protocol/semanticSnapshot";
 import { SessionItemAliasRegistry } from "./sessionItemAliasRegistry";
@@ -32,13 +32,14 @@ export class GameStateReducer {
     const diagnostics: IdBridgeDiagnostic[] = [], items: EnrichedProtocolItem[] = [];
     for (const container of protocol.containers) for (const item of container.items) {
       const gameDesignItemId = asGameDesignItemId(item.gameDesignItemId), itemBridge = this.bridge.item(gameDesignItemId);
+      const canonicalItemId = canonicalItemIdForGameDesignId(gameDesignItemId);
       if (isIdBridgeDiagnostic(itemBridge)) diagnostics.push(itemBridge);
       const convertProperties = (values: typeof item.primaryProperties): EnrichedProtocolProperty[] => values.map(value => {
         const gameDesignAttributeId = asGameDesignAttributeId(value.propertyId), bridge = this.bridge.attribute(gameDesignAttributeId);
         if (isIdBridgeDiagnostic(bridge)) { diagnostics.push(bridge); return { gameDesignAttributeId, value: value.value }; }
         return { gameDesignAttributeId, darkerDbCanonicalAttributeId: bridge.canonicalId, value: value.value, en: bridge.display.en, ...(bridge.display.zhCN ? { zhCN: bridge.display.zhCN } : {}) };
       });
-      items.push({ alias: item.alias, gameDesignItemId, ...(!isIdBridgeDiagnostic(itemBridge) ? { darkerDbCanonicalItemId: itemBridge.canonicalId, en: itemBridge.display.en, ...(itemBridge.display.zhCN ? { zhCN: itemBridge.display.zhCN } : {}) } : {}), inventoryId: item.inventoryId, slotId: item.slotId, stackQuantity: item.stackQuantity, ammoCount: item.ammoCount, contentsCount: item.contentsCount, primaryProperties: convertProperties(item.primaryProperties), secondaryProperties: convertProperties(item.secondaryProperties), tradable: item.tradable, permittedAreas: item.permittedAreas } satisfies EnrichedProtocolItem);
+      items.push({ alias: item.alias, gameDesignItemId, ...(canonicalItemId ? { darkerDbCanonicalItemId: canonicalItemId } : {}), ...(!isIdBridgeDiagnostic(itemBridge) ? { en: itemBridge.display.en, ...(itemBridge.display.zhCN ? { zhCN: itemBridge.display.zhCN } : {}) } : {}), inventoryId: item.inventoryId, slotId: item.slotId, stackQuantity: item.stackQuantity, ammoCount: item.ammoCount, contentsCount: item.contentsCount, primaryProperties: convertProperties(item.primaryProperties), secondaryProperties: convertProperties(item.secondaryProperties), tradable: item.tradable, permittedAreas: item.permittedAreas } satisfies EnrichedProtocolItem);
     }
     const next = { protocol, items, diagnostics };
     this.version = nextVersion; this.currentState = next;

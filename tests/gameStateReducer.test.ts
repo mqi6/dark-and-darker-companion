@@ -38,4 +38,18 @@ describe("Phase 4 baseline reducer", () => {
   it("rejects duplicate aliases without replacing current state", async () => { const reducer = new GameStateReducer(catalog, "schema"); const accepted = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([baseItem()]) }]); await expect(reducer.replaceBaseline([{ relativeTimestampMs: 2, response: response([baseItem(), baseItem({ slotId: 1 })]) }])).rejects.toThrow(/Duplicate item alias/); expect(reducer.current).toBe(accepted); });
   it("rejects invalid container membership", async () => { const reducer = new GameStateReducer(catalog, "schema"); const invalid: SemanticCharacterInfoResponse = { result: 1, characterDataBase: { accountId: "", accountNickname: "", characterId: "", characterItemList: [], characterStorageItemList: [], characterStorageInfos: [{ inventoryId: 20, storageStatus: 1, characterStorageItemList: [baseItem({ inventoryId: 21 })] }] } }; await expect(reducer.replaceBaseline([{ relativeTimestampMs: 1, response: invalid }])).rejects.toThrow(/does not belong/); });
   it("preserves properties, tradability, permitted areas and enriches after reduction", async () => { const reducer = new GameStateReducer(catalog, "schema"); const state = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([baseItem({ primaryPropertyArray: [{ propertyTypeId: "MaxHealthAdd", propertyValue: 5 }], secondaryPropertyArray: [{ propertyTypeId: "PhysicalWeaponDamage", propertyValue: 2 }], tradable: 0, permittedAreaArray: [{ type: 7 }] })]) }]); expect(state.items[0]).toMatchObject({ gameDesignItemId: "DesignDataItem:Id_Item_AdventurerTunic_1001", darkerDbCanonicalItemId: "id.item.adventurer_tunic_1001", tradable: 0, permittedAreas: [7], primaryProperties: [{ darkerDbCanonicalAttributeId: "id.attribute.max_health", value: 5 }], secondaryProperties: [{ darkerDbCanonicalAttributeId: "id.attribute.weapon_damage", value: 2 }] }); });
+  it("keeps spatial identity when only display localization is missing", async () => {
+    const reducer = new GameStateReducer(catalog, "schema");
+    const state = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([
+      baseItem({ itemId: "DesignDataItem:Id_Item_FutureItem_1001" })
+    ]) }]);
+    expect(state.items[0]).toMatchObject({ darkerDbCanonicalItemId: "id.item.future_item_1001" });
+    expect(state.items[0]).not.toHaveProperty("en");
+    expect(state.items[0]).not.toHaveProperty("zhCN");
+    expect(state.diagnostics).toContainEqual({
+      kind: "catalog-id-missing",
+      gameId: "DesignDataItem:Id_Item_FutureItem_1001",
+      attemptedId: "id.item.future_item_1001"
+    });
+  });
 });

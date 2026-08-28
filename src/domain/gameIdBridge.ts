@@ -27,8 +27,7 @@ export class GameIdBridge {
   constructor(catalog: LocalizationCatalog) { this.items = new Map(catalog.items.map(value => [value.id, value])); this.attributes = new Map(catalog.attributes.map(value => [value.id, value])); }
 
   item(gameId: GameDesignItemId): BridgedId<GameDesignItemId, DarkerDbCanonicalItemId> | IdBridgeDiagnostic {
-    const normal = /^DesignDataItem:Id_Item_(.+)$/.exec(gameId)?.[1];
-    const attemptedId = ITEM_EXCEPTIONS[gameId] ?? (normal ? `id.item.${snakeCase(normal)}` : undefined);
+    const attemptedId = canonicalItemIdForGameDesignId(gameId);
     if (!attemptedId) return { kind: "unknown-item-id", gameId };
     const display = this.items.get(attemptedId);
     if (!display) return { kind: "catalog-id-missing", gameId, attemptedId };
@@ -49,5 +48,10 @@ export class GameIdBridge {
 export const asGameDesignItemId = (value: string): GameDesignItemId => value as GameDesignItemId;
 export const asGameDesignAttributeId = (value: string): GameDesignAttributeId => value as GameDesignAttributeId;
 export const isIdBridgeDiagnostic = (value: object): value is IdBridgeDiagnostic => "kind" in value;
+export function canonicalItemIdForGameDesignId(gameId: GameDesignItemId): DarkerDbCanonicalItemId | undefined {
+  const normal = /^DesignDataItem:Id_Item_(.+)$/.exec(gameId)?.[1];
+  const candidate = ITEM_EXCEPTIONS[gameId] ?? (normal ? `id.item.${snakeCase(normal)}` : undefined);
+  return candidate as DarkerDbCanonicalItemId | undefined;
+}
 function snakeCase(value: string): string { return value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").toLowerCase(); }
 function pickDisplay(value: LocalizedGameText): Pick<LocalizedGameText, "en" | "zhCN" | "zhStatus"> { return { en: value.en, zhStatus: value.zhStatus, ...(value.zhCN ? { zhCN: value.zhCN } : {}) }; }
