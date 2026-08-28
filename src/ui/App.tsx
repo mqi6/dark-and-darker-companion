@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { calculateListingPrice } from "../domain/pricing";
+import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeometry";
+import { StashPreviewGrid } from "./StashPreviewGrid";
 
 type Tab = "stash" | "auction" | "gearSearch" | "settings";
 
@@ -82,11 +84,15 @@ function StashPanel() {
         <p className="eyebrow">STASH · READ ONLY</p>
         <h2>{t("stash.title")}</h2>
         <p>{t("stash.description")}</p>
-        <div className="empty-grid" aria-label="Empty captured stash grid">
-          {Array.from({ length: 50 }, (_, index) => (
-            <span key={index} />
-          ))}
+        <div className="stash-preview-toolbar">
+          <span>{t("stash.previewSource")}</span>
+          <strong>12 × 20</strong>
         </div>
+        <StashPreviewGrid
+          container={demoSpatialContainer}
+          label={t("stash.previewLabel")}
+          reservedRegions={[{ x: 9, y: 17, width: 3, height: 3 }]}
+        />
       </article>
       <article className="card accent-card">
         <h3>{t("stash.reservedTitle")}</h3>
@@ -98,6 +104,47 @@ function StashPanel() {
     </div>
   );
 }
+
+const demoPlacement = (
+  alias: string,
+  slotId: number,
+  width: number,
+  height: number,
+  rarity: string,
+  stackQuantity = 1
+): SpatialPlacement => ({
+  alias,
+  inventoryId: 20,
+  slotId,
+  x: slotId % 12,
+  y: Math.floor(slotId / 12),
+  width,
+  height,
+  stackQuantity,
+  metadata: {
+    id: `id.item.synthetic_${alias.replace("-", "_")}`,
+    rarity,
+    inventoryWidth: width,
+    inventoryHeight: height,
+    maxStackSize: Math.max(1, stackQuantity)
+  }
+});
+
+const demoSpatialContainer: SpatialContainer = {
+  inventoryId: 20,
+  status: "ready",
+  geometry: { kind: "rectangular", columns: 12, rows: 20 },
+  placements: [
+    demoPlacement("sample-1x1", 0, 1, 1, "common", 5),
+    demoPlacement("sample-1x2", 2, 1, 2, "uncommon"),
+    demoPlacement("sample-1x3", 4, 1, 3, "rare"),
+    demoPlacement("sample-1x4", 6, 1, 4, "epic"),
+    demoPlacement("sample-2x2", 8, 2, 2, "legendary"),
+    demoPlacement("sample-2x3", 36, 2, 3, "unique"),
+    demoPlacement("sample-3x2", 65, 3, 2, "rare")
+  ],
+  diagnostics: []
+};
 
 function AuctionPanel() {
   const { t } = useTranslation();
