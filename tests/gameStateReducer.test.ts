@@ -18,6 +18,23 @@ describe("game ID bridge", () => {
 
 describe("Phase 4 baseline reducer", () => {
   it("selects the latest success, replaces atomically, and increments versions", async () => { const reducer = new GameStateReducer(catalog, "schema"); const first = await reducer.replaceBaseline([{ relativeTimestampMs: 2, response: response([baseItem({ itemCount: 2 })]) }, { relativeTimestampMs: 3, response: response([], 0) }, { relativeTimestampMs: 1, response: response([]) }]); expect(first.protocol.snapshotVersion).toBe(1); expect(first.items[0]!.stackQuantity).toBe(2); const second = await reducer.replaceBaseline([{ relativeTimestampMs: 4, response: response([baseItem({ itemCount: 3 })]) }]); expect(second.protocol.snapshotVersion).toBe(2); expect(second.protocol.snapshotHash).not.toBe(first.protocol.snapshotHash); });
+  it("keeps item aliases stable when packet order and location change", async () => {
+    const reducer = new GameStateReducer(catalog, "schema");
+    const first = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([
+      baseItem({ itemUniqueId: "alpha", slotId: 0 }),
+      baseItem({ itemUniqueId: "beta", slotId: 1 })
+    ]) }]);
+    const alphaAlias = first.items.find((value) => value.slotId === 0)!.alias;
+    const betaAlias = first.items.find((value) => value.slotId === 1)!.alias;
+    const second = await reducer.replaceBaseline([{ relativeTimestampMs: 2, response: response([
+      baseItem({ itemUniqueId: "beta", slotId: 1 }),
+      baseItem({ itemUniqueId: "alpha", slotId: 12 })
+    ]) }]);
+    expect(second.items.find((value) => value.slotId === 12)!.alias).toBe(alphaAlias);
+    expect(second.items.find((value) => value.slotId === 1)!.alias).toBe(betaAlias);
+    expect(JSON.stringify(second)).not.toContain("alpha");
+    expect(JSON.stringify(second)).not.toContain("beta");
+  });
   it("rejects duplicate aliases without replacing current state", async () => { const reducer = new GameStateReducer(catalog, "schema"); const accepted = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([baseItem()]) }]); await expect(reducer.replaceBaseline([{ relativeTimestampMs: 2, response: response([baseItem(), baseItem({ slotId: 1 })]) }])).rejects.toThrow(/Duplicate item alias/); expect(reducer.current).toBe(accepted); });
   it("rejects invalid container membership", async () => { const reducer = new GameStateReducer(catalog, "schema"); const invalid: SemanticCharacterInfoResponse = { result: 1, characterDataBase: { accountId: "", accountNickname: "", characterId: "", characterItemList: [], characterStorageItemList: [], characterStorageInfos: [{ inventoryId: 20, storageStatus: 1, characterStorageItemList: [baseItem({ inventoryId: 21 })] }] } }; await expect(reducer.replaceBaseline([{ relativeTimestampMs: 1, response: invalid }])).rejects.toThrow(/does not belong/); });
   it("preserves properties, tradability, permitted areas and enriches after reduction", async () => { const reducer = new GameStateReducer(catalog, "schema"); const state = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([baseItem({ primaryPropertyArray: [{ propertyTypeId: "MaxHealthAdd", propertyValue: 5 }], secondaryPropertyArray: [{ propertyTypeId: "PhysicalWeaponDamage", propertyValue: 2 }], tradable: 0, permittedAreaArray: [{ type: 7 }] })]) }]); expect(state.items[0]).toMatchObject({ gameDesignItemId: "DesignDataItem:Id_Item_AdventurerTunic_1001", darkerDbCanonicalItemId: "id.item.adventurer_tunic_1001", tradable: 0, permittedAreas: [7], primaryProperties: [{ darkerDbCanonicalAttributeId: "id.attribute.max_health", value: 5 }], secondaryProperties: [{ darkerDbCanonicalAttributeId: "id.attribute.weapon_damage", value: 2 }] }); });
