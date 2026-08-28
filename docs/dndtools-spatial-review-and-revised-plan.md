@@ -230,29 +230,31 @@ Add tests for:
 Every implementation change must pass `npm run typecheck`, `npm test`,
 `npm run build` and `git diff --check`.
 
-## 8. Next human checkpoint: VIS-001
+## 8. VIS-001 result and next checkpoint
 
-No packet capture, tooltip capture, item rearrangement or PowerShell command is
-needed.
+VIS-001 passed without packet capture, tooltip capture or item movement.
 
-Cloud Codex has four private page signatures derived from NET-000. The operator
-opens Stash and reports the visible top-to-bottom tab/page order by matching:
+The operator confirmed this character-specific visible mapping:
 
-- the sparse page with a healing-potion stack near the top and two 2x2 scrap
-  stacks farther down;
-- the page whose top row is filled with lockpick stacks;
-- the materials/gems page whose top row includes perfect gems, arcane essence
-  and a 100-count silver-coin stack;
-- the dense currency page beginning with a 3x2 Gold Coin Chest and multiple coin
-  bags.
+| Visible tab index | Protocol inventory ID | Visible meaning |
+| --- | --- | --- |
+| 0 | 4 | Default private/unshared page available to every character; sparse-page signature matched. |
+| 1 | 20 | First paid-account shared page; gold-star page 1; lockpick signature matched. |
+| 2 | 21 | Second paid-account shared page; gold-star page 2; materials/gems signature matched. |
+| 3 | 30 | Quest-granted shared page; gray-star page 1; currency signature matched. |
 
-For each page, the operator confirms only:
+The visible grid is 12 columns by 20 rows, uses the top-left as origin, increases
+x to the right and y downward.
 
-1. its visible tab position from top to bottom;
-2. whether the described top-row/anchor pattern matches;
-3. whether the game grid visibly has 12 columns with top-left origin and rows
-   increasing downward.
+This mapping must not become a global constant. The operator confirmed that
+other characters may own additional private/unshared pages between tab 0 and the
+shared pages. Persist or derive a per-character visible tab sequence locally,
+keyed through privacy-preserving runtime identity, and invalidate it whenever the
+available page set changes. Protocol inventory IDs remain authoritative container
+identity; tab indices are only current UI routing.
 
-If the patterns match, no NET-001 through NET-007 recording is needed. If one
-does not match, stop and diagnose the smallest mismatch before any item movement.
+NET-001 through NET-007 remain unnecessary. Continue P4A through P4D offline.
+The next human checkpoint is approval and recording of ACT-001 after the
+metadata catalog, logical geometry, preview and action correlator pass their
+offline gates.
 
