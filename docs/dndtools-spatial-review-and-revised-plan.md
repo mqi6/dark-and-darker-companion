@@ -115,6 +115,11 @@ facts left for the next visual checkpoint.
 Gate P4A: all 112 NET-000 designs resolve to valid dimensions and stack limits;
 malformed/missing records fail closed in tests.
 
+Implementation result: the pinned DnDTools asset produced 2,428 validated
+spatial records. `BareHandRight` and `BareHands` have no inventory dimensions
+and are retained as explicit non-spatial omissions rather than assigned a 1x1
+fallback. Repository commit, blob SHA and source-content SHA-256 are persisted.
+
 ### P4B - logical inventory geometry
 
 1. Generate or pin the schema inventory-ID enum for build `0.17.151.9472`.
@@ -257,8 +262,7 @@ available page set changes. Protocol inventory IDs remain authoritative containe
 identity; tab indices are only current UI routing.
 
 NET-001 through NET-007 remain unnecessary. P4A through P4D now have offline
-implementations and synthetic regression coverage. Refresh the pinned gameplay
-catalog and pass CI before proceeding. The next game-side human checkpoint is
+implementations, synthetic regression coverage and a pinned gameplay catalog.
+Pass CI before proceeding. The next game-side human checkpoint is
 approval and recording of ACT-001; it remains one manual move and does not
 authorize sorting or marketplace submission.
-

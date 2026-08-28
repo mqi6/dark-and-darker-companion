@@ -52,4 +52,33 @@ describe("gameplay metadata catalog", () => {
       items: [{ id: "id.item.a", rarity: "common", inventoryWidth: 0, inventoryHeight: 1, maxStackSize: 1 }]
     })).toThrow();
   });
+
+  it("records non-spatial rows as omissions without inventing a footprint", async () => {
+    const catalog = await buildGameplayCatalog(
+      [{ ...row("id.item.unarmed"), inventory_width: undefined, inventory_height: undefined }],
+      "2026-08-03",
+      "2026-08-28T00:00:00.000Z"
+    );
+    expect(catalog.items).toHaveLength(0);
+    expect(catalog.omissions).toEqual([{ id: "id.item.unarmed", reason: "missing-inventory-dimensions" }]);
+  });
+
+  it("requires pinned repository provenance for a DnDTools-derived catalog", () => {
+    const base = {
+      schemaVersion: 1,
+      generatedAt: "2026-08-28T00:00:00.000Z",
+      source: "DarkerDB-via-DnDTools",
+      apiVersion: "2026-08-03",
+      sourceHash: "0".repeat(64),
+      items: []
+    };
+    expect(() => gameplayCatalogSchema.parse(base)).toThrow(/required/);
+    expect(() => gameplayCatalogSchema.parse({
+      ...base,
+      sourceRepository: "Beelzebub2/DnDTools",
+      sourceCommit: "a".repeat(40),
+      sourceBlobSha: "b".repeat(40),
+      sourceAssetPath: "UI/assets/items.json"
+    })).not.toThrow();
+  });
 });

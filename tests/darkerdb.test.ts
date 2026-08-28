@@ -65,12 +65,19 @@ describe("DarkerDbClient", () => {
     });
 
     fetchImplementation.mockResolvedValueOnce(
-      new Response(JSON.stringify({ body: [{ id: "id.item.longbow", name: "Longbow", rarity: "common" }] }), {
+      new Response(JSON.stringify({ body: [{
+        id: "id.item.longbow",
+        name: "Longbow",
+        rarity: "common",
+        max_stack_size: 1
+      }] }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       })
     );
-    await expect(client.getGameplayItems({ locale: "en" })).rejects.toThrow();
+    const nonSpatial = await client.getGameplayItems({ locale: "en" });
+    expect(nonSpatial.data).toMatchObject([{ id: "id.item.longbow" }]);
+    expect(nonSpatial.data[0]?.inventory_width).toBeUndefined();
   });
 
   it("encodes documented market filters and enforces the 50-row page cap", async () => {
