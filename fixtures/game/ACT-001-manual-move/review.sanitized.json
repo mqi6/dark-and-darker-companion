@@ -1,0 +1,50 @@
+{
+  "reviewVersion": 1,
+  "sampleId": "ACT-001",
+  "sanitized": true,
+  "containsRawPacketData": false,
+  "buildCompatibility": "pass",
+  "capture": {
+    "durationMilliseconds": 124585,
+    "packets": 78,
+    "tcpPayloadSegments": 48,
+    "clientToServerSegments": 19,
+    "serverToClientSegments": 29,
+    "validFrames": 48,
+    "discardedBytes": 0
+  },
+  "actionEvidence": {
+    "matchingMoveRequests": 1,
+    "moveResponses": 0,
+    "completePreStateObserved": false,
+    "newerPostStateObserved": false,
+    "visualObservationAuthoritative": false
+  },
+  "aggregateCommands": {
+    "C2S_ALIVE_REQ": 18,
+    "S2C_ALIVE_RES": 18,
+    "C2S_INVENTORY_MOVE_REQ": 1,
+    "S2C_FRIEND_SET_FRIEND_INFOS_NOT": 11
+  },
+  "relativeTimelineMilliseconds": {
+    "ready": 41559,
+    "actionStart": 72431,
+    "moveRequest": 84639,
+    "actionEnd": 105501,
+    "stop": 124558
+  },
+  "classification": {
+    "status": "ambiguous",
+    "reason": "post-state-missing",
+    "detail": "Exactly one outbound move request was observed, but no complete protocol pre-state, move response, or newer protocol post-state was captured."
+  },
+  "intentionallyOmitted": [
+    "sourceAndDestinationCoordinates",
+    "gameDesignItemId",
+    "rawItemUniqueId",
+    "accountAndCharacterIdentifiers",
+    "networkAddresses",
+    "packetPayloads",
+    "completeBeforeAndAfterLayouts"
+  ]
+}
