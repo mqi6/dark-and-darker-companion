@@ -43,11 +43,9 @@ describe("Phase 4 baseline reducer", () => {
     const state = await reducer.replaceBaseline([{ relativeTimestampMs: 1, response: response([
       baseItem({ itemId: "DesignDataItem:Id_Item_FutureItem_1001" })
     ]) }]);
-    expect(state.items[0]).toMatchObject({
-      darkerDbCanonicalItemId: "id.item.future_item_1001",
-      en: undefined,
-      zhCN: undefined
-    });
+    expect(state.items[0]).toMatchObject({ darkerDbCanonicalItemId: "id.item.future_item_1001" });
+    expect(state.items[0]).not.toHaveProperty("en");
+    expect(state.items[0]).not.toHaveProperty("zhCN");
     expect(state.diagnostics).toContainEqual({
       kind: "catalog-id-missing",
       gameId: "DesignDataItem:Id_Item_FutureItem_1001",
