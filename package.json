@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "build": "tsc -b && vite build --configLoader runner",
+    "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false",
     "fixtures:validate": "node --import tsx tools/validate-fixtures.ts",
     "localization:sync": "node --import tsx tools/sync-localization.ts",
     "darkerdb:samples": "node --import tsx tools/capture-darkerdb-live-samples.ts",
+    "protocol:replay": "node --import tsx tools/replay-protocol-fixture.ts",
+    "protocol:powershell-test": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/tests/record-game-traffic.tests.ps1",
     "check": "npm run typecheck && npm run fixtures:validate && npm run test && npm run build"
   },
   "dependencies": {

@@ -1,0 +1,7 @@
+{
+  "fixtureVersion": 1,
+  "synthetic": true,
+  "containsCapturedData": false,
+  "schemaVersion": "dndtools-0.17.151.9472-v1",
+  "description": "Synthetic protobuf values for deterministic protocol replay; no raw game traffic or identifiers."
+}

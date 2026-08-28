@@ -1,0 +1,19 @@
+[
+  {
+    "direction": "server-to-client",
+    "relativeTimestampMs": 0,
+    "command": 502,
+    "messageType": "S2C_INVENTORY_INFO_RES",
+    "fields": [
+      { "fieldNumber": 1, "wireType": 0, "value": "1" },
+      { "fieldNumber": 2, "wireType": 2, "value": "73796e7468657469632d6974656d" }
+    ]
+  },
+  {
+    "direction": "client-to-server",
+    "relativeTimestampMs": 25,
+    "command": 3565,
+    "messageType": "C2S_MARKETPLACE_ENTER_REQ",
+    "fields": []
+  }
+]
