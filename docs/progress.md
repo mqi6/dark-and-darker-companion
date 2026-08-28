@@ -32,7 +32,7 @@ The initial review reported 52 frames because it applied DnDTools's inbound-only
 
 ## Phase 4 geometry boundary
 
-The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, properties, tradability, and permitted-area values. The extracted message schema and current DarkerDB localization catalog do not establish item footprint dimensions, storage grid geometry, or a slot-to-coordinate mapping. Phase 4 therefore stops before spatial validation; no dimensions or coordinates are inferred.
+The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, properties, tradability, and permitted-area values. A deeper pinned DnDTools review established that footprints come from DarkerDB item metadata, while 12x20 storage geometry and row-major slot conversion are upstream derivations rather than wire fields. Applying those inputs privately to NET-000 matched all 112 observed designs and placed all 384 storage items with zero overlap or out-of-bounds results. Implementation now follows the fail-closed provenance and validation plan in `docs/dndtools-spatial-review-and-revised-plan.md`; visible tab order and orientation remain the next human check.
 
 ## Automated verification
 
@@ -43,7 +43,7 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002 and all four NET-000 protocol gates are complete. NET-001 is the next approved recording boundary, but must not start without explicit operator approval.
+DarkerDB checkpoints 001 and 002 and all four NET-000 protocol gates are complete. NET-001 through NET-007 are no longer mandatory. VIS-001 is the current read-only checkpoint: confirm the four visible stash-page signatures, tab order and grid orientation without packet capture or item movement. ACT-001 is the next required network recording after offline spatial implementation.
 
 ## Later local-game blockers
 
