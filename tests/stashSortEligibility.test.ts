@@ -3,12 +3,7 @@ import type { SpatialContainer, SpatialDiagnostic, SpatialProjection } from "../
 import { evaluateStashSortEligibility } from "../src/domain/stashSortEligibility";
 
 function diagnostic(code: SpatialDiagnostic["code"], inventoryId: number, alias?: string): SpatialDiagnostic {
-  return {
-    code,
-    inventoryId,
-    ...(alias === undefined ? {} : { alias }),
-    message: code
-  };
+  return { code, inventoryId, ...(alias === undefined ? {} : { alias }), message: code };
 }
 
 function container(
@@ -37,67 +32,108 @@ function projection(containers: readonly SpatialContainer[]): SpatialProjection 
 }
 
 describe("stash sort eligibility", () => {
-  it("keeps verified pages eligible while unsupported-item pages require a manual move", () => {
-    const result = evaluateStashSortEligibility(projection([
-      container(4),
-      container(5, [
-        diagnostic("item-metadata-missing", 5, "item-001"),
-        diagnostic("item-metadata-missing", 5, "item-002")
-      ]),
-      container(6),
-      container(7, [diagnostic("item-id-unmapped", 7, "item-003")])
-    ]));
-
+  it("defaults verified tabs on and independently excludes user-disabled tabs", () => {
+    const result = evaluateStashSortEligibility(
+      projection([container(4), container(5), container(6)]),
+      { disabledInventoryIds: [5] }
+    );
     expect(result).toMatchObject({
       eligibleInventoryIds: [4, 6],
-      blockedInventoryIds: [5, 7],
-      unsupportedItemCount: 3,
-      requiresManualRelocation: true
+      disabledInventoryIds: [5],
+      totalUnsupportedItemCount: 0,
+      requiresExceptionSelection: false
     });
     expect(result.pages.map((page) => [page.inventoryId, page.status])).toEqual([
       [4, "eligible"],
-      [5, "manual-relocation-required"],
-      [6, "eligible"],
-      [7, "manual-relocation-required"]
+      [5, "disabled"],
+      [6, "eligible"]
     ]);
   });
 
-  it("always excludes the configured exception page and clears relocation after unsupported items reach it", () => {
-    const result = evaluateStashSortEligibility(projection([
+  it("requests an exception page only after unsupported items are encountered", () => {
+    const unsupported = projection([
       container(4),
+      container(5, [diagnostic("item-metadata-missing", 5, "item-001")])
+    ]);
+    const result = evaluateStashSortEligibility(unsupported);
+    expect(result).toMatchObject({
+      eligibleInventoryIds: [4],
+      blockedInventoryIds: [5],
+      totalUnsupportedItemCount: 1,
+      unsupportedItemCount: 1,
+      requiresExceptionSelection: true,
+      requiresManualRelocation: true
+    });
+    expect(result).not.toHaveProperty("exceptionInventoryId");
+
+    const noUnsupported = evaluateStashSortEligibility(
+      projection([container(4), container(5)]),
+      { exceptionInventoryId: 5 }
+    );
+    expect(noUnsupported.pages.map((page) => page.status)).toEqual(["eligible", "eligible"]);
+    expect(noUnsupported).not.toHaveProperty("exceptionInventoryId");
+    expect(noUnsupported).not.toHaveProperty("configurationError");
+  });
+
+  it("forces an on-demand exception page off without overwriting its user toggle", () => {
+    const result = evaluateStashSortEligibility(projection([
+      container(4, [diagnostic("item-metadata-missing", 4, "item-001")]),
       container(5),
-      container(30, [diagnostic("item-metadata-missing", 30, "item-001")])
-    ]), 30);
+      container(30)
+    ]), { exceptionInventoryId: 30 });
 
     expect(result).toMatchObject({
       exceptionInventoryId: 30,
-      eligibleInventoryIds: [4, 5],
-      blockedInventoryIds: [],
-      unsupportedItemCount: 0,
-      requiresManualRelocation: false
+      eligibleInventoryIds: [5],
+      blockedInventoryIds: [4],
+      totalUnsupportedItemCount: 1,
+      unsupportedItemCount: 1,
+      requiresExceptionSelection: false,
+      requiresManualRelocation: true
     });
-    expect(result.pages[2]).toMatchObject({ status: "exception", unsupportedItemCount: 1 });
+    expect(result.pages[2]).toMatchObject({ status: "exception", enabledByUser: true });
   });
 
-  it("does not downgrade overlap or geometry failures to manual relocation", () => {
+  it("clears relocation once all unsupported items are on the exception page", () => {
     const result = evaluateStashSortEligibility(projection([
+      container(4),
+      container(30, [diagnostic("item-metadata-missing", 30, "item-001")])
+    ]), { exceptionInventoryId: 30 });
+    expect(result).toMatchObject({
+      eligibleInventoryIds: [4],
+      blockedInventoryIds: [],
+      totalUnsupportedItemCount: 1,
+      unsupportedItemCount: 0,
+      requiresExceptionSelection: false,
+      requiresManualRelocation: false
+    });
+    expect(result.pages[1]).toMatchObject({ status: "exception" });
+  });
+
+  it("does not downgrade mixed spatial failures and validates an active exception target", () => {
+    const state = projection([
+      container(3, [], "equipment"),
       container(4, [
         diagnostic("item-metadata-missing", 4, "item-001"),
         diagnostic("item-overlap", 4, "item-002")
       ])
-    ]), 4);
-
-    expect(result.pages[0]).toMatchObject({ status: "exception" });
-    const withoutException = evaluateStashSortEligibility(projection([
-      container(4, [diagnostic("item-overlap", 4, "item-002")])
-    ]));
-    expect(withoutException.pages[0]).toMatchObject({ status: "blocked" });
+    ]);
+    expect(evaluateStashSortEligibility(state).pages[1]).toMatchObject({ status: "blocked" });
+    expect(evaluateStashSortEligibility(state, { exceptionInventoryId: 99 }).configurationError)
+      .toBe("exception-page-not-found");
+    expect(evaluateStashSortEligibility(state, { exceptionInventoryId: 3 }).configurationError)
+      .toBe("exception-page-not-rectangular");
   });
 
-  it("rejects an exception target that is absent or non-rectangular", () => {
-    const state = projection([container(3, [], "equipment"), container(4)]);
-    expect(evaluateStashSortEligibility(state, 99).configurationError).toBe("exception-page-not-found");
-    expect(evaluateStashSortEligibility(state, 3).configurationError).toBe("exception-page-not-rectangular");
-    expect(evaluateStashSortEligibility(state, 99).eligibleInventoryIds).toEqual([4]);
+  it("does not request a stash exception for non-rectangular inventories", () => {
+    const equipment = container(3, [], "equipment");
+    const state = projection([{
+      ...equipment,
+      diagnostics: [diagnostic("item-metadata-missing", 3, "item-001")]
+    }]);
+    expect(evaluateStashSortEligibility(state)).toMatchObject({
+      totalUnsupportedItemCount: 0,
+      requiresExceptionSelection: false
+    });
   });
 });
