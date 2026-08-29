@@ -15,7 +15,8 @@ import {
   selectLatestCompletePreState,
   selectSingleActionEvent,
   validateMoveCaptureWindow,
-  type MoveCaptureWindow
+  type MoveCaptureWindow,
+  type TimedStateCandidate
 } from "../src/domain/moveCaptureSelection";
 import { correlateMove, type MoveCorrelation, type MoveItemState } from "../src/domain/moveCorrelation";
 import { SessionItemAliasRegistry } from "../src/domain/sessionItemAliasRegistry";
@@ -211,8 +212,8 @@ const stateCandidates = events
 
 const aliases = new SessionItemAliasRegistry();
 let classification: MoveCorrelation;
-let preState: ReturnType<typeof selectLatestCompletePreState<CompleteStateValue>>;
-let postState: ReturnType<typeof selectLatestCompletePostState<CompleteStateValue>>;
+let preState: TimedStateCandidate<CompleteStateValue> | undefined;
+let postState: TimedStateCandidate<CompleteStateValue> | undefined;
 let spatialValidation:
   | {
       preReady: boolean;
