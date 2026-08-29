@@ -2,7 +2,7 @@
 
 Status: implemented through the accepted NET-000 baseline; the spatial/capture sequence was revised after a deeper pinned-source review.
 
-> **Revision notice (2026-08-28):** The mandatory NET-001 through NET-007 sequence is superseded by [DnDTools Spatial Model Review and Revised Development Plan](./dndtools-spatial-review-and-revised-plan.md). Those samples are retained below only as diagnostic fallbacks. The current checkpoint is VIS-001, followed later by ACT-001.
+> **Revision notice (2026-08-28):** The mandatory NET-001 through NET-007 sequence is superseded by [DnDTools Spatial Model Review and Revised Development Plan](./dndtools-spatial-review-and-revised-plan.md). Those samples are retained below only as diagnostic fallbacks. VIS-001 and ACT-001 are complete; ACT-001 was ambiguous. REF-004 established the complete-state refresh, and the current checkpoint is MOVE-002.
 
 This plan replaces a screenshot-only interpretation of CAP-001 through CAP-010. Network evidence is the primary runtime input. Screenshots and short videos are retained only as human-readable ground truth for placement, tooltip text, normal-UI coordinates, and visible confirmation.
 
