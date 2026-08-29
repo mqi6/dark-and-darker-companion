@@ -263,6 +263,4 @@ identity; tab indices are only current UI routing.
 
 NET-001 through NET-007 remain unnecessary. P4A through P4D now have offline
 implementations, synthetic regression coverage and a pinned gameplay catalog.
-Pass CI before proceeding. The next game-side human checkpoint is
-approval and recording of ACT-001; it remains one manual move and does not
-authorize sorting or marketplace submission.
+Pass CI before proceeding. ACT-001 observed one outbound request but remained ambiguous because it lacked complete pre/post state. REF-004 established the reliable read-only refresh. The next game-side human checkpoint is MOVE-002 as documented in `docs/move002-human-checkpoint.md`; it remains one human-performed move and does not authorize Codex-generated input, sorting, or marketplace submission.
