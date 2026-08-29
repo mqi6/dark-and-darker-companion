@@ -70,6 +70,28 @@ describe("game navigation planning", () => {
       layout
     })).toEqual({ status: "blocked", diagnosticCode: "stash-tab-invalid" });
   });
+
+  it("switches directly between stash and merchant top tabs", () => {
+    const toMerchant = buildNavigationPlan({
+      from: "stash",
+      target: { screen: "merchant" },
+      layout
+    });
+    expect(toMerchant).toMatchObject({
+      status: "ready",
+      steps: [{ control: "open-merchant", point: { x: 1040, y: 41 } }]
+    });
+
+    const toStash = buildNavigationPlan({
+      from: "merchant",
+      target: { screen: "stash" },
+      layout
+    });
+    expect(toStash).toMatchObject({
+      status: "ready",
+      steps: [{ control: "open-stash", point: { x: 880, y: 41 } }]
+    });
+  });
 });
 
 describe("game navigation state machine", () => {
