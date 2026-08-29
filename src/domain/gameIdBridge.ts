@@ -12,7 +12,15 @@ export type DarkerDbCanonicalAttributeId = `id.attribute.${string}` & { readonly
 export interface IdBridgeDiagnostic { kind: "unknown-item-id" | "unknown-attribute-id" | "catalog-id-missing"; gameId: string; attemptedId?: string }
 export interface BridgedId<TGameId extends string, TCanonicalId extends string> { gameId: TGameId; canonicalId: TCanonicalId; display: Pick<LocalizedGameText, "en" | "zhCN" | "zhStatus"> }
 
-const ITEM_EXCEPTIONS: Readonly<Record<string, string>> = { "DesignDataItem:Id_Item_PotionofWaterBreathing_4001": "id.item.potion_of_water_breathing_4001" };
+const ITEM_EXCEPTIONS: Readonly<Record<string, string>> = {
+  "DesignDataItem:Id_Item_PotionofWaterBreathing_1001": "id.item.potion_of_water_breathing_1001",
+  "DesignDataItem:Id_Item_PotionofWaterBreathing_2001": "id.item.potion_of_water_breathing_2001",
+  "DesignDataItem:Id_Item_PotionofWaterBreathing_4001": "id.item.potion_of_water_breathing_4001",
+  "DesignDataItem:Id_Item_PotionofWaterBreathing_5001": "id.item.potion_of_water_breathing_5001",
+  "DesignDataItem:Id_Item_TomeofSheol_5001": "id.item.tome_of_sheol_5001",
+  "DesignDataItem:Id_Item_SealofDominion": "id.item.seal_of_dominion",
+  "DesignDataItem:Id_Item_FangsofDeathNecklace_5001": "id.item.fangs_of_death_necklace_5001"
+};
 const ATTRIBUTE_EXCEPTIONS: Readonly<Record<string, string>> = {
   MaxHealthAdd: "max_health", PhysicalWeaponDamage: "weapon_damage", ArmorRatingAdd: "additional_armor_rating",
   PhysicalDamageAdd: "additional_physical_damage", MagicRegistance: "magic_resistance", UndeadDamageMod: "undead_damage_bonus",

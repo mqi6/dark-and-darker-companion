@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DarkerDbGameplayItem } from "../src/adapters/darkerdbContracts";
+import recoveryFixture from "../fixtures/darkerdb/live-samples/items-spatial-recovery.json";
+import { darkerDbGameplayItemSchema } from "../src/adapters/darkerdbContracts";
 import {
   buildGameplayCatalog,
   gameplayCatalogSchema,
@@ -17,6 +19,12 @@ const row = (id: `id.${string}`, width = 1): DarkerDbGameplayItem => ({
 });
 
 describe("gameplay metadata catalog", () => {
+  it("validates sanitized exact live spatial-recovery rows", () => {
+    const rows = recoveryFixture.rows.map(value => darkerDbGameplayItemSchema.parse(value));
+    expect(rows).toHaveLength(6);
+    expect(rows.every(value => value.inventory_width! > 0 && value.inventory_height! > 0)).toBe(true);
+    expect(rows.find(value => value.id === "id.item.seal_of_dominion")).toMatchObject({ inventory_width: 1, inventory_height: 2 });
+  });
   it("normalizes DarkerDB dimensions and hashes stable sorted source rows", async () => {
     const first = await buildGameplayCatalog(
       [row("id.item.z"), row("id.item.a", 2)],
