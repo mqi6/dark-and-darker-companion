@@ -1,0 +1,61 @@
+{
+  "auditVersion": 1,
+  "sanitized": true,
+  "containsRawPacketData": false,
+  "subjectAlias": "audit-item-001",
+  "inputs": {
+    "pre": {
+      "sampleId": "NET-000",
+      "buildMatchesPinned": true,
+      "validFrames": 82,
+      "discardedBytes": 0
+    },
+    "action": {
+      "sampleId": "ACT-001",
+      "buildMatchesPinned": true,
+      "validFrames": 48,
+      "discardedBytes": 0
+    },
+    "post": {
+      "sampleId": "REF-004",
+      "buildMatchesPinned": true,
+      "validFrames": 111,
+      "discardedBytes": 0
+    }
+  },
+  "observableChecks": {
+    "matchingMoveRequestCount": 1,
+    "buildCompatible": true,
+    "temporalOrderValid": true,
+    "preStateComplete": true,
+    "postStateComplete": true,
+    "preIdentityFound": false,
+    "postIdentityFound": false,
+    "preAtRequestedSource": false,
+    "postAtRequestedDestination": false,
+    "sameGameDesignItemId": false,
+    "sameQuantity": false,
+    "preSpatialReady": true,
+    "postSpatialReady": true
+  },
+  "classification": {
+    "status": "insufficient",
+    "reason": "identity-missing",
+    "detail": "The ACT request identity was not found in both comparison states.",
+    "protocolConfirmed": false
+  },
+  "limitation": "Separate captures cannot exclude unrecorded intervening actions, so cross-capture consistency is never promoted to same-capture protocol confirmation.",
+  "nextStep": "Do not infer move success from these captures; retain the MOVE-002 human checkpoint.",
+  "intentionallyOmitted": [
+    "rawPacketPayloads",
+    "rawItemUniqueIds",
+    "sourceAndDestinationCoordinates",
+    "gameDesignItemId",
+    "accountAndCharacterIdentifiers",
+    "networkAddresses",
+    "completeStashLayouts",
+    "privateInventoryComposition",
+    "privateFilesystemPaths",
+    "captureWallClockTimestamps"
+  ]
+}
