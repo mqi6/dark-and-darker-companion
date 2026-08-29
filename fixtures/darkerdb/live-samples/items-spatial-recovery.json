@@ -1,0 +1,15 @@
+{
+  "fixtureVersion": 1,
+  "sanitized": true,
+  "apiVersion": "2026-08-03",
+  "endpoint": "/v2/items/{id}",
+  "requestHeadersOmitted": ["X-API-Key", "Cookie", "Authorization", "rate-limit metadata"],
+  "rows": [
+    { "id": "id.item.potion_of_water_breathing_2001", "name": "Potion of Water Breathing", "rarity": "common", "inventory_width": 1, "inventory_height": 1, "max_stack_size": 3, "archetype": "id.item.potion_of_water_breathing", "item_type": "utility", "slot_type": "utility", "patch": "0.16.138.8712" },
+    { "id": "id.item.potion_of_water_breathing_5001", "name": "Potion of Water Breathing", "rarity": "epic", "inventory_width": 1, "inventory_height": 1, "max_stack_size": 3, "archetype": "id.item.potion_of_water_breathing", "item_type": "utility", "slot_type": "utility", "patch": "0.16.138.8712" },
+    { "id": "id.item.potion_of_water_breathing_1001", "name": "Potion of Water Breathing", "rarity": "poor", "inventory_width": 1, "inventory_height": 1, "max_stack_size": 3, "archetype": "id.item.potion_of_water_breathing", "item_type": "utility", "slot_type": "utility", "patch": "0.16.138.8712" },
+    { "id": "id.item.tome_of_sheol_5001", "name": "Tome of Sheol", "rarity": "epic", "inventory_width": 2, "inventory_height": 2, "max_stack_size": 1, "archetype": "id.item.tome_of_sheol", "item_type": "weapon", "slot_type": "primary", "weapon_type": "magic_stuff", "patch": "0.16.138.8712" },
+    { "id": "id.item.seal_of_dominion", "name": "Seal of Dominion", "rarity": "legendary", "inventory_width": 1, "inventory_height": 2, "max_stack_size": 1, "archetype": "id.item.seal_of_dominion", "item_type": "misc", "patch": "0.16.138.8712" },
+    { "id": "id.item.fangs_of_death_necklace_5001", "name": "Fangs of Death Necklace", "rarity": "epic", "inventory_width": 1, "inventory_height": 1, "max_stack_size": 1, "archetype": "id.item.fangs_of_death_necklace", "item_type": "accessory", "slot_type": "necklace", "patch": "0.16.138.8712" }
+  ]
+}

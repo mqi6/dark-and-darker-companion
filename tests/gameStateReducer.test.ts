@@ -11,7 +11,15 @@ const response = (items: SemanticItem[], result = 1): SemanticCharacterInfoRespo
 
 describe("game ID bridge", () => {
   it("keeps game and DarkerDB item namespaces distinct", () => { const mapped = bridge.item(asGameDesignItemId("DesignDataItem:Id_Item_AdventurerTunic_1001")); expect(isIdBridgeDiagnostic(mapped)).toBe(false); if (!isIdBridgeDiagnostic(mapped)) { expect(mapped.gameId).toBe("DesignDataItem:Id_Item_AdventurerTunic_1001"); expect(mapped.canonicalId).toBe("id.item.adventurer_tunic_1001"); expect(mapped.display.en).toBeTruthy(); expect(mapped.display.zhCN).toBeTruthy(); } });
-  it("maps the water-breathing potion exception", () => { expect(bridge.item(asGameDesignItemId("DesignDataItem:Id_Item_PotionofWaterBreathing_4001"))).toMatchObject({ canonicalId: "id.item.potion_of_water_breathing_4001" }); });
+  it.each([
+    ["DesignDataItem:Id_Item_PotionofWaterBreathing_1001", "id.item.potion_of_water_breathing_1001"],
+    ["DesignDataItem:Id_Item_PotionofWaterBreathing_2001", "id.item.potion_of_water_breathing_2001"],
+    ["DesignDataItem:Id_Item_PotionofWaterBreathing_4001", "id.item.potion_of_water_breathing_4001"],
+    ["DesignDataItem:Id_Item_PotionofWaterBreathing_5001", "id.item.potion_of_water_breathing_5001"],
+    ["DesignDataItem:Id_Item_TomeofSheol_5001", "id.item.tome_of_sheol_5001"],
+    ["DesignDataItem:Id_Item_SealofDominion", "id.item.seal_of_dominion"],
+    ["DesignDataItem:Id_Item_FangsofDeathNecklace_5001", "id.item.fangs_of_death_necklace_5001"]
+  ])("maps exact source-backed item exception %s", (gameId, canonicalId) => { expect(bridge.item(asGameDesignItemId(gameId))).toMatchObject({ canonicalId }); });
   it.each(Object.entries({ MaxHealthAdd: "max_health", PhysicalWeaponDamage: "weapon_damage", ArmorRatingAdd: "additional_armor_rating", PhysicalDamageAdd: "additional_physical_damage", MagicRegistance: "magic_resistance", UndeadDamageMod: "undead_damage_bonus", MemoryCapacityAdd: "additional_memory_capacity", DemonReductionMod: "demon_damage_reduction", MagicalDamageAdd: "additional_magical_damage", HeadshotDamageMod: "headshot_damage_bonus", DemonDamageMod: "demon_damage_bonus", UndeadReductionMod: "undead_damage_reduction", ProjectileReductionMod: "projectile_damage_reduction" }))("maps explicit attribute %s", (gameId, slug) => { expect(bridge.attribute(asGameDesignAttributeId(gameId))).toMatchObject({ canonicalId: `id.attribute.${slug}` }); });
   it("diagnoses rather than guesses unknown IDs", () => { expect(bridge.item(asGameDesignItemId("unknown"))).toEqual({ kind: "unknown-item-id", gameId: "unknown" }); });
 });
