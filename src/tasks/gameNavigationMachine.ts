@@ -124,12 +124,12 @@ export function buildNavigationPlan(parameters: {
   } else if (parameters.target.screen === "lobby") {
     normalizeToLobby();
   } else if (parameters.target.screen === "merchant") {
-    normalizeToLobby();
+    if (current === "character-selection") enterLobbyFromCharacterSelection();
     if (current === "lobby" || current === "stash") {
       addStep("open-merchant", parameters.layout.controls.merchant, "merchant");
     }
   } else {
-    normalizeToLobby();
+    if (current === "character-selection") enterLobbyFromCharacterSelection();
     if (current === "lobby" || current === "merchant") {
       addStep("open-stash", parameters.layout.controls.stash, "stash");
     }
