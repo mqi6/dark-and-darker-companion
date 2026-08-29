@@ -27,12 +27,28 @@ export const enUS = {
     reservedDescription: "Reserved cells and their items remain untouched by the planner.",
     unsupportedItemsTitle: "Unsupported items found",
     unsupportedItemsDetail: "{{count}} unsupported items on {{pageCount}} page(s) have no verified size. Affected pages: {{pages}}. Those pages are excluded; other verified pages remain available.",
-    chooseExceptionPage: "Choose one rectangular stash page as the exception page. The companion will never sort that page.",
+    chooseExceptionPage: "Select an exception page now. It will stay out of automatic sorting while unsupported items exist.",
     moveToExceptionPage: "Move them manually to {{page}}. The companion will never move unsupported items or sort the exception page.",
     refreshAfterManualMove: "After moving them, reselect the current character to refresh the full stash state.",
+    exceptionSelectLabel: "Exception page",
+    exceptionSelectPlaceholder: "Select a visible tab",
     exceptionConfigurationTitle: "Exception page is unavailable",
     "exception-page-not-found": "The selected exception page is not present in the current character's stash.",
-    "exception-page-not-rectangular": "The selected exception target is not a verified rectangular stash page."
+    "exception-page-not-rectangular": "The selected exception target is not a verified rectangular stash page.",
+    sortTabsTitle: "Automatic sorting by tab",
+    sortTabsDescription: "Choose which visible tabs participate whenever automatic sorting runs.",
+    autoSortOn: "On",
+    autoSortOff: "Off",
+    exceptionForcedOff: "Exception page",
+    tabSortToggleLabel: "{{page}}: {{state}}",
+    sortStatus: {
+      eligible: "Ready for sorting",
+      disabled: "Disabled by you",
+      exception: "Forced off while unsupported items exist",
+      "manual-relocation-required": "Unsupported items must be moved manually",
+      blocked: "Blocked by spatial validation",
+      "not-applicable": "Not a stash tab"
+    }
   },
   auction: {
     title: "Auction pricing foundation",
