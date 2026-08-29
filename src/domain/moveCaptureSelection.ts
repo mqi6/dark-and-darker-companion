@@ -15,6 +15,28 @@ export interface TimedStateCandidate<T> extends TimedCaptureEvent<T> {
   complete: boolean;
 }
 
+export interface RequiredContainerSpatialReadiness {
+  ready: boolean;
+  blockedContainerCount: number;
+}
+
+export function evaluateRequiredContainerSpatialReadiness(
+  containers: readonly { inventoryId: number; status: "ready" | "blocked" | "not-applicable" }[],
+  requiredInventoryIds: readonly number[]
+): RequiredContainerSpatialReadiness {
+  const required = new Set(requiredInventoryIds);
+  const selected = containers.filter(container => required.has(container.inventoryId));
+  const observedIds = new Set(selected.map(container => container.inventoryId));
+  const blockedContainerCount = selected.filter(container => container.status !== "ready").length;
+  return {
+    ready:
+      observedIds.size === required.size &&
+      selected.length === required.size &&
+      blockedContainerCount === 0,
+    blockedContainerCount
+  };
+}
+
 export type SingleEventSelection<T> =
   | { status: "selected"; event: TimedCaptureEvent<T>; observedCount: 1 }
   | { status: "missing"; observedCount: 0 }

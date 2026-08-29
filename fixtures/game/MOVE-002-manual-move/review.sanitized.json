@@ -1,0 +1,50 @@
+{
+  "reviewVersion": 1,
+  "sampleId": "MOVE-002",
+  "sanitized": true,
+  "containsRawPacketData": false,
+  "build": {
+    "versionMatchesPinned": true,
+    "shaMatchesPinned": true
+  },
+  "capture": {
+    "durationMilliseconds": 600077.591,
+    "packets": 1368,
+    "tcpPayloadSegments": 1029,
+    "clientToServerSegments": 123,
+    "serverToClientSegments": 906,
+    "validFrames": 338,
+    "discardedBytes": 0,
+    "stopReason": "duration-expired"
+  },
+  "evidence": {
+    "subjectAlias": "item-001",
+    "moveRequestsInsideActionWindow": 1,
+    "completePreStateObserved": true,
+    "completePostStateObserved": true,
+    "sameContainerSet": true,
+    "preStorageSpatialReady": true,
+    "postStorageSpatialReady": true,
+    "sameIdentityAtRequestedDestination": true,
+    "absentFromRequestedSourceAfterward": true,
+    "gameDesignItemIdPreserved": true,
+    "quantityPreserved": true
+  },
+  "classification": {
+    "status": "confirmed",
+    "reason": "post-state-confirmed",
+    "protocolConfirmed": true
+  },
+  "intentionallyOmitted": [
+    "rawPacketPayloads",
+    "networkAddresses",
+    "rawItemUniqueIds",
+    "accountAndCharacterIdentifiers",
+    "itemNamesAndRarity",
+    "sourceAndDestinationCoordinates",
+    "completeStashLayouts",
+    "privateInventoryComposition",
+    "absoluteTimestamps",
+    "privateFilesystemPaths"
+  ]
+}

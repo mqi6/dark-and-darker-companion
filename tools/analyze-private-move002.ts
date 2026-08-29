@@ -11,6 +11,7 @@ import {
 } from "../src/domain/inventoryGeometry";
 import { localizationCatalogSchema } from "../src/domain/localizedCatalog";
 import {
+  evaluateRequiredContainerSpatialReadiness,
   selectLatestCompletePostState,
   selectLatestCompletePreState,
   selectSingleActionEvent,
@@ -327,11 +328,19 @@ if (requestSelection.status !== "selected") {
     }]);
     const projectedBefore = projectSpatialState(reducedBefore, gameplay);
     const projectedAfter = projectSpatialState(reducedAfter, gameplay);
+    const beforeStorage = evaluateRequiredContainerSpatialReadiness(
+      projectedBefore.containers,
+      expectedContainerIds
+    );
+    const afterStorage = evaluateRequiredContainerSpatialReadiness(
+      projectedAfter.containers,
+      expectedContainerIds
+    );
     spatialValidation = {
-      preReady: projectedBefore.ready,
-      postReady: projectedAfter.ready,
-      preBlockedContainers: projectedBefore.containers.filter(value => value.status === "blocked").length,
-      postBlockedContainers: projectedAfter.containers.filter(value => value.status === "blocked").length,
+      preReady: beforeStorage.ready,
+      postReady: afterStorage.ready,
+      preBlockedContainers: beforeStorage.blockedContainerCount,
+      postBlockedContainers: afterStorage.blockedContainerCount,
       sameContainerSet:
         JSON.stringify(preState.value.containerIds) === JSON.stringify(postState.value.containerIds)
     };
