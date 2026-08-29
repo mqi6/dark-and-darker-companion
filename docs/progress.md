@@ -54,7 +54,9 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 ## Current external checkpoint
 
-DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, and VIS-001 are complete. VIS-001 confirmed this character's visible mapping as tab 0 -> inventory 4, tab 1 -> 20, tab 2 -> 21 and tab 3 -> 30, plus a 12x20 top-left row-major grid. Other characters may have additional private pages, so tab mapping is account/character-local rather than global. P4A-P4D and the pinned gameplay catalog are complete offline. After CI, ACT-001 is the next human and network checkpoint.
+DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, VIS-001, REFRESH-001, and spatial metadata recovery are complete. ACT-001 proved one outbound move request but remained ambiguous because it lacked complete pre/post state. REF-004 established same-character reselection as the reliable complete-state refresh.
+
+The MOVE-002 offline gate now enforces ordered markers, exactly one request inside the action window, a complete pre-state after READY, and a complete post-refresh state after ACTION_END. The next checkpoint is the single human-performed MOVE-002 recording documented in `docs/move002-human-checkpoint.md`. It does not authorize Codex-generated game input, automatic sorting, or marketplace activity.
 
 ## Later local-game blockers
 
