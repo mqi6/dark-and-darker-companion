@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  evaluateRequiredContainerSpatialReadiness,
   selectLatestCompletePostState,
   selectLatestCompletePreState,
   selectSingleActionEvent,
@@ -16,6 +17,23 @@ const window: MoveCaptureWindow = {
 };
 
 describe("MOVE-002 capture selection", () => {
+  it("validates only the required stash containers and ignores unrelated inventory geometry", () => {
+    expect(evaluateRequiredContainerSpatialReadiness([
+      { inventoryId: 4, status: "ready" },
+      { inventoryId: 20, status: "ready" },
+      { inventoryId: 1, status: "blocked" }
+    ], [4, 20])).toEqual({ ready: true, blockedContainerCount: 0 });
+
+    expect(evaluateRequiredContainerSpatialReadiness([
+      { inventoryId: 4, status: "ready" },
+      { inventoryId: 20, status: "blocked" }
+    ], [4, 20])).toEqual({ ready: false, blockedContainerCount: 1 });
+
+    expect(evaluateRequiredContainerSpatialReadiness([
+      { inventoryId: 4, status: "ready" }
+    ], [4, 20])).toEqual({ ready: false, blockedContainerCount: 0 });
+  });
+
   it("requires strictly ordered operator markers", () => {
     expect(() => validateMoveCaptureWindow(window)).not.toThrow();
     expect(() => validateMoveCaptureWindow({ ...window, actionEndAtMilliseconds: 200 }))
