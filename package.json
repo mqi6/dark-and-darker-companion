@@ -15,6 +15,7 @@
     "gameplay:import-dndtools": "node --import tsx tools/import-dndtools-gameplay-catalog.ts",
     "darkerdb:samples": "node --import tsx tools/capture-darkerdb-live-samples.ts",
     "protocol:replay": "node --import tsx tools/replay-protocol-fixture.ts",
+    "protocol:analyze-move002": "node --import tsx tools/analyze-private-move002.ts",
     "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
     "protocol:replay-net000": "node --import tsx tools/replay-private-net000.ts",
     "protocol:powershell-test": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/tests/record-game-traffic.tests.ps1",
