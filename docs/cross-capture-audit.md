@@ -36,3 +36,9 @@ The output is written to:
 Inspect it before upload. It must contain the documented `intentionallyOmitted` list and must not contain raw IDs, exact coordinates, filesystem paths, or layouts. Upload only this single JSON file for cloud review. Do not upload PCAPs or the three private directories.
 
 No game launch, recording, item move, or new human action is required.
+
+## Completed audit result
+
+The accepted sanitized NET-000 / ACT-001 / REF-004 audit returned `insufficient / identity-missing`. Exactly one ACT request, compatible builds, temporal order, complete pre/post states, and spatial validation passed. The ACT request identity was found in neither comparison state, so source, destination, design, and quantity continuity could not be established.
+
+This is not evidence that the move failed. It means the available separate captures cannot identify the requested item on both sides. MOVE-002 remains the next human checkpoint.

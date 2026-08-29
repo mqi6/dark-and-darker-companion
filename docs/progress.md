@@ -56,7 +56,9 @@ The baseline reducer preserves inventory/storage ownership, slot IDs, stacks, pr
 
 DarkerDB checkpoints 001 and 002, all four NET-000 protocol gates, VIS-001, REFRESH-001, and spatial metadata recovery are complete. ACT-001 proved one outbound move request but remained ambiguous because it lacked complete pre/post state. REF-004 established same-character reselection as the reliable complete-state refresh.
 
-The MOVE-002 offline gate now enforces ordered markers, exactly one request inside the action window, a complete pre-state after READY, and a complete post-refresh state after ACTION_END. The next checkpoint is the single human-performed MOVE-002 recording documented in `docs/move002-human-checkpoint.md`. It does not authorize Codex-generated game input, automatic sorting, or marketplace activity.
+A sanitized cross-capture audit compared NET-000, ACT-001, and REF-004. Build compatibility, wall-clock order, both complete states, both spatial gates, and exactly one ACT request passed, but the request identity was present in neither comparison state. The result is `insufficient / identity-missing` and cannot replace same-capture confirmation.
+
+The MOVE-002 offline gate enforces ordered markers, exactly one request inside the action window, a complete pre-state after READY, and a complete post-refresh state after ACTION_END. The next checkpoint remains the single human-performed MOVE-002 recording documented in `docs/move002-human-checkpoint.md`. It does not authorize Codex-generated game input, automatic sorting, or marketplace activity.
 
 ## Later local-game blockers
 
