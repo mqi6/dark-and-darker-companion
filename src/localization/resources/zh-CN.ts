@@ -24,7 +24,15 @@ export const zhCN = {
     previewSource: "离线合成尺寸样本",
     previewLabel: "12 列 20 行逻辑仓库预览",
     reservedTitle: "固定区域",
-    reservedDescription: "排序器不会移动固定区域中的物品，也不会使用其中的格子。"
+    reservedDescription: "排序器不会移动固定区域中的物品，也不会使用其中的格子。",
+    unsupportedItemsTitle: "发现暂不支持的物品",
+    unsupportedItemsDetail: "{{pageCount}} 个页面中有 {{count}} 件暂不支持的物品，系统没有已验证的尺寸。受影响页面：{{pages}}。这些页面会被排除，其他已验证页面仍可使用。",
+    chooseExceptionPage: "请选择一个矩形仓库页作为例外页。游戏伴侣永远不会整理该页面。",
+    moveToExceptionPage: "请将它们手动移动到{{page}}。游戏伴侣不会移动这些物品，也不会整理例外页。",
+    refreshAfterManualMove: "移动完成后，请重新选择当前角色，以刷新完整仓库状态。",
+    exceptionConfigurationTitle: "例外页不可用",
+    "exception-page-not-found": "当前角色的仓库中没有所选例外页。",
+    "exception-page-not-rectangular": "所选目标不是经过验证的矩形仓库页。"
   },
   auction: {
     title: "拍卖定价基础",

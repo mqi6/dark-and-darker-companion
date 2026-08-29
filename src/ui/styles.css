@@ -77,6 +77,11 @@ p { color: #a9abb1; line-height: 1.55; }
 .stash-preview-reserved { z-index: 2; display: grid; place-items: center; margin: 1px; border: 1px dashed #d2934f; color: #efbd74; background: repeating-linear-gradient(135deg, rgba(210,147,79,.18) 0 6px, rgba(16,17,20,.68) 6px 12px); font-size: 9px; letter-spacing: .08em; }
 .stash-preview-blocked { width: min(100%, 570px); margin-top: 22px; padding: 14px; border: 1px solid #8f5b2a; background: rgba(72,42,22,.7); }
 .stash-preview-blocked p:last-child { margin-bottom: 0; }
+.stash-exception-alert { width: min(100%, 760px); margin: 0 0 18px; padding: 16px 18px; border: 1px solid #a6672f; border-radius: 8px; background: linear-gradient(135deg, rgba(94,55,25,.88), rgba(42,28,19,.94)); box-shadow: 0 10px 28px rgba(0,0,0,.2); }
+.stash-exception-alert h3 { margin-bottom: 8px; color: #f1bd75; }
+.stash-exception-alert p { margin-bottom: 7px; color: #d4c2aa; }
+.stash-exception-alert p:last-child { margin-bottom: 0; }
+.stash-exception-alert .stash-exception-action { color: #f0d3a8; font-weight: 700; }
 @keyframes stash-item-enter { to { opacity: 1; transform: translateY(0); } }
 .reserved-demo { width: 144px; height: 96px; display: grid; place-items: center; border: 1px dashed #d2934f; color: #efbd74; background: repeating-linear-gradient(135deg, rgba(210,147,79,.12) 0 8px, transparent 8px 16px); }
 

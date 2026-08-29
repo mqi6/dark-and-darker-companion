@@ -24,7 +24,15 @@ export const enUS = {
     previewSource: "Synthetic offline footprint fixture",
     previewLabel: "12 by 20 logical stash preview",
     reservedTitle: "Reserved regions",
-    reservedDescription: "Reserved cells and their items remain untouched by the planner."
+    reservedDescription: "Reserved cells and their items remain untouched by the planner.",
+    unsupportedItemsTitle: "Unsupported items found",
+    unsupportedItemsDetail: "{{count}} unsupported items on {{pageCount}} page(s) have no verified size. Affected pages: {{pages}}. Those pages are excluded; other verified pages remain available.",
+    chooseExceptionPage: "Choose one rectangular stash page as the exception page. The companion will never sort that page.",
+    moveToExceptionPage: "Move them manually to {{page}}. The companion will never move unsupported items or sort the exception page.",
+    refreshAfterManualMove: "After moving them, reselect the current character to refresh the full stash state.",
+    exceptionConfigurationTitle: "Exception page is unavailable",
+    "exception-page-not-found": "The selected exception page is not present in the current character's stash.",
+    "exception-page-not-rectangular": "The selected exception target is not a verified rectangular stash page."
   },
   auction: {
     title: "Auction pricing foundation",
