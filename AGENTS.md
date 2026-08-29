@@ -25,6 +25,8 @@ Do not add maps, build recommendations, automatic purchasing, unattended monitor
 - Missing market price: no automatic fallback; raise Price unknown and leave the row blocked.
 - Confirmed listing failure: skip and continue by default. Ambiguous submission: pause.
 - Fixed rectangular stash regions are supported and unavailable to the planner.
+- Every visible stash tab has an independent automatic-sort on/off preference; verified tabs default on.
+- Do not require a preselected unsupported-item exception page. Prompt for one only after an unsupported item is observed. While unsupported items exist, the chosen exception page is forced out of sorting without overwriting its normal tab preference.
 - Gear Search displays matches/evaluated and, when incomplete, retrieved/reported total.
 - Missing or naturally impossible roll means that rule does not match; other K-of-N rules may still let the item pass.
 - UI and game data support English and Simplified Chinese. Join localized game data by canonical ID, never display name.

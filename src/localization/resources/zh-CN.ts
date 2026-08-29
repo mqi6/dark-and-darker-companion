@@ -27,12 +27,28 @@ export const zhCN = {
     reservedDescription: "排序器不会移动固定区域中的物品，也不会使用其中的格子。",
     unsupportedItemsTitle: "发现暂不支持的物品",
     unsupportedItemsDetail: "{{pageCount}} 个页面中有 {{count}} 件暂不支持的物品，系统没有已验证的尺寸。受影响页面：{{pages}}。这些页面会被排除，其他已验证页面仍可使用。",
-    chooseExceptionPage: "请选择一个矩形仓库页作为例外页。游戏伴侣永远不会整理该页面。",
+    chooseExceptionPage: "请现在选择一个例外页。只要未知物品仍然存在，该页就不会参与自动整理。",
     moveToExceptionPage: "请将它们手动移动到{{page}}。游戏伴侣不会移动这些物品，也不会整理例外页。",
     refreshAfterManualMove: "移动完成后，请重新选择当前角色，以刷新完整仓库状态。",
+    exceptionSelectLabel: "例外页",
+    exceptionSelectPlaceholder: "选择一个可见页面",
     exceptionConfigurationTitle: "例外页不可用",
     "exception-page-not-found": "当前角色的仓库中没有所选例外页。",
-    "exception-page-not-rectangular": "所选目标不是经过验证的矩形仓库页。"
+    "exception-page-not-rectangular": "所选目标不是经过验证的矩形仓库页。",
+    sortTabsTitle: "按页面设置自动整理",
+    sortTabsDescription: "选择每次自动整理时哪些可见页面参与任务。",
+    autoSortOn: "开启",
+    autoSortOff: "关闭",
+    exceptionForcedOff: "例外页",
+    tabSortToggleLabel: "{{page}}：{{state}}",
+    sortStatus: {
+      eligible: "可以整理",
+      disabled: "已由你关闭",
+      exception: "未知物品存在期间强制关闭",
+      "manual-relocation-required": "需要手动移动未知物品",
+      blocked: "空间验证未通过",
+      "not-applicable": "不是仓库页"
+    }
   },
   auction: {
     title: "拍卖定价基础",
