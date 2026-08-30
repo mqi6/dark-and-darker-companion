@@ -58,6 +58,38 @@ describe("game navigation planning", () => {
     });
   });
 
+  it("gives character loading more time without slowing ordinary transitions", () => {
+    const plan = buildNavigationPlan({
+      from: "character-selection",
+      target: { screen: "stash" },
+      useCurrentCharacterSelection: true,
+      layout
+    });
+    if (plan.status !== "ready") throw new Error("Expected ready navigation plan.");
+    expect(plan.steps.map(step => [step.control, step.timeoutMilliseconds])).toEqual([
+      ["enter-lobby", 30_000],
+      ["open-stash", 10_000]
+    ]);
+  });
+
+  it("allows a bounded enter-lobby timeout override", () => {
+    const plan = buildNavigationPlan({
+      from: "character-selection",
+      target: { screen: "lobby" },
+      enterLobbyTimeoutMilliseconds: 45_000,
+      layout
+    });
+    if (plan.status !== "ready") throw new Error("Expected ready navigation plan.");
+    expect(plan.steps.find(step => step.control === "enter-lobby")?.timeoutMilliseconds)
+      .toBe(45_000);
+    expect(() => buildNavigationPlan({
+      from: "character-selection",
+      target: { screen: "lobby" },
+      enterLobbyTimeoutMilliseconds: 61_000,
+      layout
+    })).toThrow(/between 1000 and 60000/);
+  });
+
   it("blocks unknown screens and tabs outside the visible range", () => {
     expect(buildNavigationPlan({
       from: "unknown",

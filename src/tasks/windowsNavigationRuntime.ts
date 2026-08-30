@@ -9,6 +9,7 @@ import {
 import { GameInteractionLease } from "./taskMachine";
 
 export const WINDOWS_NAVIGATION_INPUT_METHOD = "dndtools-sendinput-v1" as const;
+export const NAVIGATION_TRANSITION_POLL_MILLISECONDS = 500;
 
 export interface DisplayGeometry { left: number; top: number; width: number; height: number }
 export interface NavigationWindowState {
@@ -162,13 +163,16 @@ export class WindowsNavigationSequenceRunner {
       if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
       if (!sameDisplay(current.primaryDisplay, plan.window.primaryDisplay)) return "primary-display-geometry-changed";
       const result = await this.adapter.classifyScreen();
-      if (result.status === "unknown") return "screen-unknown";
-      if (result.status === "ambiguous") return "screen-ambiguous";
-      const observation = result.observation;
-      if (observation.screen === step.expectedScreen &&
-          (step.expectedCharacterSlotIndex === undefined || observation.selectedCharacterSlotIndex === step.expectedCharacterSlotIndex) &&
-          (step.expectedStashTabIndex === undefined || observation.selectedStashTabIndex === step.expectedStashTabIndex)) return undefined;
-      await new Promise(resolve => setTimeout(resolve, 100));
+      if (result.status === "classified") {
+        const observation = result.observation;
+        if (observation.screen === step.expectedScreen &&
+            (step.expectedCharacterSlotIndex === undefined ||
+              observation.selectedCharacterSlotIndex === step.expectedCharacterSlotIndex) &&
+            (step.expectedStashTabIndex === undefined ||
+              observation.selectedStashTabIndex === step.expectedStashTabIndex)) return undefined;
+      }
+      await new Promise(resolve =>
+        setTimeout(resolve, NAVIGATION_TRANSITION_POLL_MILLISECONDS));
     }
     return `transition-timeout-${step.control}`;
   }

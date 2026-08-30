@@ -61,11 +61,15 @@ export function buildNavigationPlan(parameters: {
   characterSlotIndex?: number;
   useCurrentCharacterSelection?: boolean;
   transitionTimeoutMilliseconds?: number;
+  enterLobbyTimeoutMilliseconds?: number;
 }): NavigationPlanResult {
   if (parameters.from === "unknown") {
     return { status: "blocked", diagnosticCode: "screen-unknown" };
   }
   const timeoutMilliseconds = boundedTimeout(parameters.transitionTimeoutMilliseconds ?? 10_000);
+  const enterLobbyTimeoutMilliseconds = boundedTimeout(
+    parameters.enterLobbyTimeoutMilliseconds ?? 30_000
+  );
   const characterSlotIndex = parameters.characterSlotIndex ?? 0;
   if (!Number.isInteger(characterSlotIndex) || characterSlotIndex < 0 || characterSlotIndex >= 6) {
     return { status: "blocked", diagnosticCode: "character-slot-invalid" };
@@ -82,7 +86,8 @@ export function buildNavigationPlan(parameters: {
     control: NavigationControl,
     point: ScreenPoint,
     expectedScreen: Exclude<GameScreen, "unknown">,
-    expectations: Pick<NavigationClickStep, "expectedCharacterSlotIndex" | "expectedStashTabIndex"> = {}
+    expectations: Pick<NavigationClickStep, "expectedCharacterSlotIndex" | "expectedStashTabIndex"> = {},
+    stepTimeoutMilliseconds = timeoutMilliseconds
   ) => {
     steps.push({
       id: `navigation-${steps.length + 1}-${control}`,
@@ -91,7 +96,7 @@ export function buildNavigationPlan(parameters: {
       point: { ...point },
       requiresScreen: current,
       expectedScreen,
-      timeoutMilliseconds,
+      timeoutMilliseconds: stepTimeoutMilliseconds,
       ...expectations
     });
     current = expectedScreen;
@@ -105,7 +110,13 @@ export function buildNavigationPlan(parameters: {
         { expectedCharacterSlotIndex: characterSlotIndex }
       );
     }
-    addStep("enter-lobby", parameters.layout.controls.enterLobby, "lobby");
+    addStep(
+      "enter-lobby",
+      parameters.layout.controls.enterLobby,
+      "lobby",
+      {},
+      enterLobbyTimeoutMilliseconds
+    );
   };
   const normalizeToLobby = () => {
     if (current === "character-selection") {
