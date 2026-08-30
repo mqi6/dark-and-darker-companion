@@ -10,7 +10,7 @@ From Windows, double-click `Start-Companion-Dev.cmd` or run this once in PowerSh
 npm run operator -- --private-directory fixtures-private/runtime/move-003
 ```
 
-The server binds only to `127.0.0.1`, opens `http://127.0.0.1:4317`, fixes the private runtime directory at startup, and uses a per-process token for action requests. Routine event output stays under the gitignored private runtime directory.
+The server binds only to `127.0.0.1`, opens `http://127.0.0.1:4317`, finds the newest nested directory containing both `plan.private.json` and `calibration.private.json`, fixes that directory for the process lifetime, and uses a per-process token for action requests. Routine event output stays under the selected gitignored private runtime directory.
 
 ## Test loop
 
