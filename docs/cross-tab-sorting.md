@@ -73,6 +73,17 @@ Completed in cloud:
 - bilingual policy controls;
 - unit tests and documentation.
 
+The calibration tool is already prepared for this checkpoint. From Windows PowerShell:
+
+```powershell
+npm run sort:calibrate -- `
+  --profile-id "SORT-001-calibration" `
+  --build-fingerprint "<current build fingerprint>" `
+  --capture-cursor true
+```
+
+It records both the 12x20 stash and 10x5 bag in one pass, writes only below `fixtures-private/`, creates separate non-clicking HTML previews, and accepts negative virtual-desktop coordinates for a game window on a monitor left of the primary display.
+
 The next human checkpoint is intentionally narrow:
 
 1. In the existing local operator UI, calibrate the outer top-left and bottom-right boundaries of the visible 10x5 character bag once for the current game build/window profile.
