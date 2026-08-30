@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { once } from "node:events";
@@ -44,8 +44,8 @@ describe("operator private runtime discovery", () => {
           writeFile(resolve(directory, "calibration.private.json"), "{}")
         ]);
       }
-      await new Promise(resolveDelay => setTimeout(resolveDelay, 20));
-      await writeFile(resolve(newer, "plan.private.json"), "{\"newer\":true}");
+      await utimes(resolve(older, "plan.private.json"), new Date("2000-01-01"), new Date("2000-01-01"));
+      await utimes(resolve(newer, "plan.private.json"), new Date("2001-01-01"), new Date("2001-01-01"));
       await expect(findOperatorPrivateDirectory(root)).resolves.toBe(newer);
     } finally {
       await rm(root, { recursive: true, force: true });
