@@ -45,7 +45,9 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
   }
 
   async inspectWindow(): Promise<NavigationWindowState> {
-    const state = await this.run(["-Inspect"]);
+    const state = await this.run([
+      "-FocusGame", "-ExpectedWindowHandle", this.expected.windowHandle
+    ]);
     return { ...state, gameBuildFingerprint: this.profile.gameBuildFingerprint };
   }
 
