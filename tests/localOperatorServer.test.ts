@@ -1,7 +1,11 @@
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 import { once } from "node:events";
 import { describe, expect, it, vi } from "vitest";
 import {
   createLocalOperatorServer,
+  findOperatorPrivateDirectory,
   LocalOperatorController,
   type LocalOperatorDependencies,
   type OperatorPlanSummary
@@ -26,6 +30,37 @@ function setup(overrides: Partial<LocalOperatorDependencies> = {}) {
   };
   return { controller: new LocalOperatorController(plan, dependencies), events };
 }
+
+describe("operator private runtime discovery", () => {
+  it("selects the newest nested prepared runtime", async () => {
+    const root = await mkdtemp(resolve(tmpdir(), "companion-operator-"));
+    try {
+      const older = resolve(root, "profile-old");
+      const newer = resolve(root, "profile-new");
+      await Promise.all([mkdir(older), mkdir(newer)]);
+      for (const directory of [older, newer]) {
+        await Promise.all([
+          writeFile(resolve(directory, "plan.private.json"), "{}"),
+          writeFile(resolve(directory, "calibration.private.json"), "{}")
+        ]);
+      }
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 20));
+      await writeFile(resolve(newer, "plan.private.json"), "{\"newer\":true}");
+      await expect(findOperatorPrivateDirectory(root)).resolves.toBe(newer);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails clearly when no prepared runtime exists", async () => {
+    const root = await mkdtemp(resolve(tmpdir(), "companion-operator-empty-"));
+    try {
+      await expect(findOperatorPrivateDirectory(root)).rejects.toThrow(/No prepared runtime/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("local operator controller", () => {
   it("brings the game forward before one explicitly requested run", async () => {
