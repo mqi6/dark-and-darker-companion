@@ -133,6 +133,14 @@ describe("first supervised generated move preparation", () => {
     expect(first.planFingerprint).not.toBe(second.planFingerprint);
   });
 
+  it("binds the foreground drag implementation into the approval fingerprint", () => {
+    const first = prepare({ request: { ...request, expectedInputMethod: "legacy" } });
+    const second = prepare({ request: { ...request, expectedInputMethod: "dndtools-absolute-drag-v1" } });
+    if (first.status !== "ready" || second.status !== "ready") throw new Error("Expected ready plans.");
+    expect(second.inputMethod).toBe("dndtools-absolute-drag-v1");
+    expect(first.planFingerprint).not.toBe(second.planFingerprint);
+  });
+
   it("fails closed for disabled pages, stale snapshots, mappings, calibration, and wrong tabs", () => {
     expect(prepare({ pageEnabled: false })).toMatchObject({ status: "blocked", reason: "page-disabled" });
     expect(prepare({ request: { ...request, expectedSnapshotVersion: 6 } }))
