@@ -24,4 +24,11 @@ describe("Windows navigation input contract", () => {
     expect(helper.indexOf("Move-MouseLikeDnDTools $X $Y"))
       .toBeLessThan(helper.indexOf("Send-MouseInput 0 0 ([NavNative]::DOWN)"));
   });
+
+  it("extracts versioned stable-UI features without requiring foreground input", () => {
+    expect(helper).toContain("function Get-StableUiFeature");
+    expect(helper).toContain("if($AnalyzeImage)");
+    expect(helper).toContain("featureVersion=2");
+    expect(helper.indexOf("if($AnalyzeImage)")).toBeLessThan(helper.indexOf("$state=Get-State"));
+  });
 });
