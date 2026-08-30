@@ -39,7 +39,7 @@ function Get-State {
  $p=Get-Process -Id $foregroundPid -ErrorAction Stop
  $r=New-Object NavNative+RECT; if(-not[NavNative]::GetClientRect($h,[ref]$r)){throw 'GetClientRect failed.'}
  $origin=New-Object NavNative+POINT; $origin.X=0;$origin.Y=0;if(-not[NavNative]::ClientToScreen($h,[ref]$origin)){throw 'ClientToScreen failed.'}
- [ordered]@{windowHandle=('0x{0:X}'-f$h.ToInt64());processName=$p.ProcessName;clientBounds=[ordered]@{left=$origin.X;top=$origin.Y;width=$r.Right-$r.Left;height=$r.Bottom-$r.Top};display=[ordered]@{left=[NavNative]::GetSystemMetrics(76);top=[NavNative]::GetSystemMetrics(77);width=[NavNative]::GetSystemMetrics(78);height=[NavNative]::GetSystemMetrics(79)}}
+ [ordered]@{windowHandle=('0x{0:X}'-f$h.ToInt64());processName=$p.ProcessName;clientBounds=[ordered]@{left=$origin.X;top=$origin.Y;width=$r.Right-$r.Left;height=$r.Bottom-$r.Top};display=[ordered]@{left=[NavNative]::GetSystemMetrics(76);top=[NavNative]::GetSystemMetrics(77);width=[NavNative]::GetSystemMetrics(78);height=[NavNative]::GetSystemMetrics(79)};primaryDisplay=[ordered]@{left=0;top=0;width=[NavNative]::GetSystemMetrics(0);height=[NavNative]::GetSystemMetrics(1)}}
 }
 function Send-MouseInput([int]$dx,[int]$dy,[uint32]$flags){
  $mouse=New-Object NavNative+MOUSEINPUT;$mouse.dx=$dx;$mouse.dy=$dy;$mouse.dwFlags=$flags

@@ -6,7 +6,7 @@ import type { NavigationWindowState, ScreenClassification, WindowsNavigationAdap
 const execFileAsync=promisify(execFile);
 export interface PrivateScreenTemplate { screen: Exclude<GameScreen,"unknown">; feature:number[]; selectedCharacterSlotIndex?:number; selectedStashTabIndex?:number }
 export interface PrivateNavProfile { schemaVersion:1; gameBuildFingerprint:string; visibleStashTabs:number; selectedCharacterSlotIndex:number|null; templates:PrivateScreenTemplate[] }
-interface HelperState {windowHandle:string;processName:string;clientBounds:{left:number;top:number;width:number;height:number};display:{left:number;top:number;width:number;height:number};feature?:number[]}
+interface HelperState {windowHandle:string;processName:string;clientBounds:{left:number;top:number;width:number;height:number};display:{left:number;top:number;width:number;height:number};primaryDisplay:{left:number;top:number;width:number;height:number};feature?:number[]}
 export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
  constructor(private helper:string,private profile:PrivateNavProfile,private expected:HelperState,private capturePath:string){}
  async inspectWindow():Promise<NavigationWindowState>{const s=await this.run(["-Inspect"]);return{...s,gameBuildFingerprint:this.profile.gameBuildFingerprint}}

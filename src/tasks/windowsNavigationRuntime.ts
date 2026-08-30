@@ -16,6 +16,7 @@ export interface NavigationWindowState {
   processName: string;
   clientBounds: ScreenRectangle;
   display: DisplayGeometry;
+  primaryDisplay: DisplayGeometry;
   gameBuildFingerprint: string;
 }
 export type ScreenClassification =
@@ -61,6 +62,7 @@ export function prepareNav001Sequence(parameters: {
     clientBounds: parameters.window.clientBounds,
     visibleStashTabs: parameters.visibleStashTabs
   });
+  assertInsidePrimaryDisplay(parameters.window, layout);
   const route = [
     { from: "lobby" as const, target: { screen: "stash" as const } },
     { from: "stash" as const, target: { screen: "lobby" as const } },
@@ -142,6 +144,7 @@ export class WindowsNavigationSequenceRunner {
     if (current.processName.toLowerCase() !== "dungeoncrawler" || current.windowHandle !== plan.window.windowHandle) return "foreground-window-mismatch";
     if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
     if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
+    if (!sameDisplay(current.primaryDisplay, plan.window.primaryDisplay)) return "primary-display-geometry-changed";
     if (current.gameBuildFingerprint !== plan.gameBuildFingerprint) return "game-build-changed";
     const classified = await this.adapter.classifyScreen();
     if (classified.status !== "classified") return `screen-${classified.status}`;
@@ -157,6 +160,7 @@ export class WindowsNavigationSequenceRunner {
       if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
       if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
       if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
+      if (!sameDisplay(current.primaryDisplay, plan.window.primaryDisplay)) return "primary-display-geometry-changed";
       const result = await this.adapter.classifyScreen();
       if (result.status === "unknown") return "screen-unknown";
       if (result.status === "ambiguous") return "screen-ambiguous";
@@ -181,3 +185,14 @@ function fnv(value: string): string {
 }
 function sameRectangle(a: ScreenRectangle, b: ScreenRectangle) { return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height; }
 function sameDisplay(a: DisplayGeometry, b: DisplayGeometry) { return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height; }
+
+function assertInsidePrimaryDisplay(window: NavigationWindowState, layout: GameScreenLayout): void {
+  const primary = window.primaryDisplay;
+  const inside = (point: ScreenPoint) => point.x >= primary.left && point.y >= primary.top && point.x < primary.left + primary.width && point.y < primary.top + primary.height;
+  const bounds = window.clientBounds;
+  if (bounds.left < primary.left || bounds.top < primary.top || bounds.left + bounds.width > primary.left + primary.width || bounds.top + bounds.height > primary.top + primary.height) {
+    throw new Error("NAV-002 requires the complete game client on the primary display.");
+  }
+  const points = [layout.controls.startGame, layout.controls.stash, layout.controls.merchant, layout.controls.returnToCharacterSelection, layout.controls.enterLobby, ...layout.stash.tabCenters];
+  if (!points.every(inside)) throw new Error("NAV-002 planned point is outside the primary display.");
+}
