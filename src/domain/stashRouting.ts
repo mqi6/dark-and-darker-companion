@@ -6,7 +6,7 @@ import {
   type SpatialPlacement,
   type SpatialProjection
 } from "./inventoryGeometry";
-import { rectanglesIntersect, validateReservedRegions, type GridRectangle } from "./stash";
+import { validateReservedRegions, type GridRectangle } from "./stash";
 import type { StashTabMapping } from "./stashTabMapping";
 
 export const STASH_ITEM_CATEGORIES = [
@@ -423,10 +423,7 @@ function firstFreePoint(
           }
         }
       }
-      if (!blocked && ![...occupied].some(() => false) &&
-          !rectanglesIntersect(rectangle, { x: -1, y: -1, width: 0, height: 0 })) {
-        return { x, y };
-      }
+      if (!blocked) return { x, y };
     }
   }
   return undefined;
