@@ -8,6 +8,8 @@ import {
 } from "./gameNavigationMachine";
 import { GameInteractionLease } from "./taskMachine";
 
+export const WINDOWS_NAVIGATION_INPUT_METHOD = "dndtools-sendinput-v1" as const;
+
 export interface DisplayGeometry { left: number; top: number; width: number; height: number }
 export interface NavigationWindowState {
   windowHandle: string;
@@ -28,6 +30,7 @@ export interface WindowsNavigationAdapter {
 
 export interface PreparedNavigationSequence {
   taskId: "NAV-001";
+  inputMethod: typeof WINDOWS_NAVIGATION_INPUT_METHOD;
   gameBuildFingerprint: string;
   window: NavigationWindowState;
   visibleStashTabs: number;
@@ -78,6 +81,7 @@ export function prepareNav001Sequence(parameters: {
   });
   const base = {
     taskId: "NAV-001" as const,
+    inputMethod: WINDOWS_NAVIGATION_INPUT_METHOD,
     gameBuildFingerprint: parameters.window.gameBuildFingerprint,
     window: parameters.window,
     visibleStashTabs: parameters.visibleStashTabs,
