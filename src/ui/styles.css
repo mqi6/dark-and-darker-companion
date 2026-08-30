@@ -120,3 +120,20 @@ input:focus, select:focus { outline: 2px solid rgba(207,132,60,.35); border-colo
 @media (prefers-reduced-motion: reduce) {
   .stash-preview-item { animation: none; opacity: 1; transform: none; }
 }
+
+
+.stash-tab-policy-controls { margin-top: 20px; padding-top: 18px; border-top: 1px solid #35383e; }
+.stash-tab-policy-controls > p { margin-bottom: 12px; }
+.stash-tab-policy-list { display: grid; gap: 12px; }
+.stash-tab-policy-card { min-width: 0; margin: 0; padding: 12px; border: 1px solid #30333a; border-radius: 8px; background: rgba(12,13,16,.45); }
+.stash-tab-policy-card legend { padding: 0 6px; color: #ece8df; font-weight: 700; }
+.stash-tab-policy-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.stash-tab-policy-header small { color: #777b82; }
+.stash-tab-policy-header button { min-width: 104px; padding: 8px 12px; border: 1px solid #5b4a36; border-radius: 99px; color: #f0c58d; background: #211b15; cursor: pointer; }
+.stash-tab-policy-header button[aria-checked="false"] { border-color: #3a3d43; color: #8f9298; background: #15171a; }
+.stash-tab-policy-header button:disabled { cursor: not-allowed; opacity: .75; }
+.stash-tab-policy-label { display: block; margin: 12px 0 7px; color: #8f9298; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.stash-tab-category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 7px; }
+.stash-tab-category-grid label { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid #2c2f35; border-radius: 6px; background: #121417; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.stash-tab-category-grid input { width: auto; margin: 0; accent-color: #c9843c; }
+.stash-tab-category-grid label:has(input:disabled) { opacity: .5; cursor: not-allowed; }
