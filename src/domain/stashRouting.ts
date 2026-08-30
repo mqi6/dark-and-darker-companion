@@ -21,6 +21,10 @@ export const STASH_ITEM_CATEGORIES = [
 
 export type StashItemCategory = typeof STASH_ITEM_CATEGORIES[number];
 
+type ReadyStashContainer = SpatialContainer & {
+  geometry: { kind: "rectangular"; columns: number; rows: number };
+};
+
 export interface StashTabItemPolicy {
   inventoryId: number;
   enabled: boolean;
@@ -216,9 +220,8 @@ export function planCrossTabTransfers(parameters: {
   }
 
   const sourceContainers = parameters.projection.containers
-    .filter((container): container is SpatialContainer & {
-      geometry: { kind: "rectangular"; columns: number; rows: number };
-    } => container.status === "ready" && container.geometry.kind === "rectangular")
+    .filter((container): container is ReadyStashContainer =>
+      container.status === "ready" && container.geometry.kind === "rectangular")
     .sort((left, right) =>
       (tabByInventory.get(left.inventoryId) ?? Number.MAX_SAFE_INTEGER) -
       (tabByInventory.get(right.inventoryId) ?? Number.MAX_SAFE_INTEGER)
@@ -258,7 +261,8 @@ export function planCrossTabTransfers(parameters: {
           policy: policyByInventory.get(container.inventoryId),
           tabIndex: tabByInventory.get(container.inventoryId)
         }))
-        .filter((value): value is typeof value & {
+        .filter((value): value is {
+          container: ReadyStashContainer;
           policy: StashTabItemPolicy;
           tabIndex: number;
         } => value.policy !== undefined && value.policy.enabled &&
@@ -292,7 +296,7 @@ export function planCrossTabTransfers(parameters: {
         continue;
       }
 
-      let selected: { container: typeof targets[number]["container"]; tabIndex: number; point: GridPoint } | undefined;
+      let selected: { container: ReadyStashContainer; tabIndex: number; point: GridPoint } | undefined;
       for (const target of targets) {
         const occupied = targetOccupancy.get(target.container.inventoryId);
         if (!occupied) continue;
