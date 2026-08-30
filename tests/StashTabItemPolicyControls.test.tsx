@@ -51,7 +51,7 @@ describe("stash tab item policy controls", () => {
       allowedCategories: []
     });
 
-    fireEvent.click(within(tab4).getByRole("checkbox", { name: "Jewelry" }));
+    fireEvent.click(within(tab4).getByRole("checkbox", { name: "Necklaces and rings" }));
     expect(onChange).toHaveBeenCalledWith({
       inventoryId: 4,
       enabled: true,
