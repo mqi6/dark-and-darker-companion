@@ -18,6 +18,7 @@
     "protocol:analyze-move002": "node --import tsx tools/analyze-private-move002.ts",
     "nav001:operator": "node --import tsx tools/nav001-private-operator.ts",
     "move003:prepare-refresh": "node --import tsx tools/nav001-private-operator.ts --mode prepare-move003-refresh --directory fixtures-private/runtime/move-003-refresh",
+    "move003:prepare-plan": "node --import tsx tools/prepare-private-move003-plan.ts",
     "move003:calibrate": "node --import tsx tools/calibrate-private-stash-grid.ts",
     "move003:run": "node --import tsx tools/run-private-supervised-move.ts",
     "protocol:audit-cross-capture": "node --import tsx tools/audit-private-cross-capture.ts",
