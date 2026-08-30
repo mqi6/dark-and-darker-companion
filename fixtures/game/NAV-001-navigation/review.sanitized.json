@@ -1,0 +1,43 @@
+{
+  "reviewVersion": 1,
+  "sampleId": "NAV-001",
+  "sanitized": true,
+  "build": {
+    "gameVersion": "0.17.151.9472",
+    "schemaFingerprintMatchesPinned": true
+  },
+  "plan": {
+    "startingPage": "lobby",
+    "visibleStashTabCount": 10,
+    "usesCurrentSelectedCharacter": true,
+    "plannedClickCount": 5
+  },
+  "execution": {
+    "classification": "blocked",
+    "diagnosticCode": "transition-timeout-open-stash",
+    "dispatchedClickCount": 1,
+    "retryCount": 0,
+    "completedTransitionCount": 0,
+    "remainingClicksDispatched": false
+  },
+  "capture": {
+    "tcpPayloadSegments": 44,
+    "clientToServerSegments": 18,
+    "serverToClientSegments": 26,
+    "validApplicationFrames": 40,
+    "discardedFramingBytes": 0,
+    "command44Frames": 0,
+    "command552Frames": 0
+  },
+  "command44Result": "not-observed; character-reselection path was not reached",
+  "intentionallyOmitted": [
+    "screenshotsAndTemplates",
+    "liveScreenCoordinates",
+    "privatePlanAndFingerprint",
+    "utcTimestamps",
+    "packetPayloadsAndPcap",
+    "networkAddresses",
+    "accountAndCharacterIdentifiers",
+    "completeInventoryLayouts"
+  ]
+}
