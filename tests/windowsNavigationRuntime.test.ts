@@ -56,6 +56,7 @@ describe("NAV-001 Windows navigation runtime", () => {
       "open-stash", "start-game", "return-to-character-selection",
       "enter-lobby", "open-stash"
     ]);
+    expect(plan.inputMethod).toBe("dndtools-sendinput-v1");
     expect(plan.planFingerprint).toMatch(/^nav001-[a-f0-9]{32}$/);
   });
 
