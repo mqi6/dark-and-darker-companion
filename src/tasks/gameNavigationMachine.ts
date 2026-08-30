@@ -59,6 +59,7 @@ export function buildNavigationPlan(parameters: {
   target: GameNavigationTarget;
   layout: GameScreenLayout;
   characterSlotIndex?: number;
+  useCurrentCharacterSelection?: boolean;
   transitionTimeoutMilliseconds?: number;
 }): NavigationPlanResult {
   if (parameters.from === "unknown") {
@@ -96,12 +97,14 @@ export function buildNavigationPlan(parameters: {
     current = expectedScreen;
   };
   const enterLobbyFromCharacterSelection = () => {
-    addStep(
-      "select-character",
-      parameters.layout.controls.characterSlots[characterSlotIndex]!,
-      "character-selection",
-      { expectedCharacterSlotIndex: characterSlotIndex }
-    );
+    if (!parameters.useCurrentCharacterSelection) {
+      addStep(
+        "select-character",
+        parameters.layout.controls.characterSlots[characterSlotIndex]!,
+        "character-selection",
+        { expectedCharacterSlotIndex: characterSlotIndex }
+      );
+    }
     addStep("enter-lobby", parameters.layout.controls.enterLobby, "lobby");
   };
   const normalizeToLobby = () => {

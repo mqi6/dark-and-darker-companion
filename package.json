@@ -16,6 +16,7 @@
     "darkerdb:samples": "node --import tsx tools/capture-darkerdb-live-samples.ts",
     "protocol:replay": "node --import tsx tools/replay-protocol-fixture.ts",
     "protocol:analyze-move002": "node --import tsx tools/analyze-private-move002.ts",
+    "nav001:operator": "node --import tsx tools/nav001-private-operator.ts",
     "protocol:audit-cross-capture": "node --import tsx tools/audit-private-cross-capture.ts",
     "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
     "protocol:replay-net000": "node --import tsx tools/replay-private-net000.ts",
