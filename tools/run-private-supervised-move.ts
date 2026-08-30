@@ -97,4 +97,3 @@ function required(values: Record<string, string>, key: string): string {
   if (!value) throw new Error(`--${key} is required.`);
   return value;
 }
-

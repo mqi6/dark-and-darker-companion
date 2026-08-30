@@ -39,4 +39,3 @@ The runner checks the foreground window, bounds, display, build, snapshot hash/v
 The authoritative planning snapshot expires after five minutes. Expiry blocks before input and requires a newly prepared plan and fingerprint.
 
 After dispatch, confirmation still requires a matching private passive-protocol verification result produced from a complete newer state. Missing or conflicting post-state evidence is ambiguous.
-

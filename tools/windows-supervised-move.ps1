@@ -108,4 +108,3 @@ try {
     [ordered]@{ status='failed'; diagnosticCode='ordinary-foreground-input-failed'; inputMayHaveBeenDispatched=$inputDispatched } | ConvertTo-Json -Compress
     exit 2
 }
-

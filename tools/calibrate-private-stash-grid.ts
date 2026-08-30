@@ -132,4 +132,3 @@ function parsePoint(value: string): ScreenPoint {
   if (!match) throw new Error("Point must use x,y integer format.");
   return { x: Number(match[1]), y: Number(match[2]) };
 }
-

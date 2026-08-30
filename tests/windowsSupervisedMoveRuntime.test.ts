@@ -104,4 +104,3 @@ describe("Windows supervised move runtime", () => {
     expect(calls.verify).toBe(1);
   });
 });
-
