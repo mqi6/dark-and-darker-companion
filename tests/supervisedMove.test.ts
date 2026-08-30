@@ -50,7 +50,6 @@ const calibration = createStashGridCalibration({
   gridTopLeft: { x: 100, y: 100 },
   gridBottomRight: { x: 220, y: 300 }
 });
-
 const mapping = createStashTabMapping({
   runtimeProfileKey: "character-a",
   gameBuildFingerprint: "build-1",
@@ -114,6 +113,7 @@ describe("first supervised generated move preparation", () => {
       gameBuildFingerprint: "build-1"
     });
     if (result.status !== "ready") throw new Error("Expected a ready plan.");
+    expect(result.planFingerprint).toMatch(/^move003-[a-f0-9]{32}$/);
     expect(approvalMatchesPlan({
       kind: "human-confirmation",
       planFingerprint: result.planFingerprint,
@@ -124,6 +124,13 @@ describe("first supervised generated move preparation", () => {
       planFingerprint: `${result.planFingerprint}-stale`,
       confirmedAtMilliseconds: 1000
     }, result)).toBe(false);
+  });
+
+  it("changes the compact fingerprint when a bound plan field changes", () => {
+    const first = prepare();
+    const second = prepare({ request: { ...request, destination: { x: 4, y: 4 } } });
+    if (first.status !== "ready" || second.status !== "ready") throw new Error("Expected ready plans.");
+    expect(first.planFingerprint).not.toBe(second.planFingerprint);
   });
 
   it("fails closed for disabled pages, stale snapshots, mappings, calibration, and wrong tabs", () => {

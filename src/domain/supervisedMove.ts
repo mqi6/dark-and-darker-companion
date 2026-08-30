@@ -204,7 +204,7 @@ function validGridPoint(point: { x: number; y: number }, container: SpatialConta
 }
 
 function fingerprint(value: Omit<PreparedSupervisedMove, "planFingerprint">): string {
-  return JSON.stringify([
+  const payload = JSON.stringify([
     value.taskId,
     value.planId,
     value.actionId,
@@ -226,6 +226,18 @@ function fingerprint(value: Omit<PreparedSupervisedMove, "planFingerprint">): st
     value.destination.screen.x,
     value.destination.screen.y
   ]);
+  return `move003-${fnv1a64(`left:${payload}`)}${fnv1a64(`right:${payload}`)}`;
+}
+
+function fnv1a64(value: string): string {
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  const mask = 0xffffffffffffffffn;
+  for (const byte of new TextEncoder().encode(value)) {
+    hash ^= BigInt(byte);
+    hash = (hash * prime) & mask;
+  }
+  return hash.toString(16).padStart(16, "0");
 }
 
 function blocked(reason: SupervisedMoveBlockReason, detail: string): SupervisedMovePreparation {

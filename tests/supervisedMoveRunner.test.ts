@@ -34,6 +34,7 @@ const approval: HumanMoveApproval = {
 const environment: LiveMoveEnvironment = {
   sourceSnapshotHash: plan.sourceSnapshotHash,
   sourceSnapshotVersion: plan.sourceSnapshotVersion,
+  snapshotAgeMilliseconds: 1000,
   calibrationProfileId: plan.calibrationProfileId,
   gameBuildFingerprint: plan.gameBuildFingerprint,
   windowBounds,
@@ -55,6 +56,22 @@ function fakeRuntime(overrides: Partial<SupervisedMoveRuntime> = {}) {
 }
 
 describe("supervised move runner", () => {
+  it.each([
+    ["foreground-window mismatch", { isForeground: false }, "game-window-not-foreground"],
+    ["stale snapshot", { snapshotAgeMilliseconds: 300_001 }, "snapshot-stale"],
+    ["window movement or resize", { windowBounds: { ...windowBounds, left: 11 } }, "game-window-bounds-changed"],
+    ["build mismatch", { gameBuildFingerprint: "other-build" }, "game-build-changed"],
+    ["changed calibration profile", { calibrationProfileId: "other-profile" }, "calibration-profile-changed"],
+    ["visible-tab mismatch", { selectedTabIndex: 2 }, "visible-tab-changed"]
+  ])("blocks %s before input", async (_name, change, diagnosticCode) => {
+    const { runtime, calls } = fakeRuntime({
+      async inspectEnvironment() { calls.inspect += 1; return { ...environment, ...change }; }
+    });
+    const result = await new SupervisedMoveRunner(new GameInteractionLease(), runtime).execute({ plan, approval });
+    expect(result).toEqual({ status: "blocked", diagnosticCode });
+    expect(calls.dispatch).toBe(0);
+  });
+
   it("preflights twice, dispatches exactly once, and requires protocol verification", async () => {
     const lease = new GameInteractionLease();
     const { runtime, calls } = fakeRuntime();
@@ -97,6 +114,52 @@ describe("supervised move runner", () => {
     expect(result).toEqual({ status: "ambiguous", diagnosticCode: "runtime-error-after-input-dispatch" });
     expect(calls.dispatch).toBe(1);
     expect(calls.verify).toBe(1);
+  });
+
+  it("classifies a possible post-dispatch input error as ambiguous", async () => {
+    const { runtime, calls } = fakeRuntime({
+      async dispatchLeftDrag() {
+        calls.dispatch += 1;
+        return { status: "failed", diagnosticCode: "ordinary-input-failed", inputMayHaveBeenDispatched: true };
+      }
+    });
+    const result = await new SupervisedMoveRunner(new GameInteractionLease(), runtime).execute({ plan, approval });
+    expect(result).toEqual({ status: "ambiguous", diagnosticCode: "ordinary-input-failed" });
+    expect(calls.dispatch).toBe(1);
+    expect(calls.verify).toBe(0);
+  });
+
+  it("never treats dispatch alone as confirmation", async () => {
+    const { runtime, calls } = fakeRuntime({
+      async verifyMove() { calls.verify += 1; return { status: "ambiguous", diagnosticCode: "no-newer-post-state" }; }
+    });
+    const result = await new SupervisedMoveRunner(new GameInteractionLease(), runtime).execute({ plan, approval });
+    expect(result).toEqual({ status: "ambiguous", diagnosticCode: "no-newer-post-state" });
+    expect(calls.dispatch).toBe(1);
+  });
+
+  it("cancels before input and always releases the lease", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const lease = new GameInteractionLease();
+    const { runtime, calls } = fakeRuntime();
+    const result = await new SupervisedMoveRunner(lease, runtime).execute({
+      plan, approval, signal: controller.signal
+    });
+    expect(result).toEqual({ status: "cancelled", phase: "pre-dispatch" });
+    expect(calls.dispatch).toBe(0);
+    expect(lease.currentOwner()).toBeUndefined();
+  });
+
+  it("cancels during countdown and releases the lease", async () => {
+    const lease = new GameInteractionLease();
+    const { runtime, calls } = fakeRuntime({
+      async runCountdown() { calls.countdown += 1; return "cancelled"; }
+    });
+    const result = await new SupervisedMoveRunner(lease, runtime).execute({ plan, approval });
+    expect(result).toEqual({ status: "cancelled", phase: "countdown" });
+    expect(calls.dispatch).toBe(0);
+    expect(lease.currentOwner()).toBeUndefined();
   });
 
   it("supports a no-input dry-run preview", () => {

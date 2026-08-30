@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { GameInteractionLease } from "../src/tasks/taskMachine";
+import { prepareMove003Refresh } from "../src/tasks/move003RefreshWorkflow";
 import {
   prepareNav001Sequence,
   WindowsNavigationSequenceRunner,
@@ -112,7 +113,7 @@ if (mode === "migrate-references") {
   validatePrivateNavProfile(profile, { requireRouteTemplates: false });
   await writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
   console.log(`Saved private ${screen} reference. No input generated.`);
-} else if (mode === "prepare") {
+} else if (mode === "prepare" || mode === "prepare-move003-refresh") {
   const profile = JSON.parse(await readFile(profilePath, "utf8")) as PrivateNavProfile;
   validatePrivateNavProfile(profile);
   await delay();
@@ -125,15 +126,20 @@ if (mode === "migrate-references") {
   if (classification.status !== "classified") {
     throw new Error(`Starting screen is ${classification.status}.`);
   }
-  const plan = prepareNav001Sequence({
-    window: {
+  const window = {
       windowHandle: state.windowHandle,
       processName: state.processName,
       clientBounds: state.clientBounds,
       display: state.display,
       primaryDisplay: state.primaryDisplay,
       gameBuildFingerprint: profile.gameBuildFingerprint
-    },
+    };
+  const plan = mode === "prepare-move003-refresh" ? prepareMove003Refresh({
+    window,
+    visibleStashTabs: profile.visibleStashTabs,
+    startingScreen: classification.observation.screen
+  }) : prepareNav001Sequence({
+    window,
     visibleStashTabs: profile.visibleStashTabs,
     startingScreen: classification.observation.screen
   });
@@ -151,10 +157,9 @@ if (mode === "migrate-references") {
     featureVersion: NAVIGATION_FEATURE_VERSION,
     previewPath: resolve(directory, "preview.private.html"),
     planFingerprint: plan.planFingerprint,
-    pageSequence: [
-      "lobby", "stash", "lobby", "character-selection",
-      "current-character:enter-lobby", "lobby", "stash"
-    ],
+    pageSequence: [plan.startingScreen, ...plan.steps.map(step => step.expectedScreen)],
+    controls: plan.steps.map(step => step.control),
+    approvalScope: "approvalScope" in plan ? plan.approvalScope : "navigation-only",
     mouseEvents: 0
   }, null, 2));
 } else if (mode === "execute") {
@@ -194,7 +199,7 @@ if (mode === "migrate-references") {
   console.log(JSON.stringify(result, null, 2));
   if (result.status !== "completed") process.exitCode = 2;
 } else {
-  throw new Error("--mode must be migrate-references, capture-reference, prepare, or execute.");
+  throw new Error("--mode must be migrate-references, capture-reference, prepare, prepare-move003-refresh, or execute.");
 }
 
 async function delay() {

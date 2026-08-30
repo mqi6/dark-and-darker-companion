@@ -31,7 +31,7 @@ export interface WindowsNavigationAdapter {
 }
 
 export interface PreparedNavigationSequence {
-  taskId: "NAV-001";
+  taskId: "NAV-001" | "MOVE-003-REFRESH";
   inputMethod: typeof WINDOWS_NAVIGATION_INPUT_METHOD;
   gameBuildFingerprint: string;
   window: NavigationWindowState;
@@ -93,7 +93,7 @@ export function prepareNav001Sequence(parameters: {
     layout,
     steps
   };
-  return { ...base, planFingerprint: compactFingerprint(base) };
+  return { ...base, planFingerprint: compactNavigationFingerprint(base) };
 }
 
 export class WindowsNavigationSequenceRunner {
@@ -178,9 +178,9 @@ export class WindowsNavigationSequenceRunner {
   }
 }
 
-function compactFingerprint(value: unknown): string {
+export function compactNavigationFingerprint(value: unknown, prefix = "nav001"): string {
   const payload = JSON.stringify(value);
-  return `nav001-${fnv(`left:${payload}`)}${fnv(`right:${payload}`)}`;
+  return `${prefix}-${fnv(`left:${payload}`)}${fnv(`right:${payload}`)}`;
 }
 function fnv(value: string): string {
   let hash = 0xcbf29ce484222325n;

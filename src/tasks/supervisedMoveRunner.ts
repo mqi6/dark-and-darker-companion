@@ -9,6 +9,7 @@ import { GameInteractionLease } from "./taskMachine";
 export interface LiveMoveEnvironment {
   sourceSnapshotHash: string;
   sourceSnapshotVersion: number;
+  snapshotAgeMilliseconds: number;
   calibrationProfileId: string;
   gameBuildFingerprint: string;
   windowBounds: ScreenRectangle;
@@ -20,7 +21,7 @@ export interface LiveMoveEnvironment {
 export type MoveDispatchResult =
   | { status: "dispatched" }
   | { status: "cancelled" }
-  | { status: "failed"; diagnosticCode: string };
+  | { status: "failed"; diagnosticCode: string; inputMayHaveBeenDispatched?: boolean };
 
 export type MoveVerificationResult =
   | { status: "confirmed"; evidenceId: string }
@@ -105,7 +106,10 @@ export class SupervisedMoveRunner {
         durationMilliseconds: dragDurationMilliseconds
       }, parameters.signal);
       if (dispatch.status === "cancelled") return { status: "cancelled", phase: "pre-dispatch" };
-      if (dispatch.status === "failed") return dispatch;
+      if (dispatch.status === "failed") {
+        if (dispatch.inputMayHaveBeenDispatched) return { status: "ambiguous", diagnosticCode: dispatch.diagnosticCode };
+        return dispatch;
+      }
       dispatched = true;
 
       if (parameters.signal?.aborted) {
@@ -132,6 +136,7 @@ function environmentProblem(
   environment: LiveMoveEnvironment
 ): string | undefined {
   if (!environment.isForeground) return "game-window-not-foreground";
+  if (!Number.isFinite(environment.snapshotAgeMilliseconds) || environment.snapshotAgeMilliseconds < 0 || environment.snapshotAgeMilliseconds > 300_000) return "snapshot-stale";
   if (environment.gameBuildFingerprint !== parameters.plan.gameBuildFingerprint) {
     return "game-build-changed";
   }
