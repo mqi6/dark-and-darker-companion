@@ -39,7 +39,7 @@ describe("MOVE-003 productive refresh workflow", () => {
     const plan = prepareMove003Refresh({ window, visibleStashTabs: 10, startingScreen: "lobby" });
     const ready = { observedAfterRefreshStart: true, result: 1, complete: true, buildCompatible: true, stashContainerCount: 10, spatialValidationReady: true, blockedContainerCount: 0, overlapDiagnosticCount: 0, boundsDiagnosticCount: 0 };
     const coordinator = new Move003RefreshCoordinator(new WindowsNavigationSequenceRunner(new GameInteractionLease(), adapter), { async start() { events.push("capture-start"); }, async stop() { events.push("capture-stop"); } }, { async waitForFreshState() { events.push("state-wait"); return ready; } });
-    expect((await coordinator.execute({ plan, approval: { kind: "human-confirmation", planFingerprint: plan.planFingerprint }, workflowTimeoutMilliseconds: 60_000 })).status).toBe("ready");
+    expect((await coordinator.execute({ plan, workflowTimeoutMilliseconds: 60_000 })).status).toBe("ready");
     expect(events[0]).toBe("capture-start"); expect(events.at(-1)).toBe("capture-stop"); expect(events.filter(value => value === "click")).toHaveLength(3);
   });
 });

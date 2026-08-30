@@ -81,10 +81,22 @@ export type SupervisedMovePreparation = PreparedSupervisedMove | {
   detail: string;
 };
 
-export interface HumanMoveApproval {
-  kind: "human-confirmation";
-  planFingerprint: string;
-  confirmedAtMilliseconds: number;
+export interface LocalMoveApprovalToken {
+  readonly kind: "local-confirmation";
+  readonly confirmedAtMilliseconds: number;
+}
+
+const approvalBindings = new WeakMap<LocalMoveApprovalToken, string>();
+
+/** Creates an opaque, process-local token after the operator selects Confirm Move. */
+export function issueLocalMoveApprovalToken(
+  plan: PreparedSupervisedMove,
+  confirmedAtMilliseconds: number
+): LocalMoveApprovalToken {
+  if (!Number.isFinite(confirmedAtMilliseconds)) throw new Error("Confirmation time must be finite.");
+  const token = Object.freeze({ kind: "local-confirmation" as const, confirmedAtMilliseconds });
+  approvalBindings.set(token, plan.planFingerprint);
+  return token;
 }
 
 export function prepareSupervisedMove(parameters: {
@@ -197,12 +209,12 @@ export function prepareSupervisedMove(parameters: {
 }
 
 export function approvalMatchesPlan(
-  approval: HumanMoveApproval,
+  approval: LocalMoveApprovalToken,
   plan: PreparedSupervisedMove
 ): boolean {
-  return approval.kind === "human-confirmation" &&
+  return approval.kind === "local-confirmation" &&
     Number.isFinite(approval.confirmedAtMilliseconds) &&
-    approval.planFingerprint === plan.planFingerprint;
+    approvalBindings.get(approval) === plan.planFingerprint;
 }
 
 function validGridPoint(point: { x: number; y: number }, container: SpatialContainer): boolean {

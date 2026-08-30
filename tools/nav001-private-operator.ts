@@ -156,10 +156,10 @@ if (mode === "migrate-references") {
     inputMethod: plan.inputMethod,
     featureVersion: NAVIGATION_FEATURE_VERSION,
     previewPath: resolve(directory, "preview.private.html"),
-    planFingerprint: plan.planFingerprint,
+    ...(mode === "prepare-move003-refresh" ? {} : { planFingerprint: plan.planFingerprint }),
     pageSequence: [plan.startingScreen, ...plan.steps.map(step => step.expectedScreen)],
     controls: plan.steps.map(step => step.control),
-    approvalScope: "approvalScope" in plan ? plan.approvalScope : "navigation-only",
+    approvalScope: mode === "prepare-move003-refresh" ? "authorized-by-auto-sort-start" : "navigation-only",
     mouseEvents: 0
   }, null, 2));
 } else if (mode === "execute") {
@@ -168,10 +168,10 @@ if (mode === "migrate-references") {
   const plan = JSON.parse(
     await readFile(resolve(directory, "plan.private.json"), "utf8")
   ) as PreparedNavigationSequence;
-  const fingerprint = required("plan-fingerprint");
-  if (fingerprint !== plan.planFingerprint) {
-    throw new Error("Plan fingerprint does not match the prepared private plan.");
-  }
+  const fingerprint = plan.taskId === "MOVE-003-REFRESH"
+    ? plan.planFingerprint
+    : required("plan-fingerprint");
+  if (fingerprint !== plan.planFingerprint) throw new Error("Prepared navigation plan changed.");
   await delay();
   const logPath = resolve(directory, "execution.private.jsonl");
   const adapter = new PowerShellNavigationAdapter(

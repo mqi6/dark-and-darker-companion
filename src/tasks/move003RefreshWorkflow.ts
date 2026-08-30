@@ -42,15 +42,17 @@ export type Move003RefreshResult =
 
 export class Move003RefreshCoordinator {
   constructor(private navigation: WindowsNavigationSequenceRunner, private capture: PassiveRefreshCapture, private states: FreshCommand44Observer) {}
-  async execute(parameters: { plan: PreparedMove003Refresh; approval: NavigationApproval; workflowTimeoutMilliseconds: number; signal?: AbortSignal }): Promise<Move003RefreshResult> {
-    if (parameters.approval.planFingerprint !== parameters.plan.planFingerprint) return { status: "blocked", diagnosticCode: "stale-refresh-approval" };
+  async execute(parameters: { plan: PreparedMove003Refresh; workflowTimeoutMilliseconds: number; signal?: AbortSignal }): Promise<Move003RefreshResult> {
     const started = Date.now();
     const controller = new AbortController();
     parameters.signal?.addEventListener("abort", () => controller.abort(), { once: true });
     await this.capture.start(parameters.plan);
     try {
       const statePromise = this.states.waitForFreshState({ refreshStartedAtUnixMilliseconds: started, timeoutMilliseconds: parameters.workflowTimeoutMilliseconds, signal: controller.signal });
-      const navigation = await this.navigation.execute({ plan: parameters.plan, approval: parameters.approval, signal: controller.signal });
+      // Starting Auto Sort authorizes this navigation-only refresh. The binding remains
+      // internal and never becomes a human-copied approval credential.
+      const approval: NavigationApproval = { kind: "human-confirmation", planFingerprint: parameters.plan.planFingerprint };
+      const navigation = await this.navigation.execute({ plan: parameters.plan, approval, signal: controller.signal });
       if (navigation.status !== "completed") { controller.abort(); await statePromise.catch(() => undefined); return { status: "blocked", diagnosticCode: `navigation-${navigation.status}`, navigation }; }
       const state = await statePromise;
       if (!state || !command44Ready(state)) return { status: "blocked", diagnosticCode: "fresh-command44-gate-failed", navigation };

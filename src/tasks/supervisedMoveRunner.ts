@@ -1,7 +1,7 @@
 import type { ScreenPoint, ScreenRectangle } from "../domain/stashScreenCalibration";
 import {
   approvalMatchesPlan,
-  type HumanMoveApproval,
+  type LocalMoveApprovalToken,
   type PreparedSupervisedMove
 } from "../domain/supervisedMove";
 import { GameInteractionLease } from "./taskMachine";
@@ -16,6 +16,7 @@ export interface LiveMoveEnvironment {
   isForeground: boolean;
   selectedTabIndex: number;
   inventoryId: number;
+  inputMethod: string;
 }
 
 export type MoveDispatchResult =
@@ -63,7 +64,7 @@ export class SupervisedMoveRunner {
 
   async execute(parameters: {
     plan: PreparedSupervisedMove;
-    approval: HumanMoveApproval;
+    approval: LocalMoveApprovalToken;
     countdownMilliseconds?: number;
     dragDurationMilliseconds?: number;
     verificationTimeoutMilliseconds?: number;
@@ -150,6 +151,7 @@ function environmentProblem(
   if (environment.calibrationProfileId !== parameters.plan.calibrationProfileId) {
     return "calibration-profile-changed";
   }
+  if (environment.inputMethod !== parameters.plan.inputMethod) return "input-method-changed";
   if (environment.selectedTabIndex !== parameters.plan.tabIndex ||
       environment.inventoryId !== parameters.plan.inventoryId) {
     return "visible-tab-changed";

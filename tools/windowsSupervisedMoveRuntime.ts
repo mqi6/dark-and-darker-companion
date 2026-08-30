@@ -45,7 +45,7 @@ export interface WindowsUiBridge {
 }
 
 export interface MoveRuntimeStateProvider {
-  inspectState(): Promise<Omit<LiveMoveEnvironment, "windowBounds" | "isForeground">>;
+  inspectState(): Promise<Omit<LiveMoveEnvironment, "windowBounds" | "isForeground" | "inputMethod">>;
   verifyMove(
     plan: PreparedSupervisedMove,
     timeoutMilliseconds: number,
@@ -76,6 +76,7 @@ export class WindowsSupervisedMoveRuntime implements SupervisedMoveRuntime {
     ]);
     return {
       ...state,
+      inputMethod: WINDOWS_SUPERVISED_INPUT_METHOD,
       windowBounds: window.bounds,
       isForeground:
         window.windowHandle === this.expected.windowHandle &&
@@ -177,9 +178,9 @@ export class PrivateJsonMoveStateProvider implements MoveRuntimeStateProvider {
     private readonly verificationPath: string
   ) {}
 
-  async inspectState(): Promise<Omit<LiveMoveEnvironment, "windowBounds" | "isForeground">> {
+  async inspectState(): Promise<Omit<LiveMoveEnvironment, "windowBounds" | "isForeground" | "inputMethod">> {
     const value = JSON.parse(await readFile(this.environmentPath, "utf8")) as
-      Omit<LiveMoveEnvironment, "windowBounds" | "isForeground" | "snapshotAgeMilliseconds"> &
+      Omit<LiveMoveEnvironment, "windowBounds" | "isForeground" | "inputMethod" | "snapshotAgeMilliseconds"> &
       { snapshotObservedAtUnixMilliseconds: number };
     const { snapshotObservedAtUnixMilliseconds, ...environment } = value;
     return {
@@ -236,3 +237,4 @@ async function cancellableDelay(milliseconds: number, signal?: AbortSignal): Pro
     signal?.addEventListener("abort", done, { once: true });
   });
 }
+export const WINDOWS_SUPERVISED_INPUT_METHOD = "dndtools-absolute-drag-v1";

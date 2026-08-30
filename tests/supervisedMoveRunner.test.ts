@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScreenRectangle } from "../src/domain/stashScreenCalibration";
-import type { HumanMoveApproval, PreparedSupervisedMove } from "../src/domain/supervisedMove";
+import { issueLocalMoveApprovalToken, type PreparedSupervisedMove } from "../src/domain/supervisedMove";
 import {
   SupervisedMoveRunner,
   type LiveMoveEnvironment,
@@ -21,16 +21,13 @@ const plan: PreparedSupervisedMove = {
   sourceSnapshotVersion: 7,
   calibrationProfileId: "calibration-1",
   gameBuildFingerprint: "build-1",
+  inputMethod: "dndtools-absolute-drag-v1",
   windowBounds,
   source: { slotId: 1, grid: { x: 1, y: 0 }, screen: { x: 100, y: 200 } },
   destination: { slotId: 2, grid: { x: 2, y: 0 }, screen: { x: 120, y: 200 } },
   planFingerprint: "fingerprint-1"
 };
-const approval: HumanMoveApproval = {
-  kind: "human-confirmation",
-  planFingerprint: plan.planFingerprint,
-  confirmedAtMilliseconds: 1000
-};
+const approval = issueLocalMoveApprovalToken(plan, 1000);
 const environment: LiveMoveEnvironment = {
   sourceSnapshotHash: plan.sourceSnapshotHash,
   sourceSnapshotVersion: plan.sourceSnapshotVersion,
@@ -40,7 +37,8 @@ const environment: LiveMoveEnvironment = {
   windowBounds,
   isForeground: true,
   selectedTabIndex: plan.tabIndex,
-  inventoryId: plan.inventoryId
+  inventoryId: plan.inventoryId,
+  inputMethod: plan.inputMethod ?? "dndtools-absolute-drag-v1"
 };
 
 function fakeRuntime(overrides: Partial<SupervisedMoveRuntime> = {}) {
@@ -62,6 +60,7 @@ describe("supervised move runner", () => {
     ["window movement or resize", { windowBounds: { ...windowBounds, left: 11 } }, "game-window-bounds-changed"],
     ["build mismatch", { gameBuildFingerprint: "other-build" }, "game-build-changed"],
     ["changed calibration profile", { calibrationProfileId: "other-profile" }, "calibration-profile-changed"],
+    ["changed input method", { inputMethod: "other-input" }, "input-method-changed"],
     ["visible-tab mismatch", { selectedTabIndex: 2 }, "visible-tab-changed"]
   ])("blocks %s before input", async (_name, change, diagnosticCode) => {
     const { runtime, calls } = fakeRuntime({
@@ -85,7 +84,7 @@ describe("supervised move runner", () => {
     const { runtime, calls } = fakeRuntime();
     const result = await new SupervisedMoveRunner(new GameInteractionLease(), runtime).execute({
       plan,
-      approval: { ...approval, planFingerprint: "stale" }
+      approval: issueLocalMoveApprovalToken({ ...plan, planFingerprint: "stale" }, 1000)
     });
     expect(result).toEqual({ status: "blocked", diagnosticCode: "human-approval-missing-or-stale" });
     expect(calls).toEqual({ inspect: 0, countdown: 0, dispatch: 0, verify: 0 });

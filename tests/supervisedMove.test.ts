@@ -5,6 +5,7 @@ import { createStashGridCalibration } from "../src/domain/stashScreenCalibration
 import { createStashTabMapping } from "../src/domain/stashTabMapping";
 import {
   approvalMatchesPlan,
+  issueLocalMoveApprovalToken,
   prepareSupervisedMove,
   type SupervisedMoveRequest
 } from "../src/domain/supervisedMove";
@@ -114,16 +115,10 @@ describe("first supervised generated move preparation", () => {
     });
     if (result.status !== "ready") throw new Error("Expected a ready plan.");
     expect(result.planFingerprint).toMatch(/^move003-[a-f0-9]{32}$/);
-    expect(approvalMatchesPlan({
-      kind: "human-confirmation",
-      planFingerprint: result.planFingerprint,
-      confirmedAtMilliseconds: 1000
-    }, result)).toBe(true);
-    expect(approvalMatchesPlan({
-      kind: "human-confirmation",
-      planFingerprint: `${result.planFingerprint}-stale`,
-      confirmedAtMilliseconds: 1000
-    }, result)).toBe(false);
+    expect(approvalMatchesPlan(issueLocalMoveApprovalToken(result, 1000), result)).toBe(true);
+    const other = prepare({ request: { ...request, destination: { x: 4, y: 4 } } });
+    if (other.status !== "ready") throw new Error("Expected another ready plan.");
+    expect(approvalMatchesPlan(issueLocalMoveApprovalToken(other, 1000), result)).toBe(false);
   });
 
   it("changes the compact fingerprint when a bound plan field changes", () => {

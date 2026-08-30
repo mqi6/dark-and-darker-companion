@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { HumanMoveApproval, PreparedSupervisedMove } from "../src/domain/supervisedMove";
+import { createInterface } from "node:readline/promises";
+import { stdin, stdout } from "node:process";
+import { issueLocalMoveApprovalToken, type PreparedSupervisedMove } from "../src/domain/supervisedMove";
 import { SupervisedMoveRunner } from "../src/tasks/supervisedMoveRunner";
 import { GameInteractionLease } from "../src/tasks/taskMachine";
 import {
@@ -50,32 +52,30 @@ if (!execute) {
   console.log(JSON.stringify({
     status: result.status,
     mouseButtonEvents: 0,
-    planFingerprint: plan.planFingerprint,
     itemAlias: plan.itemAlias,
     tabIndex: plan.tabIndex,
     inventoryId: plan.inventoryId,
     source: plan.source,
     destination: plan.destination,
-    snapshotHashShort: plan.sourceSnapshotHash.slice(0, 12),
-    snapshotVersion: plan.sourceSnapshotVersion,
-    calibrationProfileId: plan.calibrationProfileId,
-    gameBuildFingerprint: plan.gameBuildFingerprint,
-    statement: "Dry-run only. Exactly one left drag would occur after exact approval; there is no retry."
+    quantity: 1,
+    footprint: "1x1",
+    dragCount: 1,
+    statement: "Dry-run only. Exactly one left drag would occur after local confirmation; there is no retry."
   }, null, 2));
   process.exit(0);
 }
 
-const expectedConfirmation = `CONFIRM MOVE-003 ${plan.planFingerprint}`;
-if (args.confirmation !== expectedConfirmation) {
-  throw new Error("Exact action-specific confirmation is missing or does not match the complete planFingerprint.");
+const terminal = createInterface({ input: stdin, output: stdout });
+console.log(`\nMOVE-003 preview\nItem: ${plan.itemAlias}\nQuantity / footprint: 1 / 1x1\nSource: tab ${plan.tabIndex}, cell (${plan.source.grid.x},${plan.source.grid.y})\nDestination: tab ${plan.tabIndex}, cell (${plan.destination.grid.x},${plan.destination.grid.y})\nDrag count: 1\nNo retry will occur.`);
+const choice = (await terminal.question("Confirm Move / Cancel [C/X]: ")).trim().toLowerCase();
+terminal.close();
+if (choice !== "c" && choice !== "confirm move") {
+  console.log(JSON.stringify({ status: "cancelled", phase: "pre-dispatch" }));
+  process.exit(0);
 }
 const controller = new AbortController();
 process.once("SIGINT", () => controller.abort());
-const approval: HumanMoveApproval = {
-  kind: "human-confirmation",
-  planFingerprint: plan.planFingerprint,
-  confirmedAtMilliseconds: Date.now()
-};
+const approval = issueLocalMoveApprovalToken(plan, Date.now());
 const result = await runner.execute({ plan, approval, signal: controller.signal });
 console.log(JSON.stringify(result));
 if (result.status !== "confirmed") process.exitCode = 2;
