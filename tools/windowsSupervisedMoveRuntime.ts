@@ -33,6 +33,7 @@ export interface CursorInspection extends ForegroundWindowInspection {
 }
 
 export interface WindowsUiBridge {
+  focusExpectedWindow(expectedWindowHandle: string): Promise<ForegroundWindowInspection>;
   inspectForegroundWindow(): Promise<ForegroundWindowInspection>;
   inspectCursor(): Promise<CursorInspection>;
   dispatchLeftDrag(parameters: {
@@ -70,6 +71,7 @@ export class WindowsSupervisedMoveRuntime implements SupervisedMoveRuntime {
   ) {}
 
   async inspectEnvironment(): Promise<LiveMoveEnvironment> {
+    await this.ui.focusExpectedWindow(this.expected.windowHandle);
     const [window, state] = await Promise.all([
       this.ui.inspectForegroundWindow(),
       this.state.inspectState()
@@ -127,6 +129,13 @@ export class WindowsSupervisedMoveRuntime implements SupervisedMoveRuntime {
 
 export class PowerShellWindowsUiBridge implements WindowsUiBridge {
   constructor(private readonly helperPath: string) {}
+
+  async focusExpectedWindow(expectedWindowHandle: string): Promise<ForegroundWindowInspection> {
+    const result = await runPowerShell(this.helperPath, [
+      "-FocusGame", "-ExpectedWindowHandle", expectedWindowHandle
+    ]);
+    return JSON.parse(result.stdout) as ForegroundWindowInspection;
+  }
 
   async inspectForegroundWindow(): Promise<ForegroundWindowInspection> {
     const result = await runPowerShell(this.helperPath, ["-Inspect"]);
@@ -237,4 +246,4 @@ async function cancellableDelay(milliseconds: number, signal?: AbortSignal): Pro
     signal?.addEventListener("abort", done, { once: true });
   });
 }
-export const WINDOWS_SUPERVISED_INPUT_METHOD = "dndtools-absolute-drag-v1";
+export const WINDOWS_SUPERVISED_INPUT_METHOD = "dndtools-virtual-desktop-drag-v2";
