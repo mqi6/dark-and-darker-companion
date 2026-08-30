@@ -2,8 +2,11 @@
 param(
     [Parameter(ParameterSetName = 'Inspect', Mandatory = $true)][switch]$Inspect,
     [Parameter(ParameterSetName = 'Cursor', Mandatory = $true)][switch]$Cursor,
+    [Parameter(ParameterSetName = 'FocusGame', Mandatory = $true)][switch]$FocusGame,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][switch]$Drag,
-    [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][string]$ExpectedWindowHandle,
+    [Parameter(ParameterSetName = 'FocusGame', Mandatory = $true)]
+    [Parameter(ParameterSetName = 'Drag', Mandatory = $true)]
+    [string]$ExpectedWindowHandle,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$ExpectedLeft,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$ExpectedTop,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$ExpectedWidth,
@@ -31,28 +34,49 @@ public static class ForegroundMoveNative {
   [DllImport("user32.dll", SetLastError=true)] public static extern bool GetCursorPos(out POINT point);
   [DllImport("user32.dll", SetLastError=true)] public static extern uint SendInput(uint count, INPUT[] inputs, int size);
   [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int command);
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll", SetLastError=true)] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool value);
   public const uint INPUT_MOUSE = 0;
   public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
   public const uint MOUSEEVENTF_LEFTUP = 0x0004;
   public const uint MOUSEEVENTF_MOVE = 0x0001;
+  public const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
   public const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
+  public const int SW_RESTORE = 9;
 }
 '@
 
-function Get-ForegroundInfo {
-    $handle = [ForegroundMoveNative]::GetForegroundWindow()
-    if ($handle -eq [IntPtr]::Zero) { throw 'No foreground window is available.' }
+function Convert-WindowHandle([string]$Value) {
+    $text = $Value.Trim()
+    if ($text.StartsWith('0x', [StringComparison]::OrdinalIgnoreCase)) {
+        return [IntPtr]([Convert]::ToInt64($text.Substring(2), 16))
+    }
+    return [IntPtr]([Convert]::ToInt64($text, 10))
+}
+
+function Get-WindowInfo([IntPtr]$Handle) {
+    if ($Handle -eq [IntPtr]::Zero) { throw 'No window is available.' }
     $rectangle = New-Object ForegroundMoveNative+RECT
-    if (-not [ForegroundMoveNative]::GetWindowRect($handle, [ref]$rectangle)) { throw 'GetWindowRect failed.' }
-    [uint32]$foregroundProcessId = 0
-    [void][ForegroundMoveNative]::GetWindowThreadProcessId($handle, [ref]$foregroundProcessId)
-    $process = Get-Process -Id $foregroundProcessId -ErrorAction Stop
+    if (-not [ForegroundMoveNative]::GetWindowRect($Handle, [ref]$rectangle)) { throw 'GetWindowRect failed.' }
+    [uint32]$processId = 0
+    [void][ForegroundMoveNative]::GetWindowThreadProcessId($Handle, [ref]$processId)
+    $process = Get-Process -Id $processId -ErrorAction Stop
     [ordered]@{
-        windowHandle = ('0x{0:X}' -f $handle.ToInt64())
-        processId = [int]$foregroundProcessId
+        windowHandle = ('0x{0:X}' -f $Handle.ToInt64())
+        processId = [int]$processId
         processName = $process.ProcessName
         windowTitle = $process.MainWindowTitle
-        bounds = [ordered]@{ left=$rectangle.Left; top=$rectangle.Top; width=$rectangle.Right-$rectangle.Left; height=$rectangle.Bottom-$rectangle.Top }
+        isForeground = [ForegroundMoveNative]::GetForegroundWindow() -eq $Handle
+        bounds = [ordered]@{
+            left = $rectangle.Left
+            top = $rectangle.Top
+            width = $rectangle.Right - $rectangle.Left
+            height = $rectangle.Bottom - $rectangle.Top
+        }
         display = [ordered]@{
             virtualLeft = [ForegroundMoveNative]::GetSystemMetrics(76)
             virtualTop = [ForegroundMoveNative]::GetSystemMetrics(77)
@@ -62,8 +86,43 @@ function Get-ForegroundInfo {
     }
 }
 
-function Send-LeftButton([uint32]$Flag) {
-    Send-MouseInput 0 0 $Flag
+function Get-ForegroundInfo {
+    Get-WindowInfo ([ForegroundMoveNative]::GetForegroundWindow())
+}
+
+function Set-GameForeground([IntPtr]$TargetHandle) {
+    if ($TargetHandle -eq [IntPtr]::Zero) { throw 'Expected game window is unavailable.' }
+    if ([ForegroundMoveNative]::IsIconic($TargetHandle)) {
+        [void][ForegroundMoveNative]::ShowWindowAsync($TargetHandle, [ForegroundMoveNative]::SW_RESTORE)
+    }
+    $currentHandle = [ForegroundMoveNative]::GetForegroundWindow()
+    [uint32]$unusedProcessId = 0
+    $currentThread = if ($currentHandle -eq [IntPtr]::Zero) { 0 } else {
+        [ForegroundMoveNative]::GetWindowThreadProcessId($currentHandle, [ref]$unusedProcessId)
+    }
+    $targetThread = [ForegroundMoveNative]::GetWindowThreadProcessId($TargetHandle, [ref]$unusedProcessId)
+    $callerThread = [ForegroundMoveNative]::GetCurrentThreadId()
+    $attachedCurrent = $false
+    $attachedTarget = $false
+    try {
+        if ($currentThread -ne 0 -and $currentThread -ne $callerThread) {
+            $attachedCurrent = [ForegroundMoveNative]::AttachThreadInput($callerThread, $currentThread, $true)
+        }
+        if ($targetThread -ne 0 -and $targetThread -ne $callerThread) {
+            $attachedTarget = [ForegroundMoveNative]::AttachThreadInput($callerThread, $targetThread, $true)
+        }
+        [void][ForegroundMoveNative]::BringWindowToTop($TargetHandle)
+        [void][ForegroundMoveNative]::SetForegroundWindow($TargetHandle)
+    } finally {
+        if ($attachedTarget) { [void][ForegroundMoveNative]::AttachThreadInput($callerThread, $targetThread, $false) }
+        if ($attachedCurrent) { [void][ForegroundMoveNative]::AttachThreadInput($callerThread, $currentThread, $false) }
+    }
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    while ([DateTime]::UtcNow -lt $deadline) {
+        if ([ForegroundMoveNative]::GetForegroundWindow() -eq $TargetHandle) { return }
+        Start-Sleep -Milliseconds 50
+    }
+    throw 'Windows did not grant foreground activation to the game window.'
 }
 
 function Send-MouseInput([int]$Dx, [int]$Dy, [uint32]$Flag) {
@@ -74,16 +133,32 @@ function Send-MouseInput([int]$Dx, [int]$Dy, [uint32]$Flag) {
     $input = New-Object ForegroundMoveNative+INPUT
     $input.type = [ForegroundMoveNative]::INPUT_MOUSE
     $input.union = $union
-    $sent = [ForegroundMoveNative]::SendInput(1, @($input), [Runtime.InteropServices.Marshal]::SizeOf([type][ForegroundMoveNative+INPUT]))
-    if ($sent -ne 1) { throw 'SendInput rejected the foreground mouse-button event.' }
+    $sent = [ForegroundMoveNative]::SendInput(
+        1,
+        @($input),
+        [Runtime.InteropServices.Marshal]::SizeOf([type][ForegroundMoveNative+INPUT])
+    )
+    if ($sent -ne 1) { throw 'SendInput rejected the foreground mouse event.' }
+}
+
+function Send-LeftButton([uint32]$Flag) {
+    Send-MouseInput 0 0 $Flag
 }
 
 function Move-Absolute([int]$X, [int]$Y) {
-    $width = [ForegroundMoveNative]::GetSystemMetrics(0); $height = [ForegroundMoveNative]::GetSystemMetrics(1)
-    if ($X -lt 0 -or $Y -lt 0 -or $X -ge $width -or $Y -ge $height) { throw 'Drag point is outside the primary display.' }
-    $absoluteX = [int][Math]::Round($X * 65535 / [Math]::Max(1, $width - 1))
-    $absoluteY = [int][Math]::Round($Y * 65535 / [Math]::Max(1, $height - 1))
-    Send-MouseInput $absoluteX $absoluteY ([ForegroundMoveNative]::MOUSEEVENTF_MOVE -bor [ForegroundMoveNative]::MOUSEEVENTF_ABSOLUTE)
+    $left = [ForegroundMoveNative]::GetSystemMetrics(76)
+    $top = [ForegroundMoveNative]::GetSystemMetrics(77)
+    $width = [ForegroundMoveNative]::GetSystemMetrics(78)
+    $height = [ForegroundMoveNative]::GetSystemMetrics(79)
+    if ($X -lt $left -or $Y -lt $top -or $X -ge ($left + $width) -or $Y -ge ($top + $height)) {
+        throw 'Drag point is outside the virtual desktop.'
+    }
+    $absoluteX = [int][Math]::Round(($X - $left) * 65535 / [Math]::Max(1, $width - 1))
+    $absoluteY = [int][Math]::Round(($Y - $top) * 65535 / [Math]::Max(1, $height - 1))
+    $flags = [ForegroundMoveNative]::MOUSEEVENTF_MOVE -bor
+        [ForegroundMoveNative]::MOUSEEVENTF_ABSOLUTE -bor
+        [ForegroundMoveNative]::MOUSEEVENTF_VIRTUALDESK
+    Send-MouseInput $absoluteX $absoluteY $flags
 }
 
 if ($Inspect) {
@@ -95,21 +170,38 @@ if ($Cursor) {
     $info = Get-ForegroundInfo
     $point = New-Object ForegroundMoveNative+POINT
     if (-not [ForegroundMoveNative]::GetCursorPos([ref]$point)) { throw 'GetCursorPos failed.' }
-    $info.cursor = [ordered]@{ x=$point.X; y=$point.Y }
+    $info.cursor = [ordered]@{ x = $point.X; y = $point.Y }
     $info | ConvertTo-Json -Depth 5 -Compress
+    return
+}
+
+$targetHandle = Convert-WindowHandle $ExpectedWindowHandle
+if ($FocusGame) {
+    Set-GameForeground $targetHandle
+    Get-WindowInfo $targetHandle | ConvertTo-Json -Depth 5 -Compress
     return
 }
 
 $inputDispatched = $false
 try {
+    Set-GameForeground $targetHandle
     $foreground = Get-ForegroundInfo
-    $expected = [ordered]@{ left=$ExpectedLeft; top=$ExpectedTop; width=$ExpectedWidth; height=$ExpectedHeight }
+    $expected = [ordered]@{
+        left = $ExpectedLeft; top = $ExpectedTop
+        width = $ExpectedWidth; height = $ExpectedHeight
+    }
     if ($foreground.windowHandle -ne $ExpectedWindowHandle) { throw 'Foreground window identity changed.' }
-    if ($foreground.bounds.left -ne $expected.left -or $foreground.bounds.top -ne $expected.top -or $foreground.bounds.width -ne $expected.width -or $foreground.bounds.height -ne $expected.height) { throw 'Foreground window bounds changed.' }
+    if ($foreground.bounds.left -ne $expected.left -or $foreground.bounds.top -ne $expected.top -or
+        $foreground.bounds.width -ne $expected.width -or $foreground.bounds.height -ne $expected.height) {
+        throw 'Foreground window bounds changed.'
+    }
     Move-Absolute $SourceX $SourceY
     Start-Sleep -Milliseconds 50
     $cursor = New-Object ForegroundMoveNative+POINT
-    if (-not [ForegroundMoveNative]::GetCursorPos([ref]$cursor) -or [Math]::Abs($cursor.X-$SourceX)-gt 2 -or [Math]::Abs($cursor.Y-$SourceY)-gt 2) { throw 'Source cursor verification failed.' }
+    if (-not [ForegroundMoveNative]::GetCursorPos([ref]$cursor) -or
+        [Math]::Abs($cursor.X - $SourceX) -gt 2 -or [Math]::Abs($cursor.Y - $SourceY) -gt 2) {
+        throw 'Source cursor verification failed.'
+    }
     Send-LeftButton ([ForegroundMoveNative]::MOUSEEVENTF_LEFTDOWN)
     $inputDispatched = $true
     $steps = [Math]::Max(2, [Math]::Ceiling($DurationMilliseconds / 16))
@@ -122,11 +214,22 @@ try {
     }
     Send-LeftButton ([ForegroundMoveNative]::MOUSEEVENTF_LEFTUP)
     Start-Sleep -Milliseconds 150
-    [ordered]@{ status='dispatched'; inputMayHaveBeenDispatched=$true; mouseButtonEvents=2 } | ConvertTo-Json -Compress
+    [ordered]@{
+        status = 'dispatched'
+        inputMayHaveBeenDispatched = $true
+        mouseButtonEvents = 2
+        foregroundRestored = $true
+        coordinateSpace = 'virtual-desktop'
+    } | ConvertTo-Json -Compress
 } catch {
     if ($inputDispatched) {
         try { Send-LeftButton ([ForegroundMoveNative]::MOUSEEVENTF_LEFTUP) } catch {}
     }
-    [ordered]@{ status='failed'; diagnosticCode='ordinary-foreground-input-failed'; inputMayHaveBeenDispatched=$inputDispatched } | ConvertTo-Json -Compress
+    [ordered]@{
+        status = 'failed'
+        diagnosticCode = 'ordinary-foreground-input-failed'
+        detail = $_.Exception.Message
+        inputMayHaveBeenDispatched = $inputDispatched
+    } | ConvertTo-Json -Compress
     exit 2
 }
