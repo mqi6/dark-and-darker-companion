@@ -1,0 +1,57 @@
+{
+  "reviewVersion": 1,
+  "sampleId": "NAV-002",
+  "sanitized": true,
+  "build": {
+    "gameVersion": "0.17.151.9472",
+    "schemaFingerprintMatchesPinned": true
+  },
+  "inputMethod": "dndtools-sendinput-v1",
+  "plan": {
+    "startingPage": "lobby",
+    "visibleStashTabCount": 10,
+    "primaryDisplayValidation": "passed",
+    "usesCurrentSelectedCharacter": true,
+    "plannedClickCount": 5
+  },
+  "execution": {
+    "classification": "blocked",
+    "diagnosticCode": "transition-timeout-enter-lobby",
+    "dispatchedClickCount": 4,
+    "retryCount": 0,
+    "completedTransitionCount": 3,
+    "remainingClicksDispatched": false,
+    "completedTransitions": [
+      "lobby-to-stash",
+      "stash-to-lobby",
+      "lobby-to-character-selection"
+    ]
+  },
+  "capture": {
+    "tcpPayloadSegments": 361,
+    "clientToServerSegments": 29,
+    "serverToClientSegments": 332,
+    "validApplicationFrames": 74,
+    "discardedFramingBytes": 0,
+    "command44Frames": 1,
+    "command552Frames": 0
+  },
+  "command44Result": {
+    "observedAfterEnterLobbyDispatch": true,
+    "relativeDelayAfterDispatchMilliseconds": 759,
+    "result": 1,
+    "containerCount": 10,
+    "complete": true
+  },
+  "intentionallyOmitted": [
+    "screenshotsAndTemplates",
+    "liveScreenCoordinates",
+    "privatePlansAndFingerprints",
+    "utcTimestamps",
+    "packetPayloadsAndPcap",
+    "networkAddresses",
+    "accountAndCharacterIdentifiers",
+    "itemCountsAndIdentities",
+    "containerIdentifiersAndCompleteLayouts"
+  ]
+}

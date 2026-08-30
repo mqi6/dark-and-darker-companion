@@ -14,6 +14,7 @@ const windowState: NavigationWindowState = {
   processName: "DungeonCrawler",
   clientBounds: { left: 0, top: 0, width: 1920, height: 1080 },
   display: { left: 0, top: 0, width: 1920, height: 1080 },
+  primaryDisplay: { left: 0, top: 0, width: 1920, height: 1080 },
   gameBuildFingerprint: "build"
 };
 const plan = prepareNav001Sequence({ window: windowState, visibleStashTabs: 4, startingScreen: "lobby" });
@@ -69,6 +70,14 @@ describe("NAV-001 Windows navigation runtime", () => {
     }
   });
 
+  it("requires the complete client and planned points on the primary display", () => {
+    expect(() => prepareNav001Sequence({
+      window: { ...windowState, clientBounds: { left: 1920, top: 0, width: 1920, height: 1080 } },
+      visibleStashTabs: 4,
+      startingScreen: "lobby"
+    })).toThrow(/complete game client on the primary display/);
+  });
+
   it("classifies private features and fails closed for unknown or ambiguous samples", () => {
     const templates = [
       { screen: "lobby" as const, feature: [10, 10, 10] },
@@ -99,6 +108,7 @@ describe("NAV-001 Windows navigation runtime", () => {
     ["foreground", { ...windowState, windowHandle: "0x2" }, "foreground-window-mismatch"],
     ["bounds", { ...windowState, clientBounds: { ...windowState.clientBounds, width: 1919 } }, "window-bounds-changed"],
     ["display", { ...windowState, display: { ...windowState.display, width: 2560 } }, "display-geometry-changed"],
+    ["primary display", { ...windowState, primaryDisplay: { ...windowState.primaryDisplay, width: 1280 } }, "primary-display-geometry-changed"],
     ["build", { ...windowState, gameBuildFingerprint: "changed" }, "game-build-changed"]
   ])("blocks %s mismatch before input", async (_name, changed, code) => {
     const { adapter, calls } = fakeAdapter({ window: changed });
