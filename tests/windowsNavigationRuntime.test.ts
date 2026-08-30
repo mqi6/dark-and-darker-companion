@@ -57,7 +57,7 @@ describe("NAV-001 Windows navigation runtime", () => {
       "open-stash", "start-game", "return-to-character-selection",
       "enter-lobby", "open-stash"
     ]);
-    expect(plan.inputMethod).toBe("dndtools-sendinput-v1");
+    expect(plan.inputMethod).toBe("dndtools-virtual-desktop-sendinput-v2");
     expect(plan.planFingerprint).toMatch(/^nav001-[a-f0-9]{32}$/);
   });
 
@@ -70,12 +70,31 @@ describe("NAV-001 Windows navigation runtime", () => {
     }
   });
 
-  it("requires the complete client and planned points on the primary display", () => {
-    expect(() => prepareNav001Sequence({
-      window: { ...windowState, clientBounds: { left: 1920, top: 0, width: 1920, height: 1080 } },
+  it("prepares navigation when the complete client is on a secondary display", () => {
+    const secondaryWindow: NavigationWindowState = {
+      ...windowState,
+      clientBounds: { left: 1920, top: 0, width: 1920, height: 1080 },
+      display: { left: 0, top: 0, width: 3840, height: 1080 }
+    };
+    const secondaryPlan = prepareNav001Sequence({
+      window: secondaryWindow,
       visibleStashTabs: 4,
       startingScreen: "lobby"
-    })).toThrow(/complete game client on the primary display/);
+    });
+    expect(secondaryPlan.window.clientBounds.left).toBe(1920);
+    expect(secondaryPlan.steps.every(step => step.point.x >= 1920)).toBe(true);
+  });
+
+  it("rejects a client that extends outside the virtual desktop", () => {
+    expect(() => prepareNav001Sequence({
+      window: {
+        ...windowState,
+        clientBounds: { left: 3000, top: 0, width: 1920, height: 1080 },
+        display: { left: 0, top: 0, width: 3840, height: 1080 }
+      },
+      visibleStashTabs: 4,
+      startingScreen: "lobby"
+    })).toThrow(/complete game client inside the virtual desktop/);
   });
 
   it("classifies private features and fails closed for unknown or ambiguous samples", () => {
@@ -108,7 +127,6 @@ describe("NAV-001 Windows navigation runtime", () => {
     ["foreground", { ...windowState, windowHandle: "0x2" }, "foreground-window-mismatch"],
     ["bounds", { ...windowState, clientBounds: { ...windowState.clientBounds, width: 1919 } }, "window-bounds-changed"],
     ["display", { ...windowState, display: { ...windowState.display, width: 2560 } }, "display-geometry-changed"],
-    ["primary display", { ...windowState, primaryDisplay: { ...windowState.primaryDisplay, width: 1280 } }, "primary-display-geometry-changed"],
     ["build", { ...windowState, gameBuildFingerprint: "changed" }, "game-build-changed"]
   ])("blocks %s mismatch before input", async (_name, changed, code) => {
     const { adapter, calls } = fakeAdapter({ window: changed });
