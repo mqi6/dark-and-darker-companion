@@ -85,9 +85,38 @@ describe("inventory geometry projection", () => {
       .toMatchObject([{ code: "item-metadata-missing" }]);
   });
 
+  it("projects complete character-bag occupancy and an absent bag as empty", async () => {
+    const bagItem = { ...item("bag-item", 11), inventoryId: 2 };
+    const bagResponse: SemanticCharacterInfoResponse = {
+      result: 1,
+      characterDataBase: {
+        accountId: "private",
+        accountNickname: "private",
+        characterId: "private",
+        characterItemList: [bagItem],
+        characterStorageItemList: [],
+        characterStorageInfos: []
+      }
+    };
+    const state = await new GameStateReducer(localization, "test-schema").replaceBaseline([
+      { relativeTimestampMs: 1, response: bagResponse }
+    ]);
+    const projectedBag = projectSpatialState(state, metadata());
+    expect(projectedBag.containers.find(container => container.inventoryId === 2))
+      .toMatchObject({
+        status: "ready",
+        geometry: { kind: "bag", columns: 10, rows: 5 },
+        placements: [{ x: 1, y: 1 }]
+      });
+
+    const empty = projectSpatialState(await reduce([]), metadata());
+    expect(empty.containers.find(container => container.inventoryId === 2))
+      .toMatchObject({ status: "ready", geometry: { kind: "bag" }, placements: [] });
+  });
+
   it("does not interpret unsupported inventories as rectangular storage", () => {
     expect(geometryForInventoryId(200)).toEqual({ kind: "rectangular", columns: 12, rows: 20 });
-    expect(geometryForInventoryId(2)).toEqual({ kind: "unverified" });
+    expect(geometryForInventoryId(2)).toEqual({ kind: "bag", columns: 10, rows: 5 });
     expect(geometryForInventoryId(3)).toEqual({ kind: "equipment" });
   });
 });

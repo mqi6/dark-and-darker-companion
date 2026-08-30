@@ -3,6 +3,7 @@ import {
   calibrationFreshness,
   calibrationMatchesGeometry,
   cellCenterFor,
+  createCharacterBagGridCalibration,
   createStashGridCalibration
 } from "../src/domain/stashScreenCalibration";
 
@@ -20,6 +21,23 @@ describe("stash screen calibration", () => {
     expect(calibration).toMatchObject({ cellWidth: 10, cellHeight: 10 });
     expect(cellCenterFor(calibration, { x: 0, y: 0 })).toEqual({ x: 105, y: 105 });
     expect(cellCenterFor(calibration, { x: 11, y: 19 })).toEqual({ x: 215, y: 295 });
+  });
+
+  it("creates a fixed 10 by 5 character bag calibration", () => {
+    const bagCalibration = createCharacterBagGridCalibration({
+      profileId: "bag-calibration-1",
+      gameBuildFingerprint: "build-1",
+      windowBounds: { left: 0, top: 0, width: 400, height: 400 },
+      gridTopLeft: { x: 100, y: 100 },
+      gridBottomRight: { x: 300, y: 200 }
+    });
+    expect(bagCalibration.grid).toEqual({ columns: 10, rows: 5 });
+    expect(bagCalibration).toMatchObject({ cellWidth: 20, cellHeight: 20 });
+    expect(calibrationMatchesGeometry(bagCalibration, {
+      kind: "bag",
+      columns: 10,
+      rows: 5
+    })).toBe(true);
   });
 
   it("rejects points outside the calibrated grid", () => {

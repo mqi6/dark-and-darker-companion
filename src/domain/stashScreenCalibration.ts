@@ -82,11 +82,20 @@ export function createStashGridCalibration(parameters: {
   };
 }
 
+export function createCharacterBagGridCalibration(
+  parameters: Omit<Parameters<typeof createStashGridCalibration>[0], "grid">
+): StashGridCalibration {
+  return createStashGridCalibration({
+    ...parameters,
+    grid: { columns: 10, rows: 5 }
+  });
+}
+
 export function calibrationMatchesGeometry(
   calibration: StashGridCalibration,
   geometry: InventoryGeometry
 ): boolean {
-  return geometry.kind === "rectangular" &&
+  return (geometry.kind === "rectangular" || geometry.kind === "bag") &&
     geometry.columns === calibration.grid.columns &&
     geometry.rows === calibration.grid.rows;
 }

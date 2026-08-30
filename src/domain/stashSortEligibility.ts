@@ -81,7 +81,7 @@ export function evaluateStashSortEligibility(
     const unsupportedItemCount = unsupportedByInventory.get(container.inventoryId) ?? 0;
     const enabledByUser = !disabledInventoryIds.has(container.inventoryId);
 
-    if (container.status === "not-applicable") {
+    if (container.status === "not-applicable" || container.geometry.kind === "bag") {
       return {
         inventoryId: container.inventoryId,
         status: "not-applicable",
