@@ -1,5 +1,5 @@
 import { execFile, spawn } from "node:child_process";
-import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { access, appendFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { stdin } from "node:process";
@@ -127,12 +127,58 @@ export function createLocalOperatorServer(parameters: {
   });
 }
 
+export async function findOperatorPrivateDirectory(root: string): Promise<string> {
+  const resolvedRoot = resolve(root);
+  const candidates: Array<{ directory: string; modified: number }> = [];
+
+  async function visit(directory: string, depth: number): Promise<void> {
+    const planPath = resolve(directory, "plan.private.json");
+    const calibrationPath = resolve(directory, "calibration.private.json");
+    try {
+      await Promise.all([access(planPath), access(calibrationPath)]);
+      candidates.push({ directory, modified: (await stat(planPath)).mtimeMs });
+    } catch (error) {
+      if (!isMissingFile(error)) throw error;
+    }
+
+    if (depth >= 4) return;
+    let entries;
+    try {
+      entries = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (isMissingFile(error)) return;
+      throw error;
+    }
+    await Promise.all(
+      entries
+        .filter(entry => entry.isDirectory() && !entry.isSymbolicLink())
+        .map(entry => visit(resolve(directory, entry.name), depth + 1))
+    );
+  }
+
+  await visit(resolvedRoot, 0);
+  candidates.sort((left, right) => right.modified - left.modified);
+  const selected = candidates[0];
+  if (!selected) {
+    throw new Error(
+      `No prepared runtime was found below ${resolvedRoot}. Expected matching plan.private.json and calibration.private.json files.`
+    );
+  }
+  return selected.directory;
+}
+
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
 async function main() {
   if (process.platform !== "win32") {
     throw new Error("The local operator must run in Windows PowerShell.");
   }
   const args = parseArgs(process.argv.slice(2));
-  const privateDirectory = resolve(args["private-directory"] ?? "fixtures-private/runtime/move-003");
+  const privateDirectory = await findOperatorPrivateDirectory(
+    args["private-directory"] ?? "fixtures-private/runtime/move-003"
+  );
   const port = Number(args.port ?? 4317);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid operator port.");
   const plan = JSON.parse(
