@@ -4,7 +4,7 @@
 
 This repository implements the Dark and Darker Companion v1: read-only stash capture and display, one-page sorting and preview, controlled normal-UI sorting, auction pricing/queue/listing, DarkerDB Gear Search, Settings, and shared Activity reporting.
 
-Do not add maps, build recommendations, automatic purchasing, unattended monitoring, repricing, cancellation, or multi-stash execution unless the product specification changes.
+Do not add maps, build recommendations, automatic purchasing, unattended monitoring, repricing, or cancellation unless the product specification changes. Cross-tab stash sorting is authorized only through the normal visible game UI and the verified character-bag route described below.
 
 ## Runtime boundary
 
@@ -26,6 +26,11 @@ Do not add maps, build recommendations, automatic purchasing, unattended monitor
 - Confirmed listing failure: skip and continue by default. Ambiguous submission: pause.
 - Fixed rectangular stash regions are supported and unavailable to the planner.
 - Every visible stash tab has an independent automatic-sort on/off preference; verified tabs default on.
+- Every enabled stash tab has an allowed-item policy. Supported categories are gear, weapon, necklace/ring, money, money container, utility, and other; canonical item-ID overrides may refine a category.
+- A disabled or exception stash tab is neither a sorting source nor a sorting destination.
+- Cross-tab sorting must use source stash -> character bag -> target stash. Never model or execute a direct stash-to-stash drag.
+- Derive the 10x5 character-bag occupancy from the complete successful character baseline. Capacity is spatial: a transfer requires a free rectangle matching the item's verified footprint; item count alone is insufficient.
+- Execute cross-tab moves one item at a time, use small bounded batches, never retry automatically, and reconcile every batch against a newer complete state obtained through the established automatic character-reselection refresh.
 - Do not require a preselected unsupported-item exception page. Prompt for one only after an unsupported item is observed. While unsupported items exist, the chosen exception page is forced out of sorting without overwriting its normal tab preference.
 - Gear Search displays matches/evaluated and, when incomplete, retrieved/reported total.
 - Missing or naturally impossible roll means that rule does not match; other K-of-N rules may still let the item pass.
