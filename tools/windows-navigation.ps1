@@ -3,6 +3,8 @@ param(
   [Parameter(ParameterSetName='Inspect',Mandatory=$true)][switch]$Inspect,
   [Parameter(ParameterSetName='Capture',Mandatory=$true)][switch]$Capture,
   [Parameter(ParameterSetName='Capture',Mandatory=$true)][string]$OutputPath,
+  [Parameter(ParameterSetName='Analyze',Mandatory=$true)][switch]$AnalyzeImage,
+  [Parameter(ParameterSetName='Analyze',Mandatory=$true)][string]$InputPath,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][switch]$Click,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][string]$ExpectedWindowHandle,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$ExpectedLeft,
@@ -58,14 +60,52 @@ function Move-MouseLikeDnDTools([int]$targetX,[int]$targetY){
  $cursor=New-Object NavNative+POINT;if(-not[NavNative]::GetCursorPos([ref]$cursor)){throw 'GetCursorPos failed after SendInput movement.'}
  if([Math]::Abs($cursor.X-$targetX)-gt 2-or[Math]::Abs($cursor.Y-$targetY)-gt 2){throw 'SendInput cursor verification failed.'}
 }
+function Get-StableUiFeature([Drawing.Bitmap]$bitmap){
+ $regions=@(
+  @{x=0.08;y=0.00;width=0.84;height=0.09;columns=24;rows=4},
+  @{x=0.78;y=0.01;width=0.21;height=0.12;columns=8;rows=4},
+  @{x=0.40;y=0.89;width=0.20;height=0.09;columns=8;rows=4},
+  @{x=0.65;y=0.10;width=0.34;height=0.12;columns=12;rows=4},
+  @{x=0.83;y=0.78;width=0.16;height=0.20;columns=6;rows=6}
+ )
+ $feature=@()
+ foreach($region in $regions){
+  $values=@()
+  for($row=0;$row-lt$region.rows;$row++){
+   for($column=0;$column-lt$region.columns;$column++){
+    $centerX=[Math]::Floor(($region.x+($column+0.5)*$region.width/$region.columns)*$bitmap.Width)
+    $centerY=[Math]::Floor(($region.y+($row+0.5)*$region.height/$region.rows)*$bitmap.Height)
+    $sum=0;$samples=0
+    for($offsetY=-1;$offsetY-le 1;$offsetY++){
+     for($offsetX=-1;$offsetX-le 1;$offsetX++){
+      $pixelX=[Math]::Max(0,[Math]::Min($bitmap.Width-1,$centerX+$offsetX))
+      $pixelY=[Math]::Max(0,[Math]::Min($bitmap.Height-1,$centerY+$offsetY))
+      $color=$bitmap.GetPixel($pixelX,$pixelY)
+      $sum+=(0.2126*$color.R)+(0.7152*$color.G)+(0.0722*$color.B);$samples++
+     }
+    }
+    $values+=$sum/[Math]::Max(1,$samples)
+   }
+  }
+  $mean=($values|Measure-Object -Average).Average
+  foreach($value in $values){$feature+=[int][Math]::Round([Math]::Max(0,[Math]::Min(255,128+$value-$mean)))}
+ }
+ return @($feature)
+}
+if($AnalyzeImage){
+ if(-not(Test-Path -LiteralPath $InputPath)){throw 'Private reference image was not found.'}
+ $resolvedInput=(Resolve-Path -LiteralPath $InputPath).Path
+ $bitmap=[Drawing.Bitmap]::FromFile($resolvedInput)
+ try{[ordered]@{featureVersion=2;feature=(Get-StableUiFeature $bitmap)}|ConvertTo-Json -Depth 5 -Compress}finally{$bitmap.Dispose()}
+ return
+}
 $state=Get-State
 if($state.processName-ne'DungeonCrawler'){throw 'DungeonCrawler is not the foreground process.'}
 if($Inspect){$state|ConvertTo-Json -Depth 5 -Compress;return}
 if($Capture){
  $b=$state.clientBounds;$bitmap=New-Object Drawing.Bitmap($b.width,$b.height);$graphics=[Drawing.Graphics]::FromImage($bitmap)
  try{$graphics.CopyFromScreen($b.left,$b.top,0,0,$bitmap.Size);$directory=Split-Path -Parent $OutputPath;if($directory){New-Item -ItemType Directory -Path $directory -Force|Out-Null};$bitmap.Save($OutputPath,[Drawing.Imaging.ImageFormat]::Png)
-  $feature=@();for($gy=0;$gy-lt 8;$gy++){for($gx=0;$gx-lt 12;$gx++){$px=[Math]::Min($b.width-1,[Math]::Floor(($gx+0.5)*$b.width/12));$py=[Math]::Min($b.height-1,[Math]::Floor(($gy+0.5)*$b.height/8));$c=$bitmap.GetPixel($px,$py);$feature+=[Math]::Round(($c.R+$c.G+$c.B)/3)}}
-  $state.feature=$feature;$state|ConvertTo-Json -Depth 6 -Compress
+  $state.featureVersion=2;$state.feature=(Get-StableUiFeature $bitmap);$state|ConvertTo-Json -Depth 6 -Compress
  }finally{$graphics.Dispose();$bitmap.Dispose()};return
 }
 if($state.windowHandle-ne$ExpectedWindowHandle-or$state.clientBounds.left-ne$ExpectedLeft-or$state.clientBounds.top-ne$ExpectedTop-or$state.clientBounds.width-ne$ExpectedWidth-or$state.clientBounds.height-ne$ExpectedHeight){throw 'Foreground window identity or client bounds changed.'}

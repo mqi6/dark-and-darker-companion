@@ -80,8 +80,8 @@ describe("NAV-001 Windows navigation runtime", () => {
 
   it("classifies private features and fails closed for unknown or ambiguous samples", () => {
     const templates = [
-      { screen: "lobby" as const, feature: [10, 10, 10] },
-      { screen: "stash" as const, feature: [50, 50, 50] }
+      { screen: "lobby" as const, featureVersion: 2 as const, feature: [10, 10, 10] },
+      { screen: "stash" as const, featureVersion: 2 as const, feature: [50, 50, 50] }
     ];
     expect(classifyFeature([11, 10, 9], templates)).toMatchObject({ status: "classified", observation: { screen: "lobby" } });
     expect(classifyFeature([250, 250, 250], templates)).toEqual({ status: "unknown" });

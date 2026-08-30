@@ -1,20 +1,136 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { ScreenPoint } from "../src/domain/stashScreenCalibration";
-import type { GameScreen, NavigationObservation } from "../src/tasks/gameNavigationMachine";
-import type { NavigationWindowState, ScreenClassification, WindowsNavigationAdapter } from "../src/tasks/windowsNavigationRuntime";
-const execFileAsync=promisify(execFile);
-export interface PrivateScreenTemplate { screen: Exclude<GameScreen,"unknown">; feature:number[]; selectedCharacterSlotIndex?:number; selectedStashTabIndex?:number }
-export interface PrivateNavProfile { schemaVersion:1; gameBuildFingerprint:string; visibleStashTabs:number; selectedCharacterSlotIndex:number|null; templates:PrivateScreenTemplate[] }
-interface HelperState {windowHandle:string;processName:string;clientBounds:{left:number;top:number;width:number;height:number};display:{left:number;top:number;width:number;height:number};primaryDisplay:{left:number;top:number;width:number;height:number};feature?:number[]}
+import {
+  classifyNavigationFeature,
+  NAVIGATION_FEATURE_VERSION,
+  type NavigationScreenTemplate
+} from "../src/tasks/navigationScreenClassifier";
+import type {
+  NavigationWindowState,
+  ScreenClassification,
+  WindowsNavigationAdapter
+} from "../src/tasks/windowsNavigationRuntime";
+
+const execFileAsync = promisify(execFile);
+
+export type PrivateScreenTemplate = NavigationScreenTemplate;
+
+export interface PrivateNavProfile {
+  schemaVersion: 2;
+  gameBuildFingerprint: string;
+  visibleStashTabs: number;
+  selectedCharacterSlotIndex: number | null;
+  templates: PrivateScreenTemplate[];
+}
+
+interface HelperState {
+  windowHandle: string;
+  processName: string;
+  clientBounds: { left: number; top: number; width: number; height: number };
+  display: { left: number; top: number; width: number; height: number };
+  primaryDisplay: { left: number; top: number; width: number; height: number };
+  featureVersion?: number;
+  feature?: number[];
+}
+
 export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
- constructor(private helper:string,private profile:PrivateNavProfile,private expected:HelperState,private capturePath:string){}
- async inspectWindow():Promise<NavigationWindowState>{const s=await this.run(["-Inspect"]);return{...s,gameBuildFingerprint:this.profile.gameBuildFingerprint}}
- async classifyScreen():Promise<ScreenClassification>{const s=await this.run(["-Capture","-OutputPath",this.capturePath]);if(!s.feature)return{status:"unknown"};return classifyFeature(s.feature,this.profile.templates)}
- async clickForeground(point:ScreenPoint){const b=this.expected.clientBounds;try{const s=await this.run(["-Click","-ExpectedWindowHandle",this.expected.windowHandle,"-ExpectedLeft",String(b.left),"-ExpectedTop",String(b.top),"-ExpectedWidth",String(b.width),"-ExpectedHeight",String(b.height),"-X",String(Math.round(point.x)),"-Y",String(Math.round(point.y))]);return s as unknown as {status:"clicked"}}catch{return{status:"rejected" as const,diagnosticCode:"send-input-rejected"}}}
- private async run(args:string[]):Promise<HelperState&Record<string,unknown>>{const r=await execFileAsync("powershell.exe",["-NoProfile","-ExecutionPolicy","Bypass","-File",this.helper,...args],{encoding:"utf8",windowsHide:true,maxBuffer:2*1024*1024});return JSON.parse(r.stdout)}
+  constructor(
+    private readonly helper: string,
+    private readonly profile: PrivateNavProfile,
+    private readonly expected: HelperState,
+    private readonly capturePath: string
+  ) {
+    validatePrivateNavProfile(profile);
+  }
+
+  async inspectWindow(): Promise<NavigationWindowState> {
+    const state = await this.run(["-Inspect"]);
+    return { ...state, gameBuildFingerprint: this.profile.gameBuildFingerprint };
+  }
+
+  async classifyScreen(): Promise<ScreenClassification> {
+    const state = await this.run(["-Capture", "-OutputPath", this.capturePath]);
+    if (state.featureVersion !== NAVIGATION_FEATURE_VERSION || !state.feature) {
+      return { status: "unknown" };
+    }
+    const result = classifyNavigationFeature(state.feature, this.profile.templates);
+    if (result.status !== "classified") return result;
+    return { status: "classified", observation: result.observation };
+  }
+
+  async clickForeground(point: ScreenPoint) {
+    const bounds = this.expected.clientBounds;
+    try {
+      const state = await this.run([
+        "-Click",
+        "-ExpectedWindowHandle", this.expected.windowHandle,
+        "-ExpectedLeft", String(bounds.left),
+        "-ExpectedTop", String(bounds.top),
+        "-ExpectedWidth", String(bounds.width),
+        "-ExpectedHeight", String(bounds.height),
+        "-X", String(Math.round(point.x)),
+        "-Y", String(Math.round(point.y))
+      ]);
+      return state as unknown as { status: "clicked" };
+    } catch {
+      return { status: "rejected" as const, diagnosticCode: "send-input-rejected" };
+    }
+  }
+
+  private async run(args: string[]): Promise<HelperState & Record<string, unknown>> {
+    const result = await execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", this.helper, ...args],
+      { encoding: "utf8", windowsHide: true, maxBuffer: 2 * 1024 * 1024 }
+    );
+    return JSON.parse(result.stdout) as HelperState & Record<string, unknown>;
+  }
 }
-export function classifyFeature(feature:number[],templates:PrivateScreenTemplate[]):ScreenClassification{
- if(feature.length===0||templates.length===0)return{status:"unknown"};const scored=templates.map(t=>({t,score:meanDifference(feature,t.feature)})).sort((a,b)=>a.score-b.score);const best=scored[0];if(!best||best.score>28)return{status:"unknown"};if(scored[1]&&scored[1].score-best.score<3)return{status:"ambiguous"};const observation:NavigationObservation={screen:best.t.screen,...(best.t.selectedCharacterSlotIndex===undefined?{}:{selectedCharacterSlotIndex:best.t.selectedCharacterSlotIndex}),...(best.t.selectedStashTabIndex===undefined?{}:{selectedStashTabIndex:best.t.selectedStashTabIndex})};return{status:"classified",observation};
+
+export function classifyFeature(
+  feature: number[],
+  templates: PrivateScreenTemplate[]
+): ScreenClassification {
+  const result = classifyNavigationFeature(feature, templates);
+  if (result.status !== "classified") return result;
+  return { status: "classified", observation: result.observation };
 }
-function meanDifference(a:number[],b:number[]){if(a.length!==b.length)return Infinity;return a.reduce((sum,v,i)=>sum+Math.abs(v-b[i]!),0)/a.length}
+
+export function validatePrivateNavProfile(
+  profile: PrivateNavProfile,
+  options: { requireRouteTemplates?: boolean } = {}
+): void {
+  if (profile.schemaVersion !== NAVIGATION_FEATURE_VERSION) {
+    throw new Error("Private navigation profile must be migrated to schema version 2.");
+  }
+  if (!Number.isInteger(profile.visibleStashTabs) ||
+      profile.visibleStashTabs < 2 || profile.visibleStashTabs > 10) {
+    throw new Error("Visible stash tabs must be 2 through 10.");
+  }
+  if (profile.selectedCharacterSlotIndex !== null &&
+      (!Number.isInteger(profile.selectedCharacterSlotIndex) ||
+        profile.selectedCharacterSlotIndex < 0 || profile.selectedCharacterSlotIndex >= 6)) {
+    throw new Error("Selected character slot must be null or 0 through 5.");
+  }
+  const requiredScreens: PrivateScreenTemplate["screen"][] = [
+    "character-selection", "lobby", "stash"
+  ];
+  if (options.requireRouteTemplates !== false &&
+      requiredScreens.some(screen => !profile.templates.some(template => template.screen === screen))) {
+    throw new Error("Character-selection, Lobby, and Stash templates are required.");
+  }
+  if (profile.templates.some(template => template.featureVersion !== NAVIGATION_FEATURE_VERSION)) {
+    throw new Error("Private navigation templates must use feature version 2.");
+  }
+  const featureLength = profile.templates[0]?.feature.length ?? 0;
+  if (featureLength === 0 || profile.templates.some(template =>
+    template.feature.length !== featureLength || template.feature.some(value => !Number.isFinite(value)))) {
+    throw new Error("Private navigation features must have one consistent, finite shape.");
+  }
+  for (const screen of ["character-selection", "lobby", "stash", "merchant"] as const) {
+    if (profile.templates.filter(template => template.screen === screen).length > 4) {
+      throw new Error("At most four private templates are allowed per screen.");
+    }
+  }
+}
