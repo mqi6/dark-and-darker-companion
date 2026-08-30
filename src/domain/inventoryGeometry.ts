@@ -6,12 +6,15 @@ import {
 } from "./gameplayCatalog";
 
 export const STORAGE_GRID = Object.freeze({ columns: 12, rows: 20 });
+export const CHARACTER_BAG_INVENTORY_ID = 2 as const;
+export const CHARACTER_BAG_GRID = Object.freeze({ columns: 10, rows: 5 });
 export const RECTANGULAR_STORAGE_INVENTORY_IDS = Object.freeze([
   4, 5, 6, 7, 8, 9, 20, 21, 30, 200
 ] as const);
 
 export type InventoryGeometry =
   | { kind: "rectangular"; columns: number; rows: number }
+  | { kind: "bag"; columns: number; rows: number }
   | { kind: "equipment" }
   | { kind: "unverified" };
 
@@ -58,6 +61,7 @@ export interface SpatialProjection {
 const rectangularInventoryIds = new Set<number>(RECTANGULAR_STORAGE_INVENTORY_IDS);
 
 export function geometryForInventoryId(inventoryId: number): InventoryGeometry {
+  if (inventoryId === CHARACTER_BAG_INVENTORY_ID) return { kind: "bag", ...CHARACTER_BAG_GRID };
   if (rectangularInventoryIds.has(inventoryId)) return { kind: "rectangular", ...STORAGE_GRID };
   if (inventoryId === 3) return { kind: "equipment" };
   return { kind: "unverified" };
@@ -74,7 +78,19 @@ export function projectSpatialState(
   catalog: GameplayCatalog
 ): SpatialProjection {
   const metadataById = indexGameplayCatalog(catalog);
-  const containers = state.protocol.containers.map((protocolContainer): SpatialContainer => {
+  const protocolContainers = [...state.protocol.containers];
+  if (!protocolContainers.some((container) =>
+    container.kind === "inventory" && container.inventoryId === CHARACTER_BAG_INVENTORY_ID
+  )) {
+    // A successful command-44 character baseline contains the complete
+    // characterItemList. No inventory-2 rows therefore means an empty bag.
+    protocolContainers.push({
+      inventoryId: CHARACTER_BAG_INVENTORY_ID,
+      kind: "inventory",
+      items: []
+    });
+  }
+  const containers = protocolContainers.map((protocolContainer): SpatialContainer => {
     const geometry = geometryForInventoryId(protocolContainer.inventoryId);
     if (geometry.kind === "equipment") {
       return {
