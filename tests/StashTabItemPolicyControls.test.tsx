@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StashSortEligibility } from "../src/domain/stashSortEligibility";
 import type { StashTabItemPolicy } from "../src/domain/stashRouting";
@@ -43,14 +43,15 @@ describe("stash tab item policy controls", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Gear" }));
+    const tab4 = screen.getAllByRole("group")[0]!;
+    fireEvent.click(within(tab4).getByRole("checkbox", { name: "Gear" }));
     expect(onChange).toHaveBeenCalledWith({
       inventoryId: 4,
       enabled: true,
       allowedCategories: []
     });
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Jewelry" }));
+    fireEvent.click(within(tab4).getByRole("checkbox", { name: "Jewelry" }));
     expect(onChange).toHaveBeenCalledWith({
       inventoryId: 4,
       enabled: true,
