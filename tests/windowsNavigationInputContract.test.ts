@@ -7,7 +7,7 @@ const helper = readFileSync(resolve(process.cwd(), "tools/windows-navigation.ps1
 describe("Windows navigation input contract", () => {
   it("matches the reviewed DnDTools click sequence", () => {
     expect(helper).toContain("Move-MouseLikeDnDTools $X $Y");
-    expect(helper).toContain("[NavNative]::MOVE-bor[NavNative]::ABSOLUTE");
+    expect(helper).toContain("[NavNative]::MOVE-bor[NavNative]::ABSOLUTE-bor[NavNative]::VIRTUALDESK");
     expect(helper).toContain("Start-Sleep -Milliseconds 50");
     expect(helper).toContain("Start-Sleep -Milliseconds 30");
     expect(helper).toContain("Start-Sleep -Milliseconds 150");
@@ -16,6 +16,15 @@ describe("Windows navigation input contract", () => {
 
   it("does not retain the ineffective SetCursorPos path", () => {
     expect(helper).not.toContain("SetCursorPos");
+  });
+
+  it("restores the game foreground and supports the complete virtual desktop", () => {
+    expect(helper).toContain("function Set-GameForeground");
+    expect(helper).toContain("SetForegroundWindow");
+    expect(helper).toContain("AttachThreadInput");
+    expect(helper).toContain("GetSystemMetrics(76)");
+    expect(helper).toContain("VIRTUALDESK=0x4000");
+    expect(helper).not.toContain("target inside the primary display");
   });
 
   it("verifies the foreground target and cursor before button down", () => {

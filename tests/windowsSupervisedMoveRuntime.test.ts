@@ -29,6 +29,7 @@ const plan = { planFingerprint: "fingerprint" } as PreparedSupervisedMove;
 function setup(overrides: Partial<WindowsUiBridge> = {}, dryRun = false) {
   const calls = { dispatch: 0, verify: 0 };
   const ui: WindowsUiBridge = {
+    async focusExpectedWindow() { return window; },
     async inspectForegroundWindow() { return window; },
     async inspectCursor() { return { ...window, cursor: { x: 100, y: 100 } }; },
     async dispatchLeftDrag() { calls.dispatch += 1; return { status: "dispatched" }; },
@@ -48,6 +49,14 @@ function setup(overrides: Partial<WindowsUiBridge> = {}, dryRun = false) {
 }
 
 describe("Windows supervised move runtime", () => {
+  it("restores the bound game foreground before inspecting the environment", async () => {
+    const focusExpectedWindow = vi.fn(async () => window);
+    const { runtime } = setup({ focusExpectedWindow });
+    await runtime.inspectEnvironment();
+    expect(focusExpectedWindow).toHaveBeenCalledOnce();
+    expect(focusExpectedWindow).toHaveBeenCalledWith(window.windowHandle);
+  });
+
   it("requires the exact foreground window identity and display geometry", async () => {
     const { runtime } = setup({
       async inspectForegroundWindow() { return { ...window, windowHandle: "0x9999" }; }

@@ -1,6 +1,6 @@
 # MOVE-003 local Windows runtime
 
-This runtime supports one supervised, human-approved, foreground-only stash drag. It does not focus, launch, or close the game; send background input; read process memory; inject packets; retry a drag; or treat dispatch as success.
+This runtime supports one supervised, human-approved stash drag. Immediately before inspection and ordinary `SendInput`, it restores and focuses the already-bound DungeonCrawler window and verifies that focus succeeded. It does not launch or close the game; send background input; read process memory; inject packets; retry a drag; or treat dispatch as success.
 
 ## Private calibration
 
@@ -34,7 +34,7 @@ Only after the private capture and action window are ready may the local operato
 npm run move003:run -- --private-directory "<private-runtime-directory>" --execute --confirmation "CONFIRM MOVE-003 <complete-planFingerprint>"
 ```
 
-The runner checks the foreground window, bounds, display, build, snapshot hash/version/age, calibration profile, visible tab, and inventory both before and after a cancellable countdown. The PowerShell helper then sends one left-button down/up drag through ordinary foreground `SendInput`. It never retries. Rejected input stops. Any failure after a possible button event is ambiguous.
+The runner restores the bound game window, then checks its identity, bounds, virtual desktop, build, snapshot hash/version/age, calibration profile, visible tab, and inventory both before and after a cancellable countdown. The PowerShell helper sends one left-button down/up drag through ordinary foreground `SendInput` using virtual-desktop coordinates. The operator UI may remain on another monitor, and the game may occupy any monitor fully contained in the same virtual desktop. It never retries. Rejected input stops. Any failure after a possible button event is ambiguous.
 
 The authoritative planning snapshot expires after five minutes. Expiry blocks before input and requires a newly prepared plan and fingerprint.
 

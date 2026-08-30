@@ -5,7 +5,9 @@ param(
   [Parameter(ParameterSetName='Capture',Mandatory=$true)][string]$OutputPath,
   [Parameter(ParameterSetName='Analyze',Mandatory=$true)][switch]$AnalyzeImage,
   [Parameter(ParameterSetName='Analyze',Mandatory=$true)][string]$InputPath,
+  [Parameter(ParameterSetName='FocusGame',Mandatory=$true)][switch]$FocusGame,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][switch]$Click,
+  [Parameter(ParameterSetName='FocusGame',Mandatory=$true)]
   [Parameter(ParameterSetName='Click',Mandatory=$true)][string]$ExpectedWindowHandle,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$ExpectedLeft,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$ExpectedTop,
@@ -32,16 +34,44 @@ public static class NavNative {
  [DllImport("user32.dll")] public static extern int GetSystemMetrics(int i);
  [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
  [DllImport("user32.dll", SetLastError=true)] public static extern uint SendInput(uint n, INPUT[] p, int size);
- public const uint MOVE=0x0001, DOWN=0x0002, UP=0x0004, ABSOLUTE=0x8000;
+ [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+ [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr h, int command);
+ [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+ [DllImport("user32.dll")] public static extern uint GetCurrentThreadId();
+ [DllImport("user32.dll", SetLastError=true)] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool value);
+ public const uint MOVE=0x0001, DOWN=0x0002, UP=0x0004, VIRTUALDESK=0x4000, ABSOLUTE=0x8000;
+ public const int SW_RESTORE=9;
 }
 '@
-function Get-State {
- $h=[NavNative]::GetForegroundWindow(); if($h-eq[IntPtr]::Zero){throw 'No foreground window.'}
+function Convert-WindowHandle([string]$value){
+ $text=$value.Trim();if($text.StartsWith('0x',[StringComparison]::OrdinalIgnoreCase)){return [IntPtr]([Convert]::ToInt64($text.Substring(2),16))};return [IntPtr]([Convert]::ToInt64($text,10))
+}
+function Get-State([IntPtr]$h=[IntPtr]::Zero) {
+ if($h-eq[IntPtr]::Zero){$h=[NavNative]::GetForegroundWindow()};if($h-eq[IntPtr]::Zero){throw 'No window.'}
  [uint32]$foregroundPid=0; [void][NavNative]::GetWindowThreadProcessId($h,[ref]$foregroundPid)
  $p=Get-Process -Id $foregroundPid -ErrorAction Stop
  $r=New-Object NavNative+RECT; if(-not[NavNative]::GetClientRect($h,[ref]$r)){throw 'GetClientRect failed.'}
  $origin=New-Object NavNative+POINT; $origin.X=0;$origin.Y=0;if(-not[NavNative]::ClientToScreen($h,[ref]$origin)){throw 'ClientToScreen failed.'}
  [ordered]@{windowHandle=('0x{0:X}'-f$h.ToInt64());processName=$p.ProcessName;clientBounds=[ordered]@{left=$origin.X;top=$origin.Y;width=$r.Right-$r.Left;height=$r.Bottom-$r.Top};display=[ordered]@{left=[NavNative]::GetSystemMetrics(76);top=[NavNative]::GetSystemMetrics(77);width=[NavNative]::GetSystemMetrics(78);height=[NavNative]::GetSystemMetrics(79)};primaryDisplay=[ordered]@{left=0;top=0;width=[NavNative]::GetSystemMetrics(0);height=[NavNative]::GetSystemMetrics(1)}}
+}
+function Set-GameForeground([IntPtr]$target){
+ if($target-eq[IntPtr]::Zero){throw 'Expected game window is unavailable.'}
+ if([NavNative]::IsIconic($target)){[void][NavNative]::ShowWindowAsync($target,[NavNative]::SW_RESTORE)}
+ $current=[NavNative]::GetForegroundWindow();[uint32]$unusedPid=0
+ $currentThread=if($current-eq[IntPtr]::Zero){0}else{[NavNative]::GetWindowThreadProcessId($current,[ref]$unusedPid)}
+ $targetThread=[NavNative]::GetWindowThreadProcessId($target,[ref]$unusedPid);$callerThread=[NavNative]::GetCurrentThreadId()
+ $attachedCurrent=$false;$attachedTarget=$false
+ try{
+  if($currentThread-ne 0-and$currentThread-ne$callerThread){$attachedCurrent=[NavNative]::AttachThreadInput($callerThread,$currentThread,$true)}
+  if($targetThread-ne 0-and$targetThread-ne$callerThread){$attachedTarget=[NavNative]::AttachThreadInput($callerThread,$targetThread,$true)}
+  [void][NavNative]::BringWindowToTop($target);[void][NavNative]::SetForegroundWindow($target)
+ }finally{
+  if($attachedTarget){[void][NavNative]::AttachThreadInput($callerThread,$targetThread,$false)}
+  if($attachedCurrent){[void][NavNative]::AttachThreadInput($callerThread,$currentThread,$false)}
+ }
+ $deadline=[DateTime]::UtcNow.AddSeconds(3);while([DateTime]::UtcNow-lt$deadline){if([NavNative]::GetForegroundWindow()-eq$target){return};Start-Sleep -Milliseconds 50}
+ throw 'Windows did not grant foreground activation to the game window.'
 }
 function Send-MouseInput([int]$dx,[int]$dy,[uint32]$flags){
  $mouse=New-Object NavNative+MOUSEINPUT;$mouse.dx=$dx;$mouse.dy=$dy;$mouse.dwFlags=$flags
@@ -51,11 +81,11 @@ function Send-MouseInput([int]$dx,[int]$dy,[uint32]$flags){
  if($sent-ne 1){$errorCode=[Runtime.InteropServices.Marshal]::GetLastWin32Error();throw "SendInput rejected mouse event (Win32 $errorCode)."}
 }
 function Move-MouseLikeDnDTools([int]$targetX,[int]$targetY){
- $screenWidth=[NavNative]::GetSystemMetrics(0);$screenHeight=[NavNative]::GetSystemMetrics(1)
- if($targetX-lt 0-or$targetY-lt 0-or$targetX-ge$screenWidth-or$targetY-ge$screenHeight){throw 'DnDTools-compatible input requires the target inside the primary display.'}
- $absoluteX=[int][Math]::Round($targetX*65535/[Math]::Max(1,$screenWidth-1))
- $absoluteY=[int][Math]::Round($targetY*65535/[Math]::Max(1,$screenHeight-1))
- Send-MouseInput $absoluteX $absoluteY ([NavNative]::MOVE-bor[NavNative]::ABSOLUTE)
+ $screenLeft=[NavNative]::GetSystemMetrics(76);$screenTop=[NavNative]::GetSystemMetrics(77);$screenWidth=[NavNative]::GetSystemMetrics(78);$screenHeight=[NavNative]::GetSystemMetrics(79)
+ if($targetX-lt$screenLeft-or$targetY-lt$screenTop-or$targetX-ge($screenLeft+$screenWidth)-or$targetY-ge($screenTop+$screenHeight)){throw 'DnDTools-compatible input requires the target inside the virtual desktop.'}
+ $absoluteX=[int][Math]::Round(($targetX-$screenLeft)*65535/[Math]::Max(1,$screenWidth-1))
+ $absoluteY=[int][Math]::Round(($targetY-$screenTop)*65535/[Math]::Max(1,$screenHeight-1))
+ Send-MouseInput $absoluteX $absoluteY ([NavNative]::MOVE-bor[NavNative]::ABSOLUTE-bor[NavNative]::VIRTUALDESK)
  Start-Sleep -Milliseconds 50
  $cursor=New-Object NavNative+POINT;if(-not[NavNative]::GetCursorPos([ref]$cursor)){throw 'GetCursorPos failed after SendInput movement.'}
  if([Math]::Abs($cursor.X-$targetX)-gt 2-or[Math]::Abs($cursor.Y-$targetY)-gt 2){throw 'SendInput cursor verification failed.'}
@@ -99,6 +129,11 @@ if($AnalyzeImage){
  try{[ordered]@{featureVersion=2;feature=(Get-StableUiFeature $bitmap)}|ConvertTo-Json -Depth 5 -Compress}finally{$bitmap.Dispose()}
  return
 }
+if($FocusGame){
+ $target=Convert-WindowHandle $ExpectedWindowHandle;Set-GameForeground $target;$focused=Get-State $target
+ if($focused.processName-ne'DungeonCrawler'){throw 'Expected window is not DungeonCrawler.'};$focused|ConvertTo-Json -Depth 5 -Compress;return
+}
+if($Click){Set-GameForeground (Convert-WindowHandle $ExpectedWindowHandle)}
 $state=Get-State
 if($state.processName-ne'DungeonCrawler'){throw 'DungeonCrawler is not the foreground process.'}
 if($Inspect){$state|ConvertTo-Json -Depth 5 -Compress;return}

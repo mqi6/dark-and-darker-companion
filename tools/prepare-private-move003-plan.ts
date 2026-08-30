@@ -11,6 +11,7 @@ import { stashTabMappingSchema } from "../src/domain/stashTabMapping";
 import { prepareSupervisedMove, type PreparedSupervisedMove } from "../src/domain/supervisedMove";
 import type { StashGridCalibration } from "../src/domain/stashScreenCalibration";
 import type { SanitizedSemanticSnapshotV1 } from "../src/protocol/semanticSnapshot";
+import { WINDOWS_SUPERVISED_INPUT_METHOD } from "./windowsSupervisedMoveRuntime";
 
 const args = Object.fromEntries(process.argv.slice(2).reduce<string[][]>((all, value, index, values) => index % 2 === 0 ? [...all, [value.replace(/^--/, ""), values[index + 1] ?? ""]] : all, []));
 const session = resolve(required("session")), runtimeDirectory = resolve(required("runtime-directory"));
@@ -25,7 +26,7 @@ const projection = projectSpatialState(state, gameplayCatalogSchema.parse(gamepl
 const eligibility = evaluateStashSortEligibility(projection);
 const candidate = selectMove003Candidate({ projection, eligibility, mapping });
 if (!candidate) throw new Error("No safe mapped enabled quantity-one 1x1 same-tab candidate is available.");
-const plan = prepareSupervisedMove({ request: { taskId: "MOVE-003", planId: `MOVE-003-plan-${Math.round(snapshot.relativeTimestampMs)}`, actionId: "MOVE-003-action-001", itemAlias: candidate.itemAlias, inventoryId: candidate.inventoryId, tabIndex: candidate.tabIndex, destination: candidate.destination, expectedSnapshotHash: snapshot.snapshotHash, expectedSnapshotVersion: snapshot.snapshotVersion, expectedSnapshotTimestampMilliseconds: snapshot.relativeTimestampMs, expectedWindowIdentity: refreshPlan.window.windowHandle, expectedInputMethod: "dndtools-absolute-drag-v1" }, projection, mapping, calibration: calibrationProfile.calibration, runtime: { runtimeProfileKey: mapping.runtimeProfileKey, availableInventoryIds: mapping.availableInventoryIds, selectedTabIndex: candidate.tabIndex, gameBuildFingerprint: refreshPlan.gameBuildFingerprint, windowBounds: refreshPlan.window.clientBounds, isForeground: true }, pageEnabled: true, reservedRegions: [] });
+const plan = prepareSupervisedMove({ request: { taskId: "MOVE-003", planId: `MOVE-003-plan-${Math.round(snapshot.relativeTimestampMs)}`, actionId: "MOVE-003-action-001", itemAlias: candidate.itemAlias, inventoryId: candidate.inventoryId, tabIndex: candidate.tabIndex, destination: candidate.destination, expectedSnapshotHash: snapshot.snapshotHash, expectedSnapshotVersion: snapshot.snapshotVersion, expectedSnapshotTimestampMilliseconds: snapshot.relativeTimestampMs, expectedWindowIdentity: refreshPlan.window.windowHandle, expectedInputMethod: WINDOWS_SUPERVISED_INPUT_METHOD }, projection, mapping, calibration: calibrationProfile.calibration, runtime: { runtimeProfileKey: mapping.runtimeProfileKey, availableInventoryIds: mapping.availableInventoryIds, selectedTabIndex: candidate.tabIndex, gameBuildFingerprint: refreshPlan.gameBuildFingerprint, windowBounds: refreshPlan.window.clientBounds, isForeground: true }, pageEnabled: true, reservedRegions: [] });
 if (plan.status !== "ready") throw new Error(`MOVE-003 plan blocked: ${plan.reason}`);
 await mkdir(runtimeDirectory, { recursive: true });
 await writeFile(resolve(runtimeDirectory, "plan.private.json"), `${JSON.stringify(plan, null, 2)}\n`);

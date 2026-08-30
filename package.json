@@ -21,6 +21,7 @@
     "move003:prepare-plan": "node --import tsx tools/prepare-private-move003-plan.ts",
     "move003:calibrate": "node --import tsx tools/calibrate-private-stash-grid.ts",
     "move003:run": "node --import tsx tools/run-private-supervised-move.ts",
+    "operator": "node --import tsx tools/local-operator-server.ts",
     "protocol:audit-cross-capture": "node --import tsx tools/audit-private-cross-capture.ts",
     "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
     "protocol:replay-net000": "node --import tsx tools/replay-private-net000.ts",
