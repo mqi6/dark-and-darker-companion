@@ -38,7 +38,8 @@ public static class NavNative {
  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr h, int command);
  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
- [DllImport("user32.dll")] public static extern uint GetCurrentThreadId();
+ [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr h, bool altTab);
+ [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
  [DllImport("user32.dll", SetLastError=true)] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool value);
  public const uint MOVE=0x0001, DOWN=0x0002, UP=0x0004, VIRTUALDESK=0x4000, ABSOLUTE=0x8000;
  public const int SW_RESTORE=9;
@@ -46,6 +47,12 @@ public static class NavNative {
 '@
 function Convert-WindowHandle([string]$value){
  $text=$value.Trim();if($text.StartsWith('0x',[StringComparison]::OrdinalIgnoreCase)){return [IntPtr]([Convert]::ToInt64($text.Substring(2),16))};return [IntPtr]([Convert]::ToInt64($text,10))
+}
+function Resolve-GameWindowHandle([string]$value){
+ $expected=Convert-WindowHandle $value
+ if($expected-ne[IntPtr]::Zero){[uint32]$expectedPid=0;[void][NavNative]::GetWindowThreadProcessId($expected,[ref]$expectedPid);if($expectedPid-ne 0){$expectedProcess=Get-Process -Id $expectedPid -ErrorAction SilentlyContinue;if($expectedProcess-and$expectedProcess.ProcessName-ieq'DungeonCrawler'-and$expectedProcess.MainWindowHandle-eq$expected){return $expected}}}
+ $candidates=@(Get-Process -Name DungeonCrawler -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle-ne[IntPtr]::Zero})
+ if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return[IntPtr]$candidates[0].MainWindowHandle
 }
 function Get-State([IntPtr]$h=[IntPtr]::Zero) {
  if($h-eq[IntPtr]::Zero){$h=[NavNative]::GetForegroundWindow()};if($h-eq[IntPtr]::Zero){throw 'No window.'}
@@ -60,16 +67,18 @@ function Set-GameForeground([IntPtr]$target){
  if([NavNative]::IsIconic($target)){[void][NavNative]::ShowWindowAsync($target,[NavNative]::SW_RESTORE)}
  $current=[NavNative]::GetForegroundWindow();[uint32]$unusedPid=0
  $currentThread=if($current-eq[IntPtr]::Zero){0}else{[NavNative]::GetWindowThreadProcessId($current,[ref]$unusedPid)}
- $targetThread=[NavNative]::GetWindowThreadProcessId($target,[ref]$unusedPid);$callerThread=[NavNative]::GetCurrentThreadId()
+ [uint32]$targetPid=0;$targetThread=[NavNative]::GetWindowThreadProcessId($target,[ref]$targetPid);$callerThread=[NavNative]::GetCurrentThreadId()
  $attachedCurrent=$false;$attachedTarget=$false
  try{
   if($currentThread-ne 0-and$currentThread-ne$callerThread){$attachedCurrent=[NavNative]::AttachThreadInput($callerThread,$currentThread,$true)}
   if($targetThread-ne 0-and$targetThread-ne$callerThread){$attachedTarget=[NavNative]::AttachThreadInput($callerThread,$targetThread,$true)}
   [void][NavNative]::BringWindowToTop($target);[void][NavNative]::SetForegroundWindow($target)
+  if([NavNative]::GetForegroundWindow()-ne$target){[NavNative]::SwitchToThisWindow($target,$true)}
  }finally{
-  if($attachedTarget){[void][NavNative]::AttachThreadInput($callerThread,$targetThread,$false)}
-  if($attachedCurrent){[void][NavNative]::AttachThreadInput($callerThread,$currentThread,$false)}
+ if($attachedTarget){[void][NavNative]::AttachThreadInput($callerThread,$targetThread,$false)}
+ if($attachedCurrent){[void][NavNative]::AttachThreadInput($callerThread,$currentThread,$false)}
  }
+ if([NavNative]::GetForegroundWindow()-ne$target){$shell=New-Object -ComObject WScript.Shell;try{[void]$shell.AppActivate([int]$targetPid)}finally{[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)}}
  $deadline=[DateTime]::UtcNow.AddSeconds(3);while([DateTime]::UtcNow-lt$deadline){if([NavNative]::GetForegroundWindow()-eq$target){return};Start-Sleep -Milliseconds 50}
  throw 'Windows did not grant foreground activation to the game window.'
 }
@@ -130,10 +139,11 @@ if($AnalyzeImage){
  return
 }
 if($FocusGame){
- $target=Convert-WindowHandle $ExpectedWindowHandle;Set-GameForeground $target;$focused=Get-State $target
+ $target=Resolve-GameWindowHandle $ExpectedWindowHandle;Set-GameForeground $target;$focused=Get-State $target
  if($focused.processName-ne'DungeonCrawler'){throw 'Expected window is not DungeonCrawler.'};$focused|ConvertTo-Json -Depth 5 -Compress;return
 }
-if($Click){Set-GameForeground (Convert-WindowHandle $ExpectedWindowHandle)}
+$boundTarget=[IntPtr]::Zero
+if($Click){$boundTarget=Resolve-GameWindowHandle $ExpectedWindowHandle;Set-GameForeground $boundTarget}
 $state=Get-State
 if($state.processName-ne'DungeonCrawler'){throw 'DungeonCrawler is not the foreground process.'}
 if($Inspect){$state|ConvertTo-Json -Depth 5 -Compress;return}
@@ -143,7 +153,8 @@ if($Capture){
   $state.featureVersion=2;$state.feature=(Get-StableUiFeature $bitmap);$state|ConvertTo-Json -Depth 6 -Compress
  }finally{$graphics.Dispose();$bitmap.Dispose()};return
 }
-if($state.windowHandle-ne$ExpectedWindowHandle-or$state.clientBounds.left-ne$ExpectedLeft-or$state.clientBounds.top-ne$ExpectedTop-or$state.clientBounds.width-ne$ExpectedWidth-or$state.clientBounds.height-ne$ExpectedHeight){throw 'Foreground window identity or client bounds changed.'}
+$resolvedExpectedWindowHandle='0x{0:X}'-f$boundTarget.ToInt64()
+if($state.windowHandle-ne$resolvedExpectedWindowHandle-or$state.clientBounds.left-ne$ExpectedLeft-or$state.clientBounds.top-ne$ExpectedTop-or$state.clientBounds.width-ne$ExpectedWidth-or$state.clientBounds.height-ne$ExpectedHeight){throw 'Foreground window identity or client bounds changed.'}
 $buttonHeld=$false
 try{
  Move-MouseLikeDnDTools $X $Y

@@ -21,7 +21,16 @@ describe("Windows navigation input contract", () => {
   it("restores the game foreground and supports the complete virtual desktop", () => {
     expect(helper).toContain("function Set-GameForeground");
     expect(helper).toContain("SetForegroundWindow");
+    expect(helper).toContain("SwitchToThisWindow($target,$true)");
+    expect(helper).toContain("$shell.AppActivate([int]$targetPid)");
+    expect(helper).toContain("function Resolve-GameWindowHandle");
+    expect(helper).toContain("Multiple DungeonCrawler main windows are available; refusing ambiguous binding.");
+    expect(helper).toContain("$state.windowHandle-ne$resolvedExpectedWindowHandle");
+    expect(helper).not.toContain("SW_MINIMIZE");
+    expect(helper).not.toContain("Send-AltActivationPulse");
     expect(helper).toContain("AttachThreadInput");
+    expect(helper).toMatch(/DllImport\("kernel32\.dll"\).*GetCurrentThreadId/);
+    expect(helper).not.toMatch(/DllImport\("user32\.dll"\).*GetCurrentThreadId/);
     expect(helper).toContain("GetSystemMetrics(76)");
     expect(helper).toContain("VIRTUALDESK=0x4000");
     expect(helper).not.toContain("target inside the primary display");

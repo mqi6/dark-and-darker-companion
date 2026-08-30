@@ -2,11 +2,14 @@ import { mkdtemp, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { once } from "node:events";
+import { Script } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
+import type { PreparedSupervisedMove } from "../src/domain/supervisedMove";
 import {
   createLocalOperatorServer,
   findOperatorPrivateDirectory,
   LocalOperatorController,
+  preparedMovePowerShellArgs,
   type LocalOperatorDependencies,
   type OperatorPlanSummary
 } from "../tools/local-operator-server";
@@ -17,7 +20,9 @@ const plan: OperatorPlanSummary = {
   sourceCell: { x: 1, y: 2 },
   destinationCell: { x: 3, y: 4 },
   dragCount: 1,
-  retry: false
+  retry: false,
+  inputMethod: "dndtools-virtual-desktop-drag-v2",
+  canRun: true
 };
 
 function setup(overrides: Partial<LocalOperatorDependencies> = {}) {
@@ -88,7 +93,68 @@ describe("local operator controller", () => {
   });
 });
 
+describe("prepared operator drag", () => {
+  it("builds exactly one bounds-bound drag from cell 0,0 to cell 7,0", () => {
+    const prepared = {
+      windowBounds: { left: 0, top: 0, width: 1920, height: 1080 },
+      source: { grid: { x: 0, y: 0 }, screen: { x: 1400.125, y: 220.175 } },
+      destination: { grid: { x: 7, y: 0 }, screen: { x: 1681.875, y: 220.175 } }
+    } as PreparedSupervisedMove;
+    expect(preparedMovePowerShellArgs(prepared, "0x1234")).toEqual([
+      "-Drag", "-ExpectedWindowHandle", "0x1234",
+      "-ExpectedLeft", "0", "-ExpectedTop", "0", "-ExpectedWidth", "1920", "-ExpectedHeight", "1080",
+      "-SourceX", "1400", "-SourceY", "220", "-DestinationX", "1682", "-DestinationY", "220",
+      "-DurationMilliseconds", "350"
+    ]);
+  });
+});
+
 describe("local operator HTTP boundary", () => {
+  it("serves browser JavaScript that parses so initial status polling can run", async () => {
+    const { controller } = setup();
+    const server = createLocalOperatorServer({ controller, token: "test-token" });
+    server.listen(0, "127.0.0.1");
+    await once(server, "listening");
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Expected TCP address.");
+    try {
+      const html = await (await fetch(`http://127.0.0.1:${address.port}/`)).text();
+      const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+      if (!script) throw new Error("Expected inline operator script.");
+      expect(() => new Script(script)).not.toThrow();
+      expect(script).toContain("join('\\n')");
+    } finally {
+      server.close();
+      await once(server, "close");
+    }
+  });
+
+  it("blocks an old input-method plan before focus or move execution", async () => {
+    const { controller, events } = setup();
+    const oldPlan = { ...plan, inputMethod: "dndtools-absolute-drag-v1", canRun: false };
+    const blocked = new LocalOperatorController(oldPlan, {
+      async focusGame() { events.push("focus"); return { processName: "DungeonCrawler", isForeground: true }; },
+      async runPreparedMove() { events.push("run"); return { exitCode: 0, stdout: "", stderr: "" }; },
+      async persist(event) { events.push(`persist:${event.event}`); }
+    });
+    await expect(blocked.run()).rejects.toThrow("prepared-plan-input-method-unsupported");
+    expect(events).toEqual(["persist:run-blocked"]);
+    expect(blocked.snapshot().phase).toBe("failed");
+  });
+
+  it("records the helper failure detail when a drag stops before dispatch", async () => {
+    const { controller } = setup({
+      async runPreparedMove() { return { exitCode: 1, stdout: "", stderr: "Source cursor verification failed." }; }
+    });
+    const state = await controller.run();
+    expect(state.phase).toBe("failed");
+    expect(state.lastResult?.summary).toBe("Source cursor verification failed.");
+    expect(state.events.at(-1)).toMatchObject({
+      event: "run-failed",
+      detail: "exit=1: Source cursor verification failed."
+    });
+  });
+
   it("serves status but requires the page token for actions", async () => {
     const { controller } = setup();
     const server = createLocalOperatorServer({ controller, token: "test-token" });

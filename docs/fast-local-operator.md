@@ -15,6 +15,7 @@ The server binds only to `127.0.0.1`, opens `http://127.0.0.1:4317`, finds the n
 ## Test loop
 
 1. Review the prepared item, source cell, destination cell, one-drag count, and no-retry statement.
+   Plans not bound to `dndtools-virtual-desktop-drag-v2` are displayed as **RUN BLOCKED** and cannot execute.
 2. Select **Bring game to front** to test foreground restoration without mouse-button input.
 3. Select **Run one prepared move** only when one live run is intended.
 4. The operator restores and verifies DungeonCrawler as foreground, then runs the existing supervised countdown, dispatch, and verification path.

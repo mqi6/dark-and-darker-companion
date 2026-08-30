@@ -38,7 +38,8 @@ public static class ForegroundMoveNative {
   [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int command);
   [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
-  [DllImport("user32.dll")] public static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool altTab);
+  [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
   [DllImport("user32.dll", SetLastError=true)] public static extern bool AttachThreadInput(uint attach, uint attachTo, bool value);
   public const uint INPUT_MOUSE = 0;
   public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
@@ -56,6 +57,27 @@ function Convert-WindowHandle([string]$Value) {
         return [IntPtr]([Convert]::ToInt64($text.Substring(2), 16))
     }
     return [IntPtr]([Convert]::ToInt64($text, 10))
+}
+
+function Resolve-GameWindowHandle([string]$ExpectedValue) {
+    $expected = Convert-WindowHandle $ExpectedValue
+    if ($expected -ne [IntPtr]::Zero) {
+        [uint32]$expectedProcessId = 0
+        [void][ForegroundMoveNative]::GetWindowThreadProcessId($expected, [ref]$expectedProcessId)
+        if ($expectedProcessId -ne 0) {
+            $expectedProcess = Get-Process -Id $expectedProcessId -ErrorAction SilentlyContinue
+            if ($expectedProcess -and
+                $expectedProcess.ProcessName -ieq 'DungeonCrawler' -and
+                $expectedProcess.MainWindowHandle -eq $expected) {
+                return $expected
+            }
+        }
+    }
+    $candidates = @(Get-Process -Name DungeonCrawler -ErrorAction SilentlyContinue |
+        Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero })
+    if ($candidates.Count -eq 0) { throw 'No visible DungeonCrawler main window is available.' }
+    if ($candidates.Count -ne 1) { throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.' }
+    return [IntPtr]$candidates[0].MainWindowHandle
 }
 
 function Get-WindowInfo([IntPtr]$Handle) {
@@ -100,7 +122,8 @@ function Set-GameForeground([IntPtr]$TargetHandle) {
     $currentThread = if ($currentHandle -eq [IntPtr]::Zero) { 0 } else {
         [ForegroundMoveNative]::GetWindowThreadProcessId($currentHandle, [ref]$unusedProcessId)
     }
-    $targetThread = [ForegroundMoveNative]::GetWindowThreadProcessId($TargetHandle, [ref]$unusedProcessId)
+    [uint32]$targetProcessId = 0
+    $targetThread = [ForegroundMoveNative]::GetWindowThreadProcessId($TargetHandle, [ref]$targetProcessId)
     $callerThread = [ForegroundMoveNative]::GetCurrentThreadId()
     $attachedCurrent = $false
     $attachedTarget = $false
@@ -113,9 +136,20 @@ function Set-GameForeground([IntPtr]$TargetHandle) {
         }
         [void][ForegroundMoveNative]::BringWindowToTop($TargetHandle)
         [void][ForegroundMoveNative]::SetForegroundWindow($TargetHandle)
+        if ([ForegroundMoveNative]::GetForegroundWindow() -ne $TargetHandle) {
+            [ForegroundMoveNative]::SwitchToThisWindow($TargetHandle, $true)
+        }
     } finally {
         if ($attachedTarget) { [void][ForegroundMoveNative]::AttachThreadInput($callerThread, $targetThread, $false) }
         if ($attachedCurrent) { [void][ForegroundMoveNative]::AttachThreadInput($callerThread, $currentThread, $false) }
+    }
+    if ([ForegroundMoveNative]::GetForegroundWindow() -ne $TargetHandle) {
+        $shell = New-Object -ComObject WScript.Shell
+        try {
+            [void]$shell.AppActivate([int]$targetProcessId)
+        } finally {
+            [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
+        }
     }
     $deadline = [DateTime]::UtcNow.AddSeconds(3)
     while ([DateTime]::UtcNow -lt $deadline) {
@@ -175,7 +209,8 @@ if ($Cursor) {
     return
 }
 
-$targetHandle = Convert-WindowHandle $ExpectedWindowHandle
+$targetHandle = Resolve-GameWindowHandle $ExpectedWindowHandle
+$resolvedExpectedWindowHandle = '0x{0:X}' -f $targetHandle.ToInt64()
 if ($FocusGame) {
     Set-GameForeground $targetHandle
     Get-WindowInfo $targetHandle | ConvertTo-Json -Depth 5 -Compress
@@ -190,16 +225,16 @@ try {
         left = $ExpectedLeft; top = $ExpectedTop
         width = $ExpectedWidth; height = $ExpectedHeight
     }
-    if ($foreground.windowHandle -ne $ExpectedWindowHandle) { throw 'Foreground window identity changed.' }
+    if ($foreground.windowHandle -ne $resolvedExpectedWindowHandle) { throw 'Foreground window identity changed.' }
     if ($foreground.bounds.left -ne $expected.left -or $foreground.bounds.top -ne $expected.top -or
         $foreground.bounds.width -ne $expected.width -or $foreground.bounds.height -ne $expected.height) {
         throw 'Foreground window bounds changed.'
     }
     Move-Absolute $SourceX $SourceY
     Start-Sleep -Milliseconds 50
-    $cursor = New-Object ForegroundMoveNative+POINT
-    if (-not [ForegroundMoveNative]::GetCursorPos([ref]$cursor) -or
-        [Math]::Abs($cursor.X - $SourceX) -gt 2 -or [Math]::Abs($cursor.Y - $SourceY) -gt 2) {
+    $sourceCursorPoint = New-Object ForegroundMoveNative+POINT
+    if (-not [ForegroundMoveNative]::GetCursorPos([ref]$sourceCursorPoint) -or
+        [Math]::Abs($sourceCursorPoint.X - $SourceX) -gt 2 -or [Math]::Abs($sourceCursorPoint.Y - $SourceY) -gt 2) {
         throw 'Source cursor verification failed.'
     }
     Send-LeftButton ([ForegroundMoveNative]::MOUSEEVENTF_LEFTDOWN)

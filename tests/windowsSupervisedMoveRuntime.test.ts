@@ -26,7 +26,7 @@ const stateValue = {
 };
 const plan = { planFingerprint: "fingerprint" } as PreparedSupervisedMove;
 
-function setup(overrides: Partial<WindowsUiBridge> = {}, dryRun = false) {
+function setup(overrides: Partial<WindowsUiBridge> = {}, dryRun = false, expectedWindowHandle = window.windowHandle) {
   const calls = { dispatch: 0, verify: 0 };
   const ui: WindowsUiBridge = {
     async focusExpectedWindow() { return window; },
@@ -40,7 +40,7 @@ function setup(overrides: Partial<WindowsUiBridge> = {}, dryRun = false) {
     async verifyMove() { calls.verify += 1; return { status: "ambiguous", diagnosticCode: "fixture" }; }
   };
   const runtime = new WindowsSupervisedMoveRuntime(ui, state, {
-    windowHandle: window.windowHandle,
+    windowHandle: expectedWindowHandle,
     processName: window.processName,
     display: window.display,
     windowBounds: window.bounds
@@ -69,6 +69,23 @@ describe("Windows supervised move runtime", () => {
       }
     });
     expect((await changedDisplay.runtime.inspectEnvironment()).isForeground).toBe(false);
+  });
+
+  it("rebinds a stale saved handle to the focused current game window for this runtime session", async () => {
+    const dispatch = vi.fn(async () => ({ status: "dispatched" as const }));
+    const { runtime } = setup({ dispatchLeftDrag: dispatch }, false, "0xSTALE");
+    expect((await runtime.inspectEnvironment()).isForeground).toBe(true);
+    await runtime.dispatchLeftDrag({
+      source: { x: 10, y: 10 }, destination: { x: 20, y: 20 }, durationMilliseconds: 350
+    });
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ expectedWindowHandle: window.windowHandle }));
+  });
+
+  it("does not rebind when the focused process, display, or bounds differ", async () => {
+    const { runtime } = setup({
+      async focusExpectedWindow() { return { ...window, processName: "OtherProcess" }; }
+    }, false, "0xSTALE");
+    expect((await runtime.inspectEnvironment()).isForeground).toBe(false);
   });
 
   it("dry-run mode produces no mouse-button dispatch", async () => {

@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import type { PreparedSupervisedMove } from "../src/domain/supervisedMove";
+import { WINDOWS_SUPERVISED_INPUT_METHOD } from "./windowsSupervisedMoveRuntime";
 
 const execFileAsync = promisify(execFile);
 
@@ -19,6 +20,8 @@ export interface OperatorPlanSummary {
   destinationCell: { x: number; y: number };
   dragCount: 1;
   retry: false;
+  inputMethod: string;
+  canRun: boolean;
 }
 
 export interface OperatorState {
@@ -69,6 +72,11 @@ export class LocalOperatorController {
 
   async run(): Promise<OperatorState> {
     if (this.busy) throw new Error("operator-busy");
+    if (!this.state.plan?.canRun) {
+      this.state.phase = "failed";
+      await this.record("run-blocked", `Prepared plan requires ${WINDOWS_SUPERVISED_INPUT_METHOD}.`);
+      throw new Error("prepared-plan-input-method-unsupported");
+    }
     this.busy = true;
     this.state.phase = "focusing";
     await this.record("run-start", "One human-requested prepared run; automatic retry disabled.");
@@ -81,7 +89,10 @@ export class LocalOperatorController {
       const summary = lastNonEmptyLine(result.stdout) || lastNonEmptyLine(result.stderr) || "no-output";
       this.state.lastResult = { exitCode: result.exitCode, summary: summary.slice(0, 1000) };
       this.state.phase = result.exitCode === 0 ? "completed" : "failed";
-      await this.record("run-complete", `exit=${result.exitCode}`);
+      await this.record(
+        result.exitCode === 0 ? "run-complete" : "run-failed",
+        result.exitCode === 0 ? "dispatched-awaiting-human-observation" : `exit=${result.exitCode}: ${summary.slice(0, 1000)}`
+      );
       return this.snapshot();
     } catch (error) {
       this.state.phase = "failed";
@@ -203,7 +214,29 @@ async function main() {
       }
       return value;
     },
-    runPreparedMove: () => spawnPreparedMove(privateDirectory),
+    async runPreparedMove() {
+      try {
+        const result = await execFileAsync("powershell.exe", [
+          "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helper,
+          ...preparedMovePowerShellArgs(plan, calibration.windowIdentity.windowHandle)
+        ], { encoding: "utf8", windowsHide: true, maxBuffer: 1024 * 1024 });
+        const dispatched = JSON.parse(result.stdout) as { status?: string };
+        if (dispatched.status !== "dispatched") {
+          return { exitCode: 1, stdout: result.stdout, stderr: "move-dispatch-not-confirmed" };
+        }
+        return {
+          exitCode: 0,
+          stdout: `${JSON.stringify({ status: "dispatched-awaiting-human-observation" })}\n`,
+          stderr: ""
+        };
+      } catch (error) {
+        return {
+          exitCode: 1,
+          stdout: typeof error === "object" && error && "stdout" in error ? String(error.stdout) : "",
+          stderr: error instanceof Error ? error.message : "ordinary-foreground-input-failed"
+        };
+      }
+    },
     persist: entry => appendFile(logPath, `${JSON.stringify(entry)}\n`, "utf8")
   });
   const token = randomUUID();
@@ -228,28 +261,26 @@ function summarizePlan(plan: PreparedSupervisedMove): OperatorPlanSummary {
     sourceCell: plan.source.grid,
     destinationCell: plan.destination.grid,
     dragCount: 1,
-    retry: false
+    retry: false,
+    inputMethod: plan.inputMethod ?? "missing",
+    canRun: plan.inputMethod === WINDOWS_SUPERVISED_INPUT_METHOD
   };
 }
 
-function spawnPreparedMove(privateDirectory: string) {
-  return new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolveRun, reject) => {
-    const child = spawn(process.execPath, [
-      "--import", "tsx", resolve("tools/run-private-supervised-move.ts"),
-      "--private-directory", privateDirectory, "--execute"
-    ], { cwd: process.cwd(), windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
-    let stdoutText = "";
-    let stderrText = "";
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", chunk => {
-      stdoutText = boundedAppend(stdoutText, String(chunk));
-      if (stdoutText.includes("Confirm Move / Cancel")) child.stdin.write("c\n");
-    });
-    child.stderr.on("data", chunk => { stderrText = boundedAppend(stderrText, String(chunk)); });
-    child.once("error", reject);
-    child.once("exit", code => resolveRun({ exitCode: code ?? 1, stdout: stdoutText, stderr: stderrText }));
-  });
+export function preparedMovePowerShellArgs(plan: PreparedSupervisedMove, expectedWindowHandle: string): string[] {
+  const bounds = plan.windowBounds;
+  return [
+    "-Drag", "-ExpectedWindowHandle", expectedWindowHandle,
+    "-ExpectedLeft", String(Math.round(bounds.left)),
+    "-ExpectedTop", String(Math.round(bounds.top)),
+    "-ExpectedWidth", String(Math.round(bounds.width)),
+    "-ExpectedHeight", String(Math.round(bounds.height)),
+    "-SourceX", String(Math.round(plan.source.screen.x)),
+    "-SourceY", String(Math.round(plan.source.screen.y)),
+    "-DestinationX", String(Math.round(plan.destination.screen.x)),
+    "-DestinationY", String(Math.round(plan.destination.screen.y)),
+    "-DurationMilliseconds", "350"
+  ];
 }
 
 function requireToken(request: IncomingMessage, expected: string) {
@@ -268,10 +299,6 @@ function send(response: ServerResponse, status: number, contentType: string, bod
     "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'"
   });
   response.end(body);
-}
-
-function boundedAppend(current: string, next: string) {
-  return `${current}${next}`.slice(-256 * 1024);
 }
 
 function lastNonEmptyLine(value: string) {
@@ -300,7 +327,7 @@ function operatorHtml(token: string) {
   <script>
   const token=${JSON.stringify(token)};const q=id=>document.getElementById(id);
   async function api(path,method='GET'){const r=await fetch(path,{method,headers:method==='POST'?{'x-operator-token':token}:{}});const v=await r.json();if(!r.ok)throw new Error(v.error||r.statusText);return v}
-  function draw(s){q('phase').textContent=s.phase;q('game').textContent=s.game?(s.game.processName+' · '+(s.game.isForeground?'foreground':'background')+' · '+s.game.coordinateSpace):'not checked';q('plan').textContent=s.plan?(s.plan.itemAlias+': tab '+s.plan.tabIndex+', ('+s.plan.sourceCell.x+','+s.plan.sourceCell.y+') → ('+s.plan.destinationCell.x+','+s.plan.destinationCell.y+'), one drag, no retry'):'not loaded';q('result').textContent=s.lastResult?('exit '+s.lastResult.exitCode+': '+s.lastResult.summary):'none';q('events').textContent=(s.events||[]).map(e=>e.at+'  '+e.event+'  '+e.detail).join('\n')||'No events yet.';const busy=['focusing','running'].includes(s.phase);q('focus').disabled=busy;q('run').disabled=busy}
+  function draw(s){q('phase').textContent=s.phase;q('game').textContent=s.game?(s.game.processName+' · '+(s.game.isForeground?'foreground':'background')+' · '+s.game.coordinateSpace):'not checked';q('plan').textContent=s.plan?(s.plan.itemAlias+': tab '+s.plan.tabIndex+', ('+s.plan.sourceCell.x+','+s.plan.sourceCell.y+') → ('+s.plan.destinationCell.x+','+s.plan.destinationCell.y+'), one drag, no retry · '+s.plan.inputMethod+(s.plan.canRun?'':' · RUN BLOCKED')):'not loaded';q('result').textContent=s.lastResult?('exit '+s.lastResult.exitCode+': '+s.lastResult.summary):(s.plan&&!s.plan.canRun?'Unsupported prepared-plan input method; prepare a fresh v2 plan.':'none');q('events').textContent=(s.events||[]).map(e=>e.at+'  '+e.event+'  '+e.detail).join('\\n')||'No events yet.';const busy=['focusing','running'].includes(s.phase);q('focus').disabled=busy;q('run').disabled=busy||!s.plan||!s.plan.canRun}
   async function refresh(){try{draw(await api('/api/status'))}catch(e){q('result').textContent=e.message}}
   q('focus').onclick=async()=>{try{draw(await api('/api/focus','POST'))}catch(e){q('result').textContent=e.message}finally{refresh()}};
   q('run').onclick=async()=>{if(!confirm('Run exactly one prepared move? The game will be brought to the foreground. No retry.'))return;try{draw(await api('/api/run','POST'))}catch(e){q('result').textContent=e.message}finally{refresh()}};

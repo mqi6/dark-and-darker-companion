@@ -71,7 +71,14 @@ export class WindowsSupervisedMoveRuntime implements SupervisedMoveRuntime {
   ) {}
 
   async inspectEnvironment(): Promise<LiveMoveEnvironment> {
-    await this.ui.focusExpectedWindow(this.expected.windowHandle);
+    const focused = await this.ui.focusExpectedWindow(this.expected.windowHandle);
+    if (
+      focused.processName.toLowerCase() === this.expected.processName.toLowerCase() &&
+      sameDisplay(focused.display, this.expected.display) &&
+      sameRectangle(focused.bounds, this.expected.windowBounds)
+    ) {
+      this.expected.windowHandle = focused.windowHandle;
+    }
     const [window, state] = await Promise.all([
       this.ui.inspectForegroundWindow(),
       this.state.inspectState()
