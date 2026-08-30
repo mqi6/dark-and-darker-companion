@@ -30,6 +30,7 @@ export interface SupervisedMoveRequest {
   expectedSnapshotHash: string;
   expectedSnapshotVersion: number;
   expectedSnapshotTimestampMilliseconds?: number;
+  expectedWindowIdentity?: string;
 }
 
 export interface SupervisedMoveRuntimeContext extends CalibrationRuntimeState {
@@ -49,6 +50,7 @@ export interface PreparedSupervisedMove {
   sourceSnapshotHash: string;
   sourceSnapshotVersion: number;
   sourceSnapshotTimestampMilliseconds?: number;
+  windowIdentity?: string;
   calibrationProfileId: string;
   gameBuildFingerprint: string;
   windowBounds: { left: number; top: number; width: number; height: number };
@@ -173,6 +175,7 @@ export function prepareSupervisedMove(parameters: {
     sourceSnapshotHash: projection.sourceSnapshotHash,
     sourceSnapshotVersion: projection.sourceVersion,
     ...(request.expectedSnapshotTimestampMilliseconds === undefined ? {} : { sourceSnapshotTimestampMilliseconds: request.expectedSnapshotTimestampMilliseconds }),
+    ...(request.expectedWindowIdentity === undefined ? {} : { windowIdentity: request.expectedWindowIdentity }),
     calibrationProfileId: calibration.profileId,
     gameBuildFingerprint: runtime.gameBuildFingerprint,
     windowBounds: { ...runtime.windowBounds },
@@ -217,6 +220,7 @@ function fingerprint(value: Omit<PreparedSupervisedMove, "planFingerprint">): st
     value.sourceSnapshotHash,
     value.sourceSnapshotVersion,
     value.sourceSnapshotTimestampMilliseconds ?? null,
+    value.windowIdentity ?? null,
     1,
     "1x1",
     1,
