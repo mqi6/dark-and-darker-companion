@@ -31,6 +31,11 @@ export interface GameScreenLayout {
     gridTopLeft: ScreenPoint;
     gridBottomRight: ScreenPoint;
     playerBagGridTopLeft: ScreenPoint;
+    playerBagGridBottomRight: ScreenPoint;
+    playerBagColumns: 10;
+    playerBagRows: 5;
+    playerBagCellWidth: number;
+    playerBagCellHeight: number;
     columns: 12;
     rows: 20;
     cellPitch: number;
@@ -57,7 +62,10 @@ export const REFERENCE_GAME_COORDINATES = {
   },
   stash: {
     gridTopLeft: { x: 1378, y: 199 },
-    playerBagGridTopLeft: { x: 690, y: 626 },
+    playerBagGridTopLeft: { x: 688, y: 625 },
+    playerBagGridBottomRight: { x: 1090, y: 823 },
+    playerBagColumns: 10 as const,
+    playerBagRows: 5 as const,
     columns: 12 as const,
     rows: 20 as const,
     cellPitch: 40.5,
@@ -74,6 +82,7 @@ const MAXIMUM_STASH_TABS = 10;
 const MANUAL_STASH_OVERRIDES = new Map<string, {
   gridTopLeft: ScreenPoint;
   playerBagGridTopLeft: ScreenPoint;
+  playerBagGridBottomRight: ScreenPoint;
   cellPitch: number;
   tabOrigin: ScreenPoint;
   tabSpacing: number;
@@ -81,6 +90,7 @@ const MANUAL_STASH_OVERRIDES = new Map<string, {
   ["1280x720", {
     gridTopLeft: { x: 918, y: 132 },
     playerBagGridTopLeft: { x: 457, y: 416 },
+    playerBagGridBottomRight: { x: 727, y: 549 },
     cellPitch: 27,
     tabOrigin: { x: 881, y: 139 },
     tabSpacing: 31
@@ -133,6 +143,10 @@ export function buildGameScreenLayout(parameters: {
     REFERENCE_GAME_COORDINATES.stash.playerBagGridTopLeft,
     transform
   );
+  const relativeBagBottomRight = manualOverride?.playerBagGridBottomRight ?? scaledRelativePoint(
+    REFERENCE_GAME_COORDINATES.stash.playerBagGridBottomRight,
+    transform
+  );
   const relativeTabOrigin = manualOverride?.tabOrigin ?? scaledRelativePoint(
     REFERENCE_GAME_COORDINATES.stash.tabOrigin,
     transform
@@ -147,6 +161,7 @@ export function buildGameScreenLayout(parameters: {
   );
   const gridTopLeft = addClientOrigin(relativeGridTopLeft, parameters.clientBounds);
   const playerBagGridTopLeft = addClientOrigin(relativeBagTopLeft, parameters.clientBounds);
+  const playerBagGridBottomRight = addClientOrigin(relativeBagBottomRight, parameters.clientBounds);
   const tabOrigin = addClientOrigin(relativeTabOrigin, parameters.clientBounds);
   const tabCenters = Array.from({ length: parameters.visibleStashTabs }, (_, index) => ({
     x: tabOrigin.x,
@@ -180,6 +195,15 @@ export function buildGameScreenLayout(parameters: {
         y: gridTopLeft.y + REFERENCE_GAME_COORDINATES.stash.rows * cellPitch
       },
       playerBagGridTopLeft,
+      playerBagGridBottomRight,
+      playerBagColumns: REFERENCE_GAME_COORDINATES.stash.playerBagColumns,
+      playerBagRows: REFERENCE_GAME_COORDINATES.stash.playerBagRows,
+      playerBagCellWidth:
+        (playerBagGridBottomRight.x - playerBagGridTopLeft.x) /
+        REFERENCE_GAME_COORDINATES.stash.playerBagColumns,
+      playerBagCellHeight:
+        (playerBagGridBottomRight.y - playerBagGridTopLeft.y) /
+        REFERENCE_GAME_COORDINATES.stash.playerBagRows,
       columns: REFERENCE_GAME_COORDINATES.stash.columns,
       rows: REFERENCE_GAME_COORDINATES.stash.rows,
       cellPitch,
