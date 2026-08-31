@@ -40,6 +40,7 @@ export interface PrivateSortOperatorEvent {
   event: "preview-start" | "preview-ready" | "preview-blocked" | "run-start" | "run-result" | "stop-requested";
   phase: string;
   diagnosticCode?: string;
+  adapterError?: string;
   moveCount?: number;
   actionCount?: number;
   dragCount?: number;

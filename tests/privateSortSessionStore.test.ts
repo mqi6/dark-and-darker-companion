@@ -62,8 +62,9 @@ describe("private sort session store", () => {
         .toContain('"actionKind":"select-stash-tab"');
       expect(store.sessionPath.endsWith("session.private.json")).toBe(true);
       const operator = new PrivateSortOperatorLog(directory);
-      await operator.append({ at: "2026-08-31T00:00:00.000Z", event: "preview-blocked", phase: "blocked", diagnosticCode: "game-window-unavailable" });
+      await operator.append({ at: "2026-08-31T00:00:00.000Z", event: "preview-blocked", phase: "blocked", diagnosticCode: "game-window-unavailable", adapterError: "private adapter detail" });
       expect(await readFile(operator.path, "utf8")).toContain('"diagnosticCode":"game-window-unavailable"');
+      expect(await readFile(operator.path, "utf8")).toContain('"adapterError":"private adapter detail"');
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
