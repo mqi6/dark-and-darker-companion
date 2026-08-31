@@ -23,6 +23,7 @@
     "sort:calibrate:diagnostic": "node --import tsx tools/calibrate-private-stash-grid.ts --include-bag true",
     "move003:run": "node --import tsx tools/run-private-supervised-move.ts",
     "operator": "node --import tsx tools/local-operator-server.ts",
+    "sort:operator": "node --import tsx tools/complete-stash-sort-private-operator.ts",
     "protocol:audit-cross-capture": "node --import tsx tools/audit-private-cross-capture.ts",
     "protocol:schema": "node --import tsx tools/generate-protocol-schema.ts",
     "protocol:replay-net000": "node --import tsx tools/replay-private-net000.ts",

@@ -43,6 +43,18 @@ export interface CompleteStashSortRuntime {
   refreshCompletePostState(signal?: AbortSignal): Promise<SpatialProjection>;
 }
 
+export interface CompleteSortActionJournalEntry {
+  actionIndex: number;
+  actionKind: ScheduledStashSortScreenAction["kind"];
+  itemAlias?: string;
+  selectedTab?: number;
+  status: "start" | "completed" | "rejected" | "failed" | "cancelled" | "ambiguous";
+  completedActionCount: number;
+  completedDragCount: number;
+  diagnosticCode?: string;
+  adapterError?: string;
+}
+
 export type CompleteStashSortRunResult =
   | { status: "already-sorted"; actionCount: 0; dragCount: 0 }
   | { status: "confirmed"; actionCount: number; dragCount: number; evidenceId: string }
@@ -54,7 +66,12 @@ export class CompleteStashSortExecutionRunner {
   constructor(
     private readonly lease: GameInteractionLease,
     private readonly runtime: CompleteStashSortRuntime,
-    private readonly log: (event: { event: string; detail: string }) => void = () => undefined
+    private readonly log: (event: { event: string; detail: string }) => void = () => undefined,
+    private readonly journal: (entry: CompleteSortActionJournalEntry) => void | Promise<void> = () => undefined,
+    private readonly savePostState: (projection: SpatialProjection, reconciliation: {
+      status: "confirmed" | "ambiguous";
+      diagnosticCode?: string;
+    }) => void | Promise<void> = () => undefined
   ) {}
 
   async execute(parameters: {
@@ -96,7 +113,7 @@ export class CompleteStashSortExecutionRunner {
         return { status: "blocked", diagnosticCode: preflightProblem, actionCount: 0, dragCount: 0 };
       }
 
-      for (const action of parameters.screenActions) {
+      for (const [actionIndex, action] of parameters.screenActions.entries()) {
         if (parameters.signal?.aborted) {
           return dragCount === 0
             ? { status: "cancelled", actionCount: completedActions, dragCount }
@@ -107,11 +124,24 @@ export class CompleteStashSortExecutionRunner {
                 dragCount
               };
         }
+        await this.journal(journalEntry(actionIndex, action, "start", completedActions, dragCount));
         this.log({ event: "sort-action-start", detail: action.kind });
         const result = await this.runtime.runScheduledScreenAction(action, parameters.signal);
         if (result.status !== "completed") {
           const possiblyChanged = dragCount > 0 ||
             (result.status === "failed" && result.inputMayHaveBeenDispatched === true);
+          const diagnosticCode = result.status === "cancelled"
+            ? "cancelled-after-input-dispatch"
+            : result.diagnosticCode;
+          await this.journal(journalEntry(
+            actionIndex,
+            action,
+            possiblyChanged ? "ambiguous" : result.status,
+            completedActions,
+            dragCount,
+            diagnosticCode,
+            "adapterError" in result ? String(result.adapterError ?? "") || undefined : undefined
+          ));
           return possiblyChanged
             ? {
                 status: "ambiguous",
@@ -132,6 +162,9 @@ export class CompleteStashSortExecutionRunner {
         }
         completedActions += 1;
         if (action.kind.startsWith("drag-")) dragCount += 1;
+        await this.journal(journalEntry(
+          actionIndex, action, "completed", completedActions, dragCount
+        ));
       }
 
       this.log({ event: "sort-final-refresh", detail: "automatic-character-reselection" });
@@ -141,6 +174,9 @@ export class CompleteStashSortExecutionRunner {
         parameters.initialProjection,
         postState
       );
+      await this.savePostState(postState, mismatch
+        ? { status: "ambiguous", diagnosticCode: mismatch }
+        : { status: "confirmed" });
       if (mismatch) {
         return {
           status: "ambiguous",
@@ -168,6 +204,29 @@ export class CompleteStashSortExecutionRunner {
       this.lease.release("STASH-SORT");
     }
   }
+}
+
+function journalEntry(
+  actionIndex: number,
+  action: ScheduledStashSortScreenAction,
+  status: CompleteSortActionJournalEntry["status"],
+  completedActionCount: number,
+  completedDragCount: number,
+  diagnosticCode?: string,
+  adapterError?: string
+): CompleteSortActionJournalEntry {
+  return {
+    actionIndex,
+    actionKind: action.kind,
+    ...(action.kind === "select-stash-tab"
+      ? { selectedTab: action.tabIndex }
+      : { itemAlias: action.itemAlias }),
+    status,
+    completedActionCount,
+    completedDragCount,
+    ...(diagnosticCode ? { diagnosticCode } : {}),
+    ...(adapterError ? { adapterError } : {})
+  };
 }
 
 export function reconcileCompleteStashSort(

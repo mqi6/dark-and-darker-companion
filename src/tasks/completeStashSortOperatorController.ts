@@ -52,6 +52,7 @@ interface CompleteSortExecutor {
  */
 export class CompleteStashSortOperatorController {
   private busy = false;
+  private abort: AbortController | undefined;
   private state: CompleteStashSortOperatorState;
 
   constructor(
@@ -91,6 +92,8 @@ export class CompleteStashSortOperatorController {
   async run(signal?: AbortSignal): Promise<CompleteStashSortOperatorState> {
     if (this.busy) throw new Error("operator-busy");
     this.busy = true;
+    this.abort = new AbortController();
+    signal?.addEventListener("abort", () => this.abort?.abort(), { once: true });
     this.state.phase = "running";
     try {
       const approval = issueCompleteSortLocalApproval(
@@ -101,13 +104,19 @@ export class CompleteStashSortOperatorController {
       const result = await this.executor.execute({
         ...this.prepared,
         approval,
-        ...(signal ? { signal } : {})
+        signal: this.abort.signal
       });
       this.state.lastResult = result;
       this.state.phase = result.status;
       return this.snapshot();
     } finally {
+      this.abort = undefined;
       this.busy = false;
     }
+  }
+
+  stop(): CompleteStashSortOperatorState {
+    this.abort?.abort();
+    return this.snapshot();
   }
 }

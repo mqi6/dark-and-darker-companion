@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SORT_INPUT_TIMING_PRESETS } from "../src/domain/automationTiming";
+import { STASH_ITEM_CATEGORIES } from "../src/domain/stashRouting";
 import type { SpatialProjection } from "../src/domain/inventoryGeometry";
 import { PrivateSortSessionStore } from "../tools/privateSortSessionStore";
 
@@ -20,6 +21,8 @@ describe("private sort session store", () => {
       const store = new PrivateSortSessionStore(directory);
       const session = await store.create({
         initialProjection: projection,
+        policies: [{ inventoryId: 4, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES }],
+        packingMode: "compact-top-left",
         plan: {
           status: "blocked",
           mode: "compact-top-left",
@@ -37,8 +40,9 @@ describe("private sort session store", () => {
       });
       await store.append({
         at: "2026-08-31T00:00:00.000Z",
-        event: "prepared",
-        detail: "offline",
+        actionIndex: 0,
+        actionKind: "select-stash-tab",
+        status: "start",
         completedActionCount: 0,
         completedDragCount: 0
       });
@@ -46,12 +50,16 @@ describe("private sort session store", () => {
         ...projection,
         sourceSnapshotHash: "after",
         sourceVersion: 2
-      });
+      }, { status: "confirmed" });
 
       expect((await store.load()).sessionId).toBe(session.sessionId);
       expect(JSON.parse(await readFile(store.postStatePath, "utf8")))
-        .toMatchObject({ sourceSnapshotHash: "after", sourceVersion: 2 });
-      expect(await readFile(store.journalPath, "utf8")).toContain('"event":"prepared"');
+        .toMatchObject({
+          finalProjection: { sourceSnapshotHash: "after", sourceVersion: 2 },
+          reconciliation: { status: "confirmed" }
+        });
+      expect(await readFile(store.journalPath, "utf8"))
+        .toContain('"actionKind":"select-stash-tab"');
       expect(store.sessionPath.endsWith("session.private.json")).toBe(true);
     } finally {
       await rm(directory, { recursive: true, force: true });

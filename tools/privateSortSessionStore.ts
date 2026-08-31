@@ -6,12 +6,16 @@ import type { ScheduledStashSortScreenAction } from "../src/domain/completeStash
 import type { SpatialProjection } from "../src/domain/inventoryGeometry";
 import type { ScheduledStashSort } from "../src/domain/stashMoveScheduler";
 import type { SortInputTiming } from "../src/domain/automationTiming";
+import type { StashPackingMode } from "../src/domain/stashPacking";
+import type { StashTabItemPolicy } from "../src/domain/stashRouting";
 
 export interface PrivateSortSession {
   schemaVersion: 1;
   sessionId: string;
   createdAt: string;
   initialProjection: SpatialProjection;
+  policies: readonly StashTabItemPolicy[];
+  packingMode: StashPackingMode;
   plan: CompleteStashSortPlan;
   schedule: ScheduledStashSort;
   screenActions: readonly ScheduledStashSortScreenAction[];
@@ -20,10 +24,15 @@ export interface PrivateSortSession {
 
 export interface PrivateSortJournalEvent {
   at: string;
-  event: string;
-  detail: string;
+  actionIndex: number;
+  actionKind: string;
+  itemAlias?: string;
+  selectedTab?: number;
+  status: string;
   completedActionCount: number;
   completedDragCount: number;
+  diagnosticCode?: string;
+  adapterError?: string;
 }
 
 export class PrivateSortSessionStore {
@@ -62,9 +71,9 @@ export class PrivateSortSessionStore {
     });
   }
 
-  async savePostState(projection: SpatialProjection): Promise<void> {
+  async savePostState(projection: SpatialProjection, reconciliation: unknown): Promise<void> {
     await mkdir(this.directory, { recursive: true });
-    await atomicJsonWrite(this.postStatePath, projection);
+    await atomicJsonWrite(this.postStatePath, { finalProjection: projection, reconciliation });
   }
 }
 

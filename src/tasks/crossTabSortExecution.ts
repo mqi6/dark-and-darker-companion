@@ -25,7 +25,7 @@ export function issueCrossTabLocalApproval(
 export type CrossTabRuntimeActionResult =
   | { status: "completed" }
   | { status: "cancelled" }
-  | { status: "failed"; diagnosticCode: string; inputMayHaveBeenDispatched?: boolean };
+  | { status: "failed"; diagnosticCode: string; inputMayHaveBeenDispatched?: boolean; adapterError?: string };
 
 export interface CrossTabSortRuntime {
   preflight(

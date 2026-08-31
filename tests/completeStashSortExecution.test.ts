@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CompleteStashSortPlan } from "../src/domain/completeStashSort";
 import type { ScheduledStashSortScreenAction } from "../src/domain/completeStashScreenPlan";
 import type {
@@ -229,5 +229,37 @@ describe("complete stash sort execution", () => {
       diagnosticCode: "post-state-layout-mismatch"
     });
     expect(calls.filter((call) => call === "refresh")).toHaveLength(1);
+  });
+
+  it("journals action detail and stops on the first failed adapter action", async () => {
+    const journal = vi.fn();
+    const refresh = vi.fn();
+    const runtime: CompleteStashSortRuntime = {
+      async preflightScheduledScreenActions() { return undefined; },
+      async runScheduledScreenAction(action) {
+        return action.kind === "select-stash-tab"
+          ? { status: "completed" }
+          : { status: "failed", diagnosticCode: "drag-rejected", adapterError: "SendInput returned zero" };
+      },
+      refreshCompletePostState: refresh
+    };
+    const result = await new CompleteStashSortExecutionRunner(
+      new GameInteractionLease(), runtime, undefined, journal
+    ).execute({
+      plan, schedule, screenActions, initialProjection: projection(1, 5),
+      approval: issueCompleteSortLocalApproval(plan, schedule, 1)
+    });
+    expect(result).toMatchObject({ status: "blocked", diagnosticCode: "drag-rejected" });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(journal).toHaveBeenLastCalledWith(expect.objectContaining({
+      actionIndex: 1,
+      actionKind: "drag-stash-to-stash",
+      itemAlias: "a",
+      status: "failed",
+      completedActionCount: 1,
+      completedDragCount: 0,
+      diagnosticCode: "drag-rejected",
+      adapterError: "SendInput returned zero"
+    }));
   });
 });
