@@ -1,3 +1,8 @@
+import {
+  SORT_INPUT_TIMING_PRESETS,
+  validateSortInputTiming,
+  type SortInputTiming
+} from "../domain/automationTiming";
 import { buildGameScreenLayout, type GameScreenLayout } from "../domain/gameScreenLayout";
 import { prepareCrossTabScreenTransfer } from "../domain/crossTabScreenPlan";
 import type { SpatialProjection } from "../domain/inventoryGeometry";
@@ -13,17 +18,26 @@ import type {
   ScreenClassification
 } from "./windowsNavigationRuntime";
 
+export interface FixedCoordinateClickTiming {
+  pointerSettleMilliseconds: number;
+  clickHoldMilliseconds: number;
+  postClickMilliseconds: number;
+}
+
 export interface FixedCoordinateDrag {
   source: ScreenPoint;
   destination: ScreenPoint;
   durationMilliseconds: number;
+  pointerSettleMilliseconds: number;
+  postDragMilliseconds: number;
 }
 
 export interface FixedCoordinateCrossTabAdapter {
   inspectWindow(): Promise<NavigationWindowState>;
   classifyScreen(): Promise<ScreenClassification>;
   clickForeground(
-    point: ScreenPoint
+    point: ScreenPoint,
+    timing: FixedCoordinateClickTiming
   ): Promise<{ status: "clicked" } | { status: "rejected"; diagnosticCode: string }>;
   dragForeground(drag: FixedCoordinateDrag): Promise<CrossTabRuntimeActionResult>;
 }
@@ -34,27 +48,21 @@ export interface CompleteSpatialProjectionRefresher {
 
 export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
   readonly layout: GameScreenLayout;
+  readonly timing: SortInputTiming;
 
   constructor(
     private readonly adapter: FixedCoordinateCrossTabAdapter,
     private readonly refresher: CompleteSpatialProjectionRefresher,
     private readonly expectedWindow: NavigationWindowState,
     visibleStashTabs: number,
-    private readonly tabSettleMilliseconds = 250,
-    private readonly dragDurationMilliseconds = 350
+    timing: SortInputTiming = SORT_INPUT_TIMING_PRESETS.balanced
   ) {
+    validateSortInputTiming(timing);
+    this.timing = { ...timing };
     this.layout = buildGameScreenLayout({
       clientBounds: expectedWindow.clientBounds,
       visibleStashTabs
     });
-    if (!Number.isFinite(tabSettleMilliseconds) ||
-        tabSettleMilliseconds < 0 || tabSettleMilliseconds > 2000) {
-      throw new RangeError("Tab settle delay must be between 0 and 2000 milliseconds.");
-    }
-    if (!Number.isFinite(dragDurationMilliseconds) ||
-        dragDurationMilliseconds < 100 || dragDurationMilliseconds > 2000) {
-      throw new RangeError("Drag duration must be between 100 and 2000 milliseconds.");
-    }
   }
 
   async preflight(
@@ -90,11 +98,15 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     if (problem) return { status: "failed", diagnosticCode: problem };
     const point = this.layout.stash.tabCenters[tabIndex];
     if (!point) return { status: "failed", diagnosticCode: "stash-tab-not-visible" };
-    const click = await this.adapter.clickForeground(point);
+    const click = await this.adapter.clickForeground(point, {
+      pointerSettleMilliseconds: this.timing.pointerSettleMilliseconds,
+      clickHoldMilliseconds: this.timing.clickHoldMilliseconds,
+      postClickMilliseconds: this.timing.postClickMilliseconds
+    });
     if (click.status === "rejected") {
       return { status: "failed", diagnosticCode: click.diagnosticCode };
     }
-    await cancellableDelay(this.tabSettleMilliseconds, signal);
+    await cancellableDelay(this.timing.tabSettleMilliseconds, signal);
     if (signal?.aborted) {
       return {
         status: "failed",
@@ -151,7 +163,9 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     if (problem) return { status: "failed", diagnosticCode: problem };
     return this.adapter.dragForeground({
       ...drag,
-      durationMilliseconds: this.dragDurationMilliseconds
+      durationMilliseconds: this.timing.dragDurationMilliseconds,
+      pointerSettleMilliseconds: this.timing.pointerSettleMilliseconds,
+      postDragMilliseconds: this.timing.postDragMilliseconds
     });
   }
 
