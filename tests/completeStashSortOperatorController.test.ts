@@ -119,7 +119,7 @@ describe("complete stash sort operator controller", () => {
   });
 
   it("turns one local button press into one process-local complete-run approval", async () => {
-    const execute = vi.fn(async () => ({
+    const execute = vi.fn(async (_parameters: unknown) => ({
       status: "confirmed" as const,
       actionCount: 4,
       dragCount: 2,
@@ -139,7 +139,7 @@ describe("complete stash sort operator controller", () => {
       }
     });
     expect(execute).toHaveBeenCalledTimes(1);
-    expect(execute.mock.calls[0]?.[0]).toMatchObject({
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
       plan,
       schedule,
       screenActions,
@@ -147,6 +147,6 @@ describe("complete stash sort operator controller", () => {
       approval: {
         kind: "local-complete-sort-confirmation"
       }
-    });
+    }));
   });
 });
