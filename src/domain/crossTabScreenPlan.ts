@@ -85,8 +85,15 @@ function actionPoint(
   side: "source" | "destination"
 ): GridPoint {
   const action = transfer.actions.find((candidate) => candidate.kind === kind);
-  if (!action) throw new Error(`Transfer ${transfer.transferId} is missing ${kind}.`);
-  return action[side].point;
+  if (!action ||
+      (kind === "drag-stash-to-bag" && action.kind !== "drag-stash-to-bag") ||
+      (kind === "drag-bag-to-stash" && action.kind !== "drag-bag-to-stash")) {
+    throw new Error(`Transfer ${transfer.transferId} is missing ${kind}.`);
+  }
+  if (action.kind === "select-stash-tab") {
+    throw new Error(`Transfer ${transfer.transferId} has an invalid ${kind} action.`);
+  }
+  return side === "source" ? action.source.point : action.destination.point;
 }
 
 function stashCellCenter(
