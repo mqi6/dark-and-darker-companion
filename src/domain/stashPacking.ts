@@ -151,8 +151,8 @@ function packCategoryRows(
         point = firstShelfPoint(grid, item, occupied, rowTop, 0, item.height);
       }
 
-      while (!point && rowTop + item.height <= grid.rows) {
-        rowTop += Math.max(1, rowHeight || item.height);
+      while (!point && rowTop + item.height < grid.rows) {
+        rowTop += 1;
         rowHeight = 0;
         rowCursorX = 0;
         point = firstShelfPoint(grid, item, occupied, rowTop, 0, item.height);
