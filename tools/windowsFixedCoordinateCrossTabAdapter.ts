@@ -3,6 +3,7 @@ import type {
   CrossTabRuntimeActionResult
 } from "../src/tasks/crossTabSortExecution";
 import type {
+  FixedCoordinateClickTiming,
   FixedCoordinateCrossTabAdapter,
   FixedCoordinateDrag
 } from "../src/tasks/fixedCoordinateCrossTabRuntime";
@@ -16,7 +17,8 @@ export interface NavigationInputBridge {
   inspectWindow(): Promise<NavigationWindowState>;
   classifyScreen(): Promise<ScreenClassification>;
   clickForeground(
-    point: ScreenPoint
+    point: ScreenPoint,
+    timing?: FixedCoordinateClickTiming
   ): Promise<{ status: "clicked" } | { status: "rejected"; diagnosticCode: string }>;
 }
 
@@ -27,6 +29,8 @@ export interface DragInputBridge {
     source: ScreenPoint;
     destination: ScreenPoint;
     durationMilliseconds: number;
+    pointerSettleMilliseconds: number;
+    postDragMilliseconds: number;
   }): Promise<MoveDispatchResult>;
 }
 
@@ -48,8 +52,8 @@ implements FixedCoordinateCrossTabAdapter {
     return this.navigation.classifyScreen();
   }
 
-  clickForeground(point: ScreenPoint) {
-    return this.navigation.clickForeground(point);
+  clickForeground(point: ScreenPoint, timing: FixedCoordinateClickTiming) {
+    return this.navigation.clickForeground(point, timing);
   }
 
   async dragForeground(
