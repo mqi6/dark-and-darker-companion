@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { ScreenPoint } from "../src/domain/stashScreenCalibration";
+import type { FixedCoordinateClickTiming } from "../src/tasks/fixedCoordinateCrossTabRuntime";
 import {
   classifyNavigationFeature,
   NAVIGATION_FEATURE_VERSION,
@@ -61,7 +62,10 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
     return { status: "classified", observation: result.observation };
   }
 
-  async clickForeground(point: ScreenPoint) {
+  async clickForeground(
+    point: ScreenPoint,
+    timing?: FixedCoordinateClickTiming
+  ) {
     const bounds = this.expected.clientBounds;
     try {
       const state = await this.run([
@@ -72,7 +76,12 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
         "-ExpectedWidth", String(bounds.width),
         "-ExpectedHeight", String(bounds.height),
         "-X", String(Math.round(point.x)),
-        "-Y", String(Math.round(point.y))
+        "-Y", String(Math.round(point.y)),
+        ...(timing ? [
+          "-PointerSettleMilliseconds", String(timing.pointerSettleMilliseconds),
+          "-ClickHoldMilliseconds", String(timing.clickHoldMilliseconds),
+          "-PostClickMilliseconds", String(timing.postClickMilliseconds)
+        ] : [])
       ]);
       return state as unknown as { status: "clicked" };
     } catch {
