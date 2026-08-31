@@ -69,8 +69,8 @@ export function prepareCrossTabScreenBatch(
   transfers: readonly CrossTabTransfer[],
   layout: GameScreenLayout
 ): readonly CrossTabScreenTransfer[] {
-  if (transfers.length < 1 || transfers.length > 3) {
-    throw new RangeError("Cross-tab screen batches require one through three transfers.");
+  if (transfers.length < 1 || transfers.length > 2400) {
+    throw new RangeError("Complete cross-tab screen plans require one through 2400 transfers.");
   }
   const ids = new Set(transfers.map((transfer) => transfer.transferId));
   if (ids.size !== transfers.length) {
