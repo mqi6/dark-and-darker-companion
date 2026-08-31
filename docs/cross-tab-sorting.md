@@ -67,13 +67,13 @@ Each transfer has exactly four logical actions:
 3. Select the destination stash tab.
 4. Drag the same item from the bag cell to its planned destination stash cell.
 
-The first execution batch is bounded to one through three independent transfers and processes one item at a time. There is no automatic retry.
+The planner schedules every eligible move from one initial complete snapshot. It resolves destination dependencies and uses one verified character-bag rectangle to break placement cycles. Actions run sequentially with no intermediate character reselection and no automatic input retry.
 
 If step 3 or 4 fails after the first drag, the run is ambiguous and reports that the item may remain in the character bag. The operator must inspect the game before any further sorting.
 
 ## Refresh and confirmation
 
-After all planned two-leg transfers, the runtime invokes the already-established automatic character-reselection refresh. This behavior was confirmed by NAV-002 and is not a separate test target.
+After every planned same-page and two-leg transfer has completed, the runtime invokes the already-established automatic character-reselection refresh exactly once. This behavior was confirmed by NAV-002 and is not a separate test target.
 
 The run is confirmed only when a newer complete projection shows every moved deterministic alias exactly once at its planned target inventory and slot with the same verified footprint. A stale state, missing or duplicated alias, wrong destination, wrong footprint, or spatial validation error produces an ambiguous result.
 
@@ -117,16 +117,50 @@ Completed in cloud:
 - bag-backed cross-tab planning;
 - fixed screen coordinates with DnDTools-compatible scaling;
 - Windows foreground click/drag adapter;
-- bounded execution state machine;
-- automatic post-refresh reconciliation adapter;
+- complete one-snapshot dependency scheduler, including bag-backed cycle breaking;
+- compact top-left and category-row packing modes;
+- fast, balanced, reliable, and bounded custom input timing;
+- private atomic session, journal, and post-state files for crash diagnosis;
+- complete execution state machine with no intermediate refresh;
+- one automatic final-refresh reconciliation adapter;
 - bilingual policy controls;
 - unit tests and documentation.
 
 The next human checkpoint contains no coordinate marking:
 
-1. Open the game on Stash and start the local smoke-test operator.
-2. Review its source tab, source item, temporary bag cell, target tab, target cell, and the two calculated drags.
-3. Press the single local confirmation button.
-4. Observe one cross-tab item move while logs record both drags and the established automatic character-reselection refresh supplies the newer complete state.
+1. Open the game and start the local sort operator.
+2. Choose compact top-left or category-row layout and a speed preset.
+3. Review the complete before/after preview, skipped items, action count, and bag usage.
+4. Press the single local confirmation button.
+5. Observe the complete sort; the established automatic character-reselection refresh runs once at the end and the UI reports full reconciliation.
 
 Do not repeat foreground activation, single-drag, navigation, character-reselection, stash calibration, or bag calibration tests. If the calculated preview is visibly wrong, stop before input and provide one screenshot; only then use diagnostic calibration.
+
+## Packing modes
+
+- **Compact top-left:** first-fit decreasing over all available cells, starting
+  at the top-left. Larger footprints are placed first and output is
+  deterministic.
+- **Category rows:** categories follow the configured category order. Every
+  category begins on a fresh row band; unused cells in the previous category's
+  final row are intentionally left empty.
+
+Both modes treat reserved regions and their intersecting items as fixed
+obstacles. Disabled and exception tabs are excluded from both source and
+destination planning.
+
+## Input speed
+
+The sort UI exposes Fast, Balanced, Reliable, and Custom profiles. Custom mode
+edits pointer settle, click hold, post-click wait, tab settle, drag duration,
+and post-drag wait within validated limits. Timing changes affect only ordinary
+foreground UI input; they do not change coordinates, item identity, or the
+planned layout.
+
+## Private session data
+
+The initial projection, complete plan, action schedule, timing, progress
+journal, and final projection are written atomically to gitignored
+`*.private.json` or `*.private.jsonl` files. No PCAP or raw network stream is
+required for a sort run. A stale session is never resumed without first reading
+a new authoritative game state.
