@@ -25,7 +25,7 @@ import { createCompleteSortOperatorServer, type CompleteSortHttpController } fro
 import { PowerShellNavigationAdapter, type PrivateNavProfile } from "./windowsNavigationAdapter";
 import { WindowsFixedCoordinateCrossTabAdapter } from "./windowsFixedCoordinateCrossTabAdapter";
 import { PowerShellWindowsUiBridge } from "./windowsSupervisedMoveRuntime";
-import { PrivateSortSessionStore } from "./privateSortSessionStore";
+import { PrivateSortOperatorLog, PrivateSortSessionStore } from "./privateSortSessionStore";
 
 const execFileAsync = promisify(execFile);
 type Settings = { mode: StashPackingMode; speed: AutomationSpeedPreset; custom?: Partial<SortInputTiming>; tabs: Array<{ tabIndex: number; enabled: boolean; allowedCategories: string[] }> };
@@ -59,11 +59,16 @@ class PrivateCompleteController implements CompleteSortHttpController {
   private prepared?: CompleteStashSortOperatorController;
   private abort?: AbortController;
   private detail: Record<string, unknown> = {};
-  constructor(private readonly mapping: StashTabMapping, private readonly window: NavigationWindowState, private readonly refresher: AutomaticPrivateProjectionRefresher, private readonly sessionsRoot: string, private readonly navigation: PowerShellNavigationAdapter) {}
+  private readonly activity: PrivateSortOperatorLog;
+  constructor(private readonly mapping: StashTabMapping, private readonly window: NavigationWindowState, private readonly refresher: AutomaticPrivateProjectionRefresher, private readonly sessionsRoot: string, private readonly navigation: PowerShellNavigationAdapter) {
+    this.activity = new PrivateSortOperatorLog(sessionsRoot);
+  }
   snapshot() { return { phase: this.phase, tabs: this.mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES })), ...this.detail }; }
   async refreshAndPreview(value: unknown) {
     if (this.phase === "refreshing" || this.phase === "running") throw new Error("operator-busy");
     const settings = parseSettings(value, this.mapping); this.phase = "refreshing"; this.abort = new AbortController();
+    this.detail = {};
+    await this.record("preview-start");
     try {
       const options = { mode: settings.mode, timing: resolveSortInputTiming({ preset: settings.speed, custom: settings.custom }), policies: policies(settings, this.mapping), excludedInventoryIds: [] };
       const result = await new CompleteStashSortPreparationController(this.refresher, this.mapping, this.window).refreshAndPreview(options, this.abort.signal);
@@ -77,15 +82,19 @@ class PrivateCompleteController implements CompleteSortHttpController {
       this.prepared = new CompleteStashSortOperatorController(result, runner);
       this.phase = "ready";
       this.detail = { mode: result.plan.mode, moveCount: result.schedule.itemMoveCount, actionCount: result.schedule.actions.length, dragCount: result.schedule.dragCount, crossTabCount: result.plan.moves.filter(move => move.route === "via-character-bag").length, temporaryBagBufferCount: result.schedule.temporaryBufferCount, skippedCount: result.plan.skippedAliases.length, skippedDiagnostics: result.plan.diagnostics, before: { containerCount: result.initialProjection.containers.length }, after: result.plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: page.placements.length })) };
+      await this.record("preview-ready", undefined, result.schedule.itemMoveCount, result.schedule.actions.length, result.schedule.dragCount);
       return this.snapshot();
     } catch (error) {
       this.phase = "blocked";
-      this.detail = { diagnosticCode: error instanceof Error ? error.message : "refresh-preview-failed" };
+      const diagnosticCode = operatorDiagnostic(error);
+      this.detail = { diagnosticCode };
+      await this.record("preview-blocked", diagnosticCode);
       return this.snapshot();
     } finally { this.abort = undefined; }
   }
-  async run() { if (!this.prepared || this.phase !== "ready") throw new Error("preview-required"); this.phase = "running"; const state = await this.prepared.run(); this.phase = state.phase; this.detail = { ...this.detail, progress: state.lastResult }; return this.snapshot(); }
-  stop() { this.abort?.abort(); this.prepared?.stop(); return this.snapshot(); }
+  async run() { if (!this.prepared || this.phase !== "ready") throw new Error("preview-required"); this.phase = "running"; await this.record("run-start"); const state = await this.prepared.run(); this.phase = state.phase; this.detail = { ...this.detail, progress: state.lastResult }; await this.record("run-result", state.lastResult && "diagnosticCode" in state.lastResult ? state.lastResult.diagnosticCode : undefined); return this.snapshot(); }
+  stop() { this.abort?.abort(); this.prepared?.stop(); void this.record("stop-requested"); return this.snapshot(); }
+  private record(event: Parameters<PrivateSortOperatorLog["append"]>[0]["event"], diagnosticCode?: string, moveCount?: number, actionCount?: number, dragCount?: number) { return this.activity.append({ at: new Date().toISOString(), event, phase: this.phase, ...(diagnosticCode ? { diagnosticCode } : {}), ...(moveCount === undefined ? {} : { moveCount }), ...(actionCount === undefined ? {} : { actionCount }), ...(dragCount === undefined ? {} : { dragCount }) }); }
 }
 
 async function main() {
@@ -108,5 +117,6 @@ function parseSettings(value: unknown, mapping: StashTabMapping): Settings { con
 async function readJson<T>(path: string): Promise<T> { return JSON.parse((await readFile(path, "utf8")).replace(/^\uFEFF/, "")) as T; }
 async function newestNamed(root: string, name: string): Promise<string> { const found: Array<{ path: string; time: number }> = []; async function visit(dir: string, depth: number): Promise<void> { if (depth > 5) return; for (const entry of await readdir(dir, { withFileTypes: true })) { const path = resolve(dir, entry.name); if (entry.isDirectory()) await visit(path, depth + 1); else if (entry.name === name) found.push({ path, time: (await stat(path)).mtimeMs }); } } await visit(root, 0); found.sort((a, b) => b.time - a.time); if (!found[0]) throw new Error(`missing-${name}`); return found[0].path; }
 async function delay(ms: number, signal?: AbortSignal) { await new Promise<void>((done, reject) => { const timer = setTimeout(done, ms); signal?.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("operator-cancelled")); }, { once: true }); }); }
+function operatorDiagnostic(error: unknown): string { const message = error instanceof Error ? error.message : ""; if (message.includes("No visible DungeonCrawler main window")) return "game-window-unavailable"; if (message.includes("Multiple DungeonCrawler")) return "multiple-game-windows"; if (message.includes("navigation-")) return message.match(/navigation-[a-z-]+/)?.[0] ?? "navigation-failed"; if (message.includes("capture")) return "complete-capture-failed"; return "refresh-preview-failed"; }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main();

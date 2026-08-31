@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { SORT_INPUT_TIMING_PRESETS } from "../src/domain/automationTiming";
 import { STASH_ITEM_CATEGORIES } from "../src/domain/stashRouting";
 import type { SpatialProjection } from "../src/domain/inventoryGeometry";
-import { PrivateSortSessionStore } from "../tools/privateSortSessionStore";
+import { PrivateSortOperatorLog, PrivateSortSessionStore } from "../tools/privateSortSessionStore";
 
 const projection: SpatialProjection = {
   sourceSnapshotHash: "hash",
@@ -61,6 +61,9 @@ describe("private sort session store", () => {
       expect(await readFile(store.journalPath, "utf8"))
         .toContain('"actionKind":"select-stash-tab"');
       expect(store.sessionPath.endsWith("session.private.json")).toBe(true);
+      const operator = new PrivateSortOperatorLog(directory);
+      await operator.append({ at: "2026-08-31T00:00:00.000Z", event: "preview-blocked", phase: "blocked", diagnosticCode: "game-window-unavailable" });
+      expect(await readFile(operator.path, "utf8")).toContain('"diagnosticCode":"game-window-unavailable"');
     } finally {
       await rm(directory, { recursive: true, force: true });
     }

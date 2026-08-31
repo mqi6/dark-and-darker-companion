@@ -35,6 +35,27 @@ export interface PrivateSortJournalEvent {
   adapterError?: string;
 }
 
+export interface PrivateSortOperatorEvent {
+  at: string;
+  event: "preview-start" | "preview-ready" | "preview-blocked" | "run-start" | "run-result" | "stop-requested";
+  phase: string;
+  diagnosticCode?: string;
+  moveCount?: number;
+  actionCount?: number;
+  dragCount?: number;
+}
+
+export class PrivateSortOperatorLog {
+  readonly path: string;
+  constructor(directory: string) {
+    this.path = resolve(directory, "operator.private.jsonl");
+  }
+  async append(event: PrivateSortOperatorEvent): Promise<void> {
+    await mkdir(resolve(this.path, ".."), { recursive: true });
+    await appendFile(this.path, `${JSON.stringify(event)}\n`, { encoding: "utf8", mode: 0o600 });
+  }
+}
+
 export class PrivateSortSessionStore {
   readonly sessionPath: string;
   readonly journalPath: string;
