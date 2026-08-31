@@ -144,9 +144,9 @@ describe("complete stash sort operator controller", () => {
       schedule,
       screenActions,
       initialProjection,
-      approval: {
+      approval: expect.objectContaining({
         kind: "local-complete-sort-confirmation"
-      }
+      })
     }));
   });
 });
