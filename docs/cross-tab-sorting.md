@@ -19,6 +19,30 @@ For each visible stash tab, the user can independently:
 
 A disabled, blocked, or active exception page is neither a source nor a destination.
 
+## Public stash-page mapping
+
+The verified maximum ten-page mapping is version-controlled in
+`src/data/stash-tabs.v1.json`:
+
+| Visible tab in the full ten-page layout | Inventory ID | Page kind |
+| ---: | ---: | --- |
+| 0 | 4 | Personal 1 |
+| 1 | 5 | Personal 2 |
+| 2 | 6 | Personal 3 |
+| 3 | 7 | Personal 4 |
+| 4 | 8 | Personal 5 |
+| 5 | 9 | Personal 6 |
+| 6 | 20 | Shared 1 |
+| 7 | 21 | Shared 2 |
+| 8 | 30 | Shared 3 |
+| 9 | 200 | Mission 1 |
+
+Characters with fewer owned pages use a compact mapping derived from that
+canonical order and their explicitly observed visible-page profile. Do not
+derive visibility from command-44 container presence alone because a complete
+state may include containers whose buttons are not visible for that character.
+Only the character-specific visible selection remains private.
+
 ## Bag capacity
 
 The successful complete character baseline contains the character item list. Inventory ID 2 is modeled as the 10-column by 5-row character bag.
