@@ -5,6 +5,7 @@ import {
 } from "../domain/automationTiming";
 import { buildGameScreenLayout, type GameScreenLayout } from "../domain/gameScreenLayout";
 import { prepareCrossTabScreenTransfer } from "../domain/crossTabScreenPlan";
+import type { ScheduledStashSortScreenAction } from "../domain/completeStashScreenPlan";
 import type { SpatialProjection } from "../domain/inventoryGeometry";
 import type { CrossTabSortPlan, CrossTabTransfer } from "../domain/stashRouting";
 import type { ScreenPoint, ScreenRectangle } from "../domain/stashScreenCalibration";
@@ -148,6 +149,19 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
   ): Promise<CrossTabRuntimeActionResult> {
     const prepared = prepareCrossTabScreenTransfer(transfer, this.layout);
     return this.dispatchDrag(prepared.bagToStash, signal);
+  }
+
+  async runScheduledScreenAction(
+    action: ScheduledStashSortScreenAction,
+    signal?: AbortSignal
+  ): Promise<CrossTabRuntimeActionResult> {
+    if (action.kind === "select-stash-tab") {
+      return this.selectStashTab(action.tabIndex, action.inventoryId, signal);
+    }
+    return this.dispatchDrag({
+      source: action.source,
+      destination: action.destination
+    }, signal);
   }
 
   refreshCompletePostState(signal?: AbortSignal): Promise<SpatialProjection> {
