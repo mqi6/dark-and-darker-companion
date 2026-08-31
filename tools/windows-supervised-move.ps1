@@ -81,6 +81,7 @@ function Resolve-GameWindowHandle([string]$ExpectedValue) {
     if ($candidates.Count -ne 1) { throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.' }
     return [IntPtr]$candidates[0].MainWindowHandle
 }
+. (Join-Path $PSScriptRoot 'windows-game-window.ps1')
 
 function Get-WindowInfo([IntPtr]$Handle) {
     if ($Handle -eq [IntPtr]::Zero) { throw 'No window is available.' }

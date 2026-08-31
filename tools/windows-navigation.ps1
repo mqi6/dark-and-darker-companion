@@ -57,6 +57,7 @@ function Resolve-GameWindowHandle([string]$value){
  $candidates=@(Get-Process -Name DungeonCrawler -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle-ne[IntPtr]::Zero})
  if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return [IntPtr]$candidates[0].MainWindowHandle
 }
+. (Join-Path $PSScriptRoot 'windows-game-window.ps1')
 function Get-State([IntPtr]$h=[IntPtr]::Zero) {
  if($h-eq[IntPtr]::Zero){$h=[NavNative]::GetForegroundWindow()};if($h-eq[IntPtr]::Zero){throw 'No window.'}
  [uint32]$foregroundPid=0; [void][NavNative]::GetWindowThreadProcessId($h,[ref]$foregroundPid)

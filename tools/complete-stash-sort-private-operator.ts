@@ -64,6 +64,11 @@ class PrivateCompleteController implements CompleteSortHttpController {
     this.activity = new PrivateSortOperatorLog(sessionsRoot);
   }
   snapshot() { return { phase: this.phase, tabs: this.mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES })), ...this.detail }; }
+  async focus() {
+    const state = await this.navigation.inspectWindow();
+    this.detail = { ...this.detail, foreground: { status: "focused", processClass: state.processName.toLowerCase() === "dungeoncrawler" ? "verified-game-process" : "unexpected-process" } };
+    return this.snapshot();
+  }
   async refreshAndPreview(value: unknown) {
     if (this.phase === "refreshing" || this.phase === "running") throw new Error("operator-busy");
     const settings = parseSettings(value, this.mapping); this.phase = "refreshing"; this.abort = new AbortController();
