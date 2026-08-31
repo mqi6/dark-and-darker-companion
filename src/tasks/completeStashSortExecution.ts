@@ -110,7 +110,8 @@ export class CompleteStashSortExecutionRunner {
         this.log({ event: "sort-action-start", detail: action.kind });
         const result = await this.runtime.runScheduledScreenAction(action, parameters.signal);
         if (result.status !== "completed") {
-          const possiblyChanged = dragCount > 0 || result.inputMayHaveBeenDispatched === true;
+          const possiblyChanged = dragCount > 0 ||
+            (result.status === "failed" && result.inputMayHaveBeenDispatched === true);
           return possiblyChanged
             ? {
                 status: "ambiguous",
