@@ -59,6 +59,29 @@ Execution uses an opaque process-local approval bound to the exact plan. The ope
 
 All actions share the existing game-interaction lease. Automatic sorting cannot overlap navigation, supervised moves, or auction automation.
 
+## Fixed screen-coordinate profile
+
+Normal execution does not require the operator to mark either grid.
+
+At the 1920x1080 reference resolution:
+
+| Region | Top-left | Bottom-right | Grid |
+| --- | ---: | ---: | ---: |
+| Stash | existing verified `(1378,199)` | existing verified `(1864,1009)` | 12x20 |
+| Character bag | `(688,625)` | `(1090,823)` | 10x5 |
+
+The layout uses the existing DnDTools-compatible transform:
+
+- normal aspect ratios scale X and Y from the game client size;
+- ultrawide clients use a centered 16:9 viewport;
+- the game client origin is added after scaling, so the game may be on another monitor;
+- the 1280x720 hand-tuned override remains supported;
+- stash tab buttons are generated vertically for 2 through 10 visible tabs.
+
+Item drags use the center of the verified item footprint, not the top-left pixel. The same calculated bag center is used for the first drag destination and second drag source.
+
+`npm run sort:calibrate:diagnostic` remains available only if a later game update visibly moves the UI. It is not an ordinary prerequisite.
+
 ## Offline/live boundary
 
 Completed in cloud:
@@ -68,28 +91,18 @@ Completed in cloud:
 - per-tab item category policies;
 - reserved-region-aware target placement;
 - bag-backed cross-tab planning;
+- fixed screen coordinates with DnDTools-compatible scaling;
+- Windows foreground click/drag adapter;
 - bounded execution state machine;
-- automatic post-refresh reconciliation;
+- automatic post-refresh reconciliation adapter;
 - bilingual policy controls;
 - unit tests and documentation.
 
-The calibration tool is already prepared for this checkpoint. From Windows PowerShell:
+The next human checkpoint contains no coordinate marking:
 
-```powershell
-npm run sort:calibrate -- `
-  --profile-id "SORT-001-calibration" `
-  --build-fingerprint "<current build fingerprint>" `
-  --capture-cursor true
-```
+1. Open the game on Stash and start the local smoke-test operator.
+2. Review its source tab, source item, temporary bag cell, target tab, target cell, and the two calculated drags.
+3. Press the single local confirmation button.
+4. Observe one cross-tab item move while logs record both drags and the established automatic character-reselection refresh supplies the newer complete state.
 
-It records both the 12x20 stash and 10x5 bag in one pass, writes only below `fixtures-private/`, creates separate non-clicking HTML previews, and accepts negative virtual-desktop coordinates for a game window on a monitor left of the primary display.
-
-The next human checkpoint is intentionally narrow:
-
-1. In the existing local operator UI, calibrate the outer top-left and bottom-right boundaries of the visible 10x5 character bag once for the current game build/window profile.
-2. Review the annotated preview. No input is sent.
-3. Choose one ordinary, verified-size item whose source page rejects its category and whose target page accepts it.
-4. Run one cross-tab smoke transfer: stash to bag, tab switch, bag to stash.
-5. Observe the UI while local logs and the automatic complete refresh determine the protocol result.
-
-Do not repeat the already-passed foreground activation, single normal drag, tab navigation, or character-reselection experiments. The purpose of the one remaining live checkpoint is only to validate the bag screen calibration and the composed two-drag path.
+Do not repeat foreground activation, single-drag, navigation, character-reselection, stash calibration, or bag calibration tests. If the calculated preview is visibly wrong, stop before input and provide one screenshot; only then use diagnostic calibration.
