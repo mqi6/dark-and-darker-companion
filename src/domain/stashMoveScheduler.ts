@@ -90,7 +90,7 @@ export function scheduleCompleteStashSort(
 
   const pending = new Map(plan.moves.map((move) => [move.alias, move]));
   for (const move of plan.moves) {
-    if (!occupancy.get(move.source.inventoryId)?.has(move.alias)) {
+    if (!aliasPresent(occupancy.get(move.source.inventoryId), move.alias)) {
       return {
         status: "blocked",
         diagnosticCode: "source-item-missing",
@@ -316,6 +316,10 @@ function buildOccupancy(
     result.set(container.inventoryId, cells);
   }
   return result;
+}
+
+function aliasPresent(cells: Map<string, string> | undefined, alias: string): boolean {
+  return cells !== undefined && [...cells.values()].some((value) => value === alias);
 }
 
 function destinationFree(
