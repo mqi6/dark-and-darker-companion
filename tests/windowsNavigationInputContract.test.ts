@@ -27,6 +27,8 @@ describe("Windows navigation input contract", () => {
     expect(helper).toContain("SwitchToThisWindow($target,$true)");
     expect(helper).toContain("$shell.AppActivate([int]$targetPid)");
     expect(helper).toContain("function Resolve-GameWindowHandle");
+    expect(helper).toContain("return [IntPtr]$candidates[0].MainWindowHandle");
+    expect(helper).not.toContain("return[IntPtr]");
     expect(helper).toContain("Multiple DungeonCrawler main windows are available; refusing ambiguous binding.");
     expect(helper).toContain("$state.windowHandle-ne$resolvedExpectedWindowHandle");
     expect(helper).not.toContain("SW_MINIMIZE");
