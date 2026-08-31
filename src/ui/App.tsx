@@ -1,8 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { calculateListingPrice } from "../domain/pricing";
+import {
+  SORT_INPUT_TIMING_PRESETS,
+  type AutomationSpeedPreset
+} from "../domain/automationTiming";
+import type { StashPackingMode } from "../domain/stashPacking";
 import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeometry";
 import { StashPreviewGrid } from "./StashPreviewGrid";
+import { StashSortSettings } from "./StashSortSettings";
 
 type Tab = "stash" | "auction" | "gearSearch" | "settings";
 
@@ -78,6 +84,15 @@ function StatusStrip() {
 
 function StashPanel() {
   const { t } = useTranslation();
+  const [packingMode, setPackingMode] = useState<StashPackingMode>("compact-top-left");
+  const [speedPreset, setSpeedPreset] = useState<AutomationSpeedPreset>("balanced");
+  const [timing, setTiming] = useState({ ...SORT_INPUT_TIMING_PRESETS.balanced });
+
+  const changeSpeedPreset = (preset: AutomationSpeedPreset) => {
+    setSpeedPreset(preset);
+    if (preset !== "custom") setTiming({ ...SORT_INPUT_TIMING_PRESETS[preset] });
+  };
+
   return (
     <div className="panel-grid">
       <article className="card span-two">
@@ -100,6 +115,16 @@ function StashPanel() {
         <div className="reserved-demo">
           <span>3 × 2</span>
         </div>
+      </article>
+      <article className="card">
+        <StashSortSettings
+          mode={packingMode}
+          speedPreset={speedPreset}
+          timing={timing}
+          onModeChange={setPackingMode}
+          onSpeedPresetChange={changeSpeedPreset}
+          onTimingChange={setTiming}
+        />
       </article>
     </div>
   );
