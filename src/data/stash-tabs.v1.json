@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "description": "Verified maximum stash-tab order for a character with all ten pages visible. Character-specific visible mappings are compacted from this order and stored separately.",
+  "maximumVisibleTabs": 10,
+  "entries": [
+    { "tabIndex": 0, "inventoryId": 4, "pageType": "personal", "pageNumber": 1 },
+    { "tabIndex": 1, "inventoryId": 5, "pageType": "personal", "pageNumber": 2 },
+    { "tabIndex": 2, "inventoryId": 6, "pageType": "personal", "pageNumber": 3 },
+    { "tabIndex": 3, "inventoryId": 7, "pageType": "personal", "pageNumber": 4 },
+    { "tabIndex": 4, "inventoryId": 8, "pageType": "personal", "pageNumber": 5 },
+    { "tabIndex": 5, "inventoryId": 9, "pageType": "personal", "pageNumber": 6 },
+    { "tabIndex": 6, "inventoryId": 20, "pageType": "shared", "pageNumber": 1 },
+    { "tabIndex": 7, "inventoryId": 21, "pageType": "shared", "pageNumber": 2 },
+    { "tabIndex": 8, "inventoryId": 30, "pageType": "shared", "pageNumber": 3 },
+    { "tabIndex": 9, "inventoryId": 200, "pageType": "mission", "pageNumber": 1 }
+  ]
+}
