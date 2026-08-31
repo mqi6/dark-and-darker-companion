@@ -151,6 +151,29 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     return this.dispatchDrag(prepared.bagToStash, signal);
   }
 
+  async preflightScheduledScreenActions(
+    actions: readonly ScheduledStashSortScreenAction[],
+    signal?: AbortSignal
+  ): Promise<string | undefined> {
+    if (signal?.aborted) return "operator-cancelled";
+    if (actions.length === 0) return "complete-sort-has-no-actions";
+    for (const action of actions) {
+      const points = action.kind === "select-stash-tab"
+        ? [action.point]
+        : [action.source, action.destination];
+      if (points.some((point) => !insideClient(point, this.layout.clientBounds))) {
+        return "fixed-coordinate-plan-invalid";
+      }
+    }
+    const problem = await this.windowProblem();
+    if (problem) return problem;
+    const classification = await this.adapter.classifyScreen();
+    return classification.status === "classified" &&
+      classification.observation.screen === "stash"
+      ? undefined
+      : "stash-screen-not-observed";
+  }
+
   async runScheduledScreenAction(
     action: ScheduledStashSortScreenAction,
     signal?: AbortSignal
@@ -210,6 +233,12 @@ function sameRectangle(left: ScreenRectangle, right: ScreenRectangle): boolean {
 function sameDisplay(left: DisplayGeometry, right: DisplayGeometry): boolean {
   return left.left === right.left && left.top === right.top &&
     left.width === right.width && left.height === right.height;
+}
+
+function insideClient(point: ScreenPoint, bounds: ScreenRectangle): boolean {
+  return point.x >= bounds.left && point.y >= bounds.top &&
+    point.x < bounds.left + bounds.width &&
+    point.y < bounds.top + bounds.height;
 }
 
 async function cancellableDelay(milliseconds: number, signal?: AbortSignal): Promise<void> {
