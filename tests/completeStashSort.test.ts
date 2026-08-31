@@ -160,7 +160,7 @@ describe("complete stash sort planning", () => {
     if (plan.status !== "ready") return;
     const page = plan.pages.find((candidate) => candidate.inventoryId === 4)!;
     const movable = page.placements.filter((placement) =>
-      placement.alias !== "money-pinned"
+      !page.pinnedAliases.includes(placement.alias)
     );
     const categoryMinimumY = new Map<string, number>();
     for (const placement of movable) {
