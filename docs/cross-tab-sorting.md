@@ -98,6 +98,8 @@ Completed in cloud:
 - bilingual policy controls;
 - unit tests and documentation.
 
+The composed Windows checkpoint subsequently passed locally: one approved item followed the stash-to-bag-to-stash route, automatic character reselection produced a newer complete state, and reconciliation returned `confirmed`. The operator recorded two completed drags, one completed transfer and no automatic retry. All raw evidence remains gitignored.
+
 The next human checkpoint contains no coordinate marking:
 
 1. Open the game on Stash and start the local smoke-test operator.

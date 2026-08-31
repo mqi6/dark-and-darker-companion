@@ -10,6 +10,8 @@ import {
   findOperatorPrivateDirectory,
   LocalOperatorController,
   preparedMovePowerShellArgs,
+  SHARED_OPERATOR_LOG,
+  shouldResumeItemFromBag,
   type LocalOperatorDependencies,
   type OperatorPlanSummary
 } from "../tools/local-operator-server";
@@ -37,6 +39,22 @@ function setup(overrides: Partial<LocalOperatorDependencies> = {}) {
 }
 
 describe("operator private runtime discovery", () => {
+  it("keeps a stable gitignored log path for unattended Codex review", () => {
+    expect(SHARED_OPERATOR_LOG.replace(/\\/g, "/"))
+      .toMatch(/fixtures-private\/runtime\/operator-latest\.private\.jsonl$/);
+  });
+
+  it("recovers only when the latest terminal run left one drag in the bag", () => {
+    const ambiguous = JSON.stringify({
+      event: "run-failed",
+      detail: 'exit=2: {"status":"ambiguous","diagnosticCode":"item-may-remain-in-bag","dragCount":1}'
+    });
+    expect(shouldResumeItemFromBag(ambiguous)).toBe(true);
+    expect(shouldResumeItemFromBag(`${ambiguous}\n${JSON.stringify({
+      event: "run-complete", detail: '{"status":"confirmed"}'
+    })}`)).toBe(false);
+  });
+
   it("selects the newest nested prepared runtime", async () => {
     const root = await mkdtemp(resolve(tmpdir(), "companion-operator-"));
     try {
@@ -123,6 +141,8 @@ describe("local operator HTTP boundary", () => {
       if (!script) throw new Error("Expected inline operator script.");
       expect(() => new Script(script)).not.toThrow();
       expect(script).toContain("join('\\n')");
+      expect(script).not.toContain("confirm(");
+      expect(script).toContain("s.plan.crossTab");
     } finally {
       server.close();
       await once(server, "close");

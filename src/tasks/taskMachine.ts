@@ -73,12 +73,16 @@ export function listingFailureAction(kind: ListingFailureKind): ListingFailureAc
 
 export class GameInteractionLease {
   private owner: string | undefined;
+  private depth = 0;
 
   acquire(taskId: string): boolean {
     if (this.owner !== undefined) {
-      return this.owner === taskId;
+      if (this.owner !== taskId) return false;
+      this.depth += 1;
+      return true;
     }
     this.owner = taskId;
+    this.depth = 1;
     return true;
   }
 
@@ -86,7 +90,8 @@ export class GameInteractionLease {
     if (this.owner !== taskId) {
       throw new Error(`Task '${taskId}' does not own the game interaction lease.`);
     }
-    this.owner = undefined;
+    this.depth -= 1;
+    if (this.depth === 0) this.owner = undefined;
   }
 
   currentOwner(): string | undefined {

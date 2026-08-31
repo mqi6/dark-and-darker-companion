@@ -119,10 +119,12 @@ export class CrossTabSortExecutionRunner {
           transfer.sourceInventoryId,
           parameters.signal
         );
+        this.log({ event: "source-tab-result", detail: JSON.stringify(sourceTab) });
         const sourceTabProblem = actionProblem(sourceTab, dragCount > 0);
         if (sourceTabProblem) return terminalFromProblem(sourceTabProblem, dragCount, completedTransfers, "select-source-tab");
 
         const toBag = await this.runtime.dragStashToBag(transfer, parameters.signal);
+        this.log({ event: "stash-to-bag-result", detail: JSON.stringify(toBag) });
         if (toBag.status === "completed") dragCount += 1;
         const toBagProblem = actionProblem(toBag, dragCount > 0);
         if (toBagProblem) return terminalFromProblem(toBagProblem, dragCount, completedTransfers, "stash-to-bag");
@@ -132,6 +134,7 @@ export class CrossTabSortExecutionRunner {
           transfer.targetInventoryId,
           parameters.signal
         );
+        this.log({ event: "target-tab-result", detail: JSON.stringify(targetTab) });
         const targetTabProblem = actionProblem(targetTab, true);
         if (targetTabProblem) {
           return {
@@ -143,6 +146,7 @@ export class CrossTabSortExecutionRunner {
         }
 
         const toStash = await this.runtime.dragBagToStash(transfer, parameters.signal);
+        this.log({ event: "bag-to-stash-result", detail: JSON.stringify(toStash) });
         if (toStash.status === "completed") dragCount += 1;
         if (toStash.status !== "completed") {
           return {
@@ -195,6 +199,67 @@ export class CrossTabSortExecutionRunner {
       this.lease.release("SORT-SMOKE-001");
     }
   }
+
+  async resumeItemFromBag(parameters: {
+    plan: CrossTabSortPlan;
+    approval: CrossTabLocalApproval;
+    signal?: AbortSignal;
+  }): Promise<CrossTabRunResult> {
+    const plan = parameters.plan;
+    if (plan.status !== "ready" || plan.transfers.length !== 1 ||
+        approvalBindings.get(parameters.approval) !== planBinding(plan)) {
+      return { status: "blocked", diagnosticCode: "bag-recovery-approval-invalid", transferCount: 0, dragCount: 0 };
+    }
+    if (!this.lease.acquire("SORT-SMOKE-001")) {
+      return { status: "blocked", diagnosticCode: "game-interaction-lease-unavailable", transferCount: 0, dragCount: 0 };
+    }
+    let dragCount = 0;
+    try {
+      const problem = await this.runtime.preflight(plan, parameters.signal);
+      if (problem) return { status: "blocked", diagnosticCode: problem, transferCount: 0, dragCount };
+      const transfer = plan.transfers[0]!;
+      this.log({ event: "bag-recovery-start", detail: transfer.transferId });
+      const target = await this.runtime.selectStashTab(
+        transfer.targetTabIndex, transfer.targetInventoryId, parameters.signal
+      );
+      this.log({ event: "target-tab-result", detail: JSON.stringify(target) });
+      if (target.status !== "completed") {
+        return { status: "ambiguous", diagnosticCode: "item-may-remain-in-bag", transferCount: 0, dragCount };
+      }
+      const moved = await this.runtime.dragBagToStash(transfer, parameters.signal);
+      this.log({ event: "bag-to-stash-result", detail: JSON.stringify(moved) });
+      if (moved.status !== "completed") {
+        return { status: "ambiguous", diagnosticCode: "item-may-remain-in-bag", transferCount: 0, dragCount };
+      }
+      dragCount = 1;
+      this.log({ event: "post-refresh-start", detail: "automatic-character-reselection" });
+      const postState = await this.runtime.refreshCompletePostState(parameters.signal);
+      const reconciliation = reconcileCrossTabPlan(plan, postState);
+      if (reconciliation.status === "mismatch") {
+        return {
+          status: "ambiguous",
+          diagnosticCode: reconciliation.diagnosticCode ?? "post-state-mismatch",
+          transferCount: 1,
+          dragCount
+        };
+      }
+      return {
+        status: "confirmed",
+        transferCount: 1,
+        dragCount,
+        evidenceId: reconciliation.evidenceId!
+      };
+    } catch {
+      return {
+        status: dragCount > 0 ? "ambiguous" : "blocked",
+        diagnosticCode: dragCount > 0 ? "runtime-error-after-input-dispatch" : "runtime-error-before-input-dispatch",
+        transferCount: 0,
+        dragCount
+      };
+    } finally {
+      this.lease.release("SORT-SMOKE-001");
+    }
+  }
 }
 
 export function reconcileCrossTabPlan(
@@ -222,6 +287,9 @@ export function reconcileCrossTabPlan(
     if (item.width !== transfer.width || item.height !== transfer.height) {
       return { status: "mismatch", diagnosticCode: "post-state-footprint-mismatch" };
     }
+    if (transfer.quantity !== undefined && item.stackQuantity !== transfer.quantity) {
+      return { status: "mismatch", diagnosticCode: "post-state-quantity-mismatch" };
+    }
   }
 
   return {
@@ -237,6 +305,9 @@ function planBinding(plan: Extract<CrossTabSortPlan, { status: "ready" }>): stri
     transfers: plan.transfers.map(transfer => ({
       transferId: transfer.transferId,
       itemAlias: transfer.itemAlias,
+      quantity: transfer.quantity,
+      width: transfer.width,
+      height: transfer.height,
       sourceInventoryId: transfer.sourceInventoryId,
       bagSlotId: transfer.bagSlotId,
       targetInventoryId: transfer.targetInventoryId,

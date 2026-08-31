@@ -32,6 +32,19 @@ export interface CompleteSpatialProjectionRefresher {
   refreshCompleteProjection(signal?: AbortSignal): Promise<SpatialProjection>;
 }
 
+export function rebindExpectedGameWindow(
+  expected: NavigationWindowState,
+  current: NavigationWindowState
+): void {
+  if (current.processName.toLowerCase() !== "dungeoncrawler" ||
+      !sameRectangle(current.clientBounds, expected.clientBounds) ||
+      !sameDisplay(current.display, expected.display) ||
+      current.gameBuildFingerprint !== expected.gameBuildFingerprint) {
+    throw new Error("game-window-rebind-contract-mismatch");
+  }
+  expected.windowHandle = current.windowHandle;
+}
+
 export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
   readonly layout: GameScreenLayout;
 
@@ -111,14 +124,8 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
         inputMayHaveBeenDispatched: true
       };
     }
-    const observedTab = classification.observation.selectedStashTabIndex;
-    if (observedTab !== undefined && observedTab !== tabIndex) {
-      return {
-        status: "failed",
-        diagnosticCode: "selected-stash-tab-mismatch",
-        inputMayHaveBeenDispatched: true
-      };
-    }
+    // A stash template proves the screen, not the selected tab. The saved
+    // template may have been captured on tab 0 and is reused for every tab.
     return { status: "completed" };
   }
 

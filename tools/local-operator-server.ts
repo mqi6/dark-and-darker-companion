@@ -1,15 +1,15 @@
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { access, appendFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { stdin } from "node:process";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
 import type { PreparedSupervisedMove } from "../src/domain/supervisedMove";
 import { WINDOWS_SUPERVISED_INPUT_METHOD } from "./windowsSupervisedMoveRuntime";
+import { preparePrivateCrossTabOperator } from "./privateCrossTabOperatorRuntime";
 
-const execFileAsync = promisify(execFile);
+export const SHARED_OPERATOR_LOG = resolve("fixtures-private/runtime/operator-latest.private.jsonl");
 
 export type OperatorPhase = "idle" | "focusing" | "running" | "completed" | "failed";
 
@@ -18,10 +18,17 @@ export interface OperatorPlanSummary {
   tabIndex: number;
   sourceCell: { x: number; y: number };
   destinationCell: { x: number; y: number };
-  dragCount: 1;
+  dragCount: 1 | 2;
   retry: false;
   inputMethod: string;
   canRun: boolean;
+  crossTab?: {
+    sourceTabIndex: number; footprint: { width: number; height: number }; quantity: number;
+    bagItemCount: number; bagFreeCells: number; bagCell: { x: number; y: number };
+    targetTabIndex: number; targetCell: { x: number; y: number };
+    stashToBag: { source: { x: number; y: number }; destination: { x: number; y: number } };
+    bagToStash: { source: { x: number; y: number }; destination: { x: number; y: number } };
+  };
 }
 
 export interface OperatorState {
@@ -35,6 +42,7 @@ export interface OperatorState {
 export interface LocalOperatorDependencies {
   focusGame(): Promise<{ processName: string; isForeground: boolean }>;
   runPreparedMove(): Promise<{ exitCode: number; stdout: string; stderr: string }>;
+  drainRunEvents?(): Array<{ event: string; detail: string }>;
   persist(event: { at: string; event: string; detail: string }): Promise<void>;
 }
 
@@ -86,12 +94,15 @@ export class LocalOperatorController {
       this.state.phase = "running";
       await this.record("game-foreground", game.processName);
       const result = await this.dependencies.runPreparedMove();
+      for (const event of this.dependencies.drainRunEvents?.() ?? []) {
+        await this.record(event.event, event.detail);
+      }
       const summary = lastNonEmptyLine(result.stdout) || lastNonEmptyLine(result.stderr) || "no-output";
       this.state.lastResult = { exitCode: result.exitCode, summary: summary.slice(0, 1000) };
       this.state.phase = result.exitCode === 0 ? "completed" : "failed";
       await this.record(
         result.exitCode === 0 ? "run-complete" : "run-failed",
-        result.exitCode === 0 ? "dispatched-awaiting-human-observation" : `exit=${result.exitCode}: ${summary.slice(0, 1000)}`
+        result.exitCode === 0 ? summary.slice(0, 1000) : `exit=${result.exitCode}: ${summary.slice(0, 1000)}`
       );
       return this.snapshot();
     } catch (error) {
@@ -192,52 +203,51 @@ async function main() {
   );
   const port = Number(args.port ?? 4317);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid operator port.");
-  const plan = JSON.parse(
-    await readFile(resolve(privateDirectory, "plan.private.json"), "utf8")
-  ) as PreparedSupervisedMove;
-  const calibration = JSON.parse(
-    await readFile(resolve(privateDirectory, "calibration.private.json"), "utf8")
-  ) as { windowIdentity: { windowHandle: string } };
   const logDirectory = resolve(privateDirectory, "operator-runs");
   await mkdir(logDirectory, { recursive: true });
   const logPath = resolve(logDirectory, "latest.private.jsonl");
-  const helper = resolve("tools/windows-supervised-move.ps1");
-  const controller = new LocalOperatorController(summarizePlan(plan), {
+  const runtimeEvents: Array<{ event: string; detail: string }> = [];
+  const sharedLog = await readFile(SHARED_OPERATOR_LOG, "utf8").catch(() => "");
+  const prepared = await preparePrivateCrossTabOperator({
+    runtimeDirectory: privateDirectory,
+    navigationDirectory: resolve("fixtures-private/runtime/move-003-refresh"),
+    captureRoot: resolve("fixtures-private/game"),
+    resumeItemFromBag: shouldResumeItemFromBag(sharedLog),
+    log: event => runtimeEvents.push(event)
+  });
+  const controller = new LocalOperatorController({
+    itemAlias: prepared.summary.itemAlias,
+    tabIndex: prepared.summary.sourceTabIndex,
+    sourceCell: prepared.summary.sourceCell,
+    destinationCell: prepared.summary.targetCell,
+    dragCount: 2,
+    retry: false,
+    inputMethod: "fixed-coordinate-cross-tab-v1",
+    canRun: true,
+    crossTab: prepared.summary
+  }, {
     async focusGame() {
-      const result = await execFileAsync("powershell.exe", [
-        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helper,
-        "-FocusGame", "-ExpectedWindowHandle", calibration.windowIdentity.windowHandle
-      ], { encoding: "utf8", windowsHide: true, maxBuffer: 1024 * 1024 });
-      const value = JSON.parse(result.stdout) as { processName: string; isForeground: boolean };
+      const value = await prepared.focusGame();
       if (!value.isForeground || value.processName.toLowerCase() !== "dungeoncrawler") {
         throw new Error("game-foreground-verification-failed");
       }
       return value;
     },
     async runPreparedMove() {
-      try {
-        const result = await execFileAsync("powershell.exe", [
-          "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", helper,
-          ...preparedMovePowerShellArgs(plan, calibration.windowIdentity.windowHandle)
-        ], { encoding: "utf8", windowsHide: true, maxBuffer: 1024 * 1024 });
-        const dispatched = JSON.parse(result.stdout) as { status?: string };
-        if (dispatched.status !== "dispatched") {
-          return { exitCode: 1, stdout: result.stdout, stderr: "move-dispatch-not-confirmed" };
-        }
-        return {
-          exitCode: 0,
-          stdout: `${JSON.stringify({ status: "dispatched-awaiting-human-observation" })}\n`,
-          stderr: ""
-        };
-      } catch (error) {
-        return {
-          exitCode: 1,
-          stdout: typeof error === "object" && error && "stdout" in error ? String(error.stdout) : "",
-          stderr: error instanceof Error ? error.message : "ordinary-foreground-input-failed"
-        };
-      }
+      const state = await prepared.controller.run();
+      const result = state.lastResult;
+      const value = result ?? { status: state.phase };
+      return {
+        exitCode: result?.status === "confirmed" ? 0 : 2,
+        stdout: `${JSON.stringify(value)}\n`,
+        stderr: result?.status === "confirmed" ? "" : JSON.stringify(value)
+      };
     },
-    persist: entry => appendFile(logPath, `${JSON.stringify(entry)}\n`, "utf8")
+    drainRunEvents: () => runtimeEvents.splice(0),
+    persist: entry => Promise.all([
+      appendFile(logPath, `${JSON.stringify(entry)}\n`, "utf8"),
+      appendFile(SHARED_OPERATOR_LOG, `${JSON.stringify(entry)}\n`, "utf8")
+    ]).then(() => undefined)
   });
   const token = randomUUID();
   const server = createLocalOperatorServer({ controller, token });
@@ -281,6 +291,16 @@ export function preparedMovePowerShellArgs(plan: PreparedSupervisedMove, expecte
     "-DestinationY", String(Math.round(plan.destination.screen.y)),
     "-DurationMilliseconds", "350"
   ];
+}
+
+export function shouldResumeItemFromBag(log: string): boolean {
+  const terminal = log.split(/\r?\n/).filter(Boolean).reverse().map(line => {
+    try { return JSON.parse(line) as { event?: string; detail?: string }; } catch { return undefined; }
+  }).find(entry => entry?.event === "run-failed" || entry?.event === "run-complete");
+  return terminal?.event === "run-failed" &&
+    Boolean(terminal.detail?.includes('"status":"ambiguous"') &&
+      terminal.detail.includes('"diagnosticCode":"item-may-remain-in-bag"') &&
+      terminal.detail.includes('"dragCount":1'));
 }
 
 function requireToken(request: IncomingMessage, expected: string) {
@@ -327,14 +347,24 @@ function operatorHtml(token: string) {
   <script>
   const token=${JSON.stringify(token)};const q=id=>document.getElementById(id);
   async function api(path,method='GET'){const r=await fetch(path,{method,headers:method==='POST'?{'x-operator-token':token}:{}});const v=await r.json();if(!r.ok)throw new Error(v.error||r.statusText);return v}
-  function draw(s){q('phase').textContent=s.phase;q('game').textContent=s.game?(s.game.processName+' · '+(s.game.isForeground?'foreground':'background')+' · '+s.game.coordinateSpace):'not checked';q('plan').textContent=s.plan?(s.plan.itemAlias+': tab '+s.plan.tabIndex+', ('+s.plan.sourceCell.x+','+s.plan.sourceCell.y+') → ('+s.plan.destinationCell.x+','+s.plan.destinationCell.y+'), one drag, no retry · '+s.plan.inputMethod+(s.plan.canRun?'':' · RUN BLOCKED')):'not loaded';q('result').textContent=s.lastResult?('exit '+s.lastResult.exitCode+': '+s.lastResult.summary):(s.plan&&!s.plan.canRun?'Unsupported prepared-plan input method; prepare a fresh v2 plan.':'none');q('events').textContent=(s.events||[]).map(e=>e.at+'  '+e.event+'  '+e.detail).join('\\n')||'No events yet.';const busy=['focusing','running'].includes(s.phase);q('focus').disabled=busy;q('run').disabled=busy||!s.plan||!s.plan.canRun}
+  function pt(p){return '('+Math.round(p.x)+','+Math.round(p.y)+')'}function draw(s){q('phase').textContent=s.phase;q('game').textContent=s.game?(s.game.processName+' · '+(s.game.isForeground?'foreground':'background')+' · '+s.game.coordinateSpace):'not checked';if(s.plan&&s.plan.crossTab){const c=s.plan.crossTab;q('plan').textContent=s.plan.itemAlias+': source tab '+c.sourceTabIndex+' cell '+pt(s.plan.sourceCell)+' · footprint '+c.footprint.width+'x'+c.footprint.height+' qty '+c.quantity+' · bag '+c.bagItemCount+' items / '+c.bagFreeCells+' free cells, temp '+pt(c.bagCell)+' · target tab '+c.targetTabIndex+' cell '+pt(c.targetCell)+' · paths '+pt(c.stashToBag.source)+'→'+pt(c.stashToBag.destination)+' and '+pt(c.bagToStash.source)+'→'+pt(c.bagToStash.destination)+' · two drags, no retry'}else{q('plan').textContent=s.plan?(s.plan.itemAlias+': tab '+s.plan.tabIndex+', '+pt(s.plan.sourceCell)+' → '+pt(s.plan.destinationCell)+', one drag, no retry · '+s.plan.inputMethod+(s.plan.canRun?'':' · RUN BLOCKED')):'not loaded'}q('result').textContent=s.lastResult?('exit '+s.lastResult.exitCode+': '+s.lastResult.summary):(s.plan&&!s.plan.canRun?'Unsupported prepared-plan input method; prepare a fresh v2 plan.':'none');q('events').textContent=(s.events||[]).map(e=>e.at+'  '+e.event+'  '+e.detail).join('\\n')||'No events yet.';const busy=['focusing','running'].includes(s.phase);q('focus').disabled=busy;q('run').disabled=busy||!s.plan||!s.plan.canRun}
   async function refresh(){try{draw(await api('/api/status'))}catch(e){q('result').textContent=e.message}}
   q('focus').onclick=async()=>{try{draw(await api('/api/focus','POST'))}catch(e){q('result').textContent=e.message}finally{refresh()}};
-  q('run').onclick=async()=>{if(!confirm('Run exactly one prepared move? The game will be brought to the foreground. No retry.'))return;try{draw(await api('/api/run','POST'))}catch(e){q('result').textContent=e.message}finally{refresh()}};
+  q('run').onclick=async()=>{try{draw(await api('/api/run','POST'))}catch(e){q('result').textContent=e.message}finally{refresh()}};
   refresh();setInterval(refresh,1000);
   </script></html>`;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href && stdin) {
-  await main();
+  try {
+    await main();
+  } catch (error) {
+    const entry = {
+      at: new Date().toISOString(),
+      event: "operator-startup-failed",
+      detail: error instanceof Error ? error.stack ?? error.message : "unknown-error"
+    };
+    await appendFile(SHARED_OPERATOR_LOG, `${JSON.stringify(entry)}\n`, "utf8").catch(() => undefined);
+    throw error;
+  }
 }

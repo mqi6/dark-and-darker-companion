@@ -109,13 +109,15 @@ export class WindowsNavigationSequenceRunner {
     plan: PreparedNavigationSequence;
     approval: NavigationApproval;
     signal?: AbortSignal;
+    leaseTaskId?: string;
   }): Promise<NavigationRunResult> {
     const { plan } = parameters;
     if (parameters.approval.kind !== "human-confirmation" ||
         parameters.approval.planFingerprint !== plan.planFingerprint) {
       return { status: "blocked", diagnosticCode: "stale-action-confirmation", clickCount: 0 };
     }
-    if (!this.lease.acquire(plan.taskId)) {
+    const leaseTaskId = parameters.leaseTaskId ?? plan.taskId;
+    if (!this.lease.acquire(leaseTaskId)) {
       return { status: "blocked", diagnosticCode: "game-interaction-lease-unavailable", clickCount: 0 };
     }
     let clickCount = 0;
@@ -136,7 +138,7 @@ export class WindowsNavigationSequenceRunner {
       }
       return { status: "completed", clickCount };
     } finally {
-      this.lease.release(plan.taskId);
+      this.lease.release(leaseTaskId);
     }
   }
 

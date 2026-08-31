@@ -33,21 +33,30 @@ export class CrossTabOperatorController {
   constructor(
     private readonly planValue: Extract<CrossTabSortPlan, { status: "ready" }>,
     screenTransfers: readonly CrossTabScreenTransfer[],
-    private readonly runner: CrossTabSortExecutionRunner
+    private readonly runner: CrossTabSortExecutionRunner,
+    resumeItemFromBag = false
   ) {
     if (planValue.transfers.length === 0 ||
         planValue.transfers.length !== screenTransfers.length) {
       throw new Error("Operator requires matching non-empty logical and screen plans.");
     }
     this.state = {
-      phase: "ready",
+      phase: resumeItemFromBag ? "ambiguous" : "ready",
       plan: {
         transferCount: planValue.transfers.length,
         dragCount: planValue.transfers.length * 2,
         bagItemCount: planValue.bag.itemCount,
         bagFreeCells: planValue.bag.freeCellCount,
         transfers: screenTransfers
-      }
+      },
+      ...(resumeItemFromBag ? {
+        lastResult: {
+          status: "ambiguous" as const,
+          diagnosticCode: "item-may-remain-in-bag",
+          transferCount: 0,
+          dragCount: 1
+        }
+      } : {})
     };
   }
 
@@ -67,11 +76,17 @@ export class CrossTabOperatorController {
       // The local UI button itself is the approval. Nothing is copied through
       // chat and no persistent approval token is written to disk.
       const approval = issueCrossTabLocalApproval(this.planValue, Date.now());
-      const result = await this.runner.execute({
+      const resumeFromBag = this.state.lastResult?.status === "ambiguous" &&
+        this.state.lastResult.diagnosticCode === "item-may-remain-in-bag" &&
+        this.state.lastResult.dragCount === 1;
+      const parameters = {
         plan: this.planValue,
         approval,
         ...(signal ? { signal } : {})
-      });
+      };
+      const result = resumeFromBag
+        ? await this.runner.resumeItemFromBag(parameters)
+        : await this.runner.execute(parameters);
       this.state.lastResult = result;
       this.state.phase = result.status === "dry-run"
         ? "ready"

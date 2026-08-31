@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  CANONICAL_STASH_PAGE_ORDER,
+  confirmedStashTabEntries,
   createStashTabMapping,
   mappingIsCurrent,
   resolveInventoryForTab
@@ -13,6 +15,15 @@ describe("character-local stash tab mapping", () => {
     { tabIndex: 2, inventoryId: 21, label: "paid shared 2" },
     { tabIndex: 3, inventoryId: 30, label: "quest shared" }
   ];
+
+  it("uses the confirmed canonical order and compacts a saved owned-page set", () => {
+    expect(confirmedStashTabEntries({ visibleTabCount: 10 }).map(value => value.inventoryId))
+      .toEqual(CANONICAL_STASH_PAGE_ORDER);
+    expect(confirmedStashTabEntries({
+      visibleTabCount: 4,
+      ownedInventoryIds: visibleInventories
+    })).toEqual(visibleInventories.map((inventoryId, tabIndex) => ({ tabIndex, inventoryId })));
+  });
 
   it("represents the confirmed VIS-001 mapping without making it a global default", () => {
     const mapping = createStashTabMapping({

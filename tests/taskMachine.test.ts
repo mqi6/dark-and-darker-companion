@@ -28,6 +28,17 @@ describe("task state machine", () => {
 });
 
 describe("game interaction lease", () => {
+  it("supports nested work owned by the same task without releasing the outer lease", () => {
+    const lease = new GameInteractionLease();
+    expect(lease.acquire("sort")).toBe(true);
+    expect(lease.acquire("sort")).toBe(true);
+    lease.release("sort");
+    expect(lease.currentOwner()).toBe("sort");
+    expect(lease.acquire("other")).toBe(false);
+    lease.release("sort");
+    expect(lease.currentOwner()).toBeUndefined();
+  });
+
   it("permits only one task owner", () => {
     const lease = new GameInteractionLease();
     expect(lease.acquire("sort-1")).toBe(true);

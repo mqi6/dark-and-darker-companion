@@ -28,6 +28,8 @@ describe("Windows navigation input contract", () => {
     expect(helper).toContain("$state.windowHandle-ne$resolvedExpectedWindowHandle");
     expect(helper).not.toContain("SW_MINIMIZE");
     expect(helper).not.toContain("Send-AltActivationPulse");
+    expect(helper).not.toMatch(/\breturn\[/);
+    expect(helper).toContain("return [IntPtr]$candidates[0].MainWindowHandle");
     expect(helper).toContain("AttachThreadInput");
     expect(helper).toMatch(/DllImport\("kernel32\.dll"\).*GetCurrentThreadId/);
     expect(helper).not.toMatch(/DllImport\("user32\.dll"\).*GetCurrentThreadId/);

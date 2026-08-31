@@ -31,6 +31,25 @@ export const stashTabMappingSchema = z
 export type StashTabMapping = z.infer<typeof stashTabMappingSchema>;
 export type StashTabMappingEntry = z.infer<typeof entrySchema>;
 
+export const CANONICAL_STASH_PAGE_ORDER = Object.freeze([
+  4, 5, 6, 7, 8, 9, 20, 21, 30, 200
+] as const);
+
+export function confirmedStashTabEntries(parameters: {
+  visibleTabCount: number;
+  ownedInventoryIds?: readonly number[];
+}): StashTabMappingEntry[] {
+  const owned = parameters.ownedInventoryIds === undefined
+    ? CANONICAL_STASH_PAGE_ORDER
+    : CANONICAL_STASH_PAGE_ORDER.filter(id => parameters.ownedInventoryIds!.includes(id));
+  if (!Number.isInteger(parameters.visibleTabCount) || parameters.visibleTabCount < 1 ||
+      parameters.visibleTabCount > CANONICAL_STASH_PAGE_ORDER.length ||
+      owned.length !== parameters.visibleTabCount) {
+    throw new Error("Saved visible-tab count and owned stash page set do not agree.");
+  }
+  return owned.map((inventoryId, tabIndex) => ({ tabIndex, inventoryId }));
+}
+
 export function pageSetSignature(inventoryIds: readonly number[]): string {
   const normalized = [...new Set(inventoryIds)].sort((left, right) => left - right);
   return normalized.join(",");

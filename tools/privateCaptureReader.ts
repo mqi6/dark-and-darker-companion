@@ -43,7 +43,9 @@ export async function readPrivateCapture(directoryInput: string): Promise<Privat
   const manifest = JSON.parse(
     (await readFile(resolve(directory, "manifest.private.json"), "utf8")).replace(/^\uFEFF/, "")
   ) as PrivateCaptureManifest;
-  const timeline = (await readFile(resolve(directory, "operator-timeline.ndjson"), "utf8"))
+  const timelineText = await readFile(resolve(directory, "operator-timeline.ndjson"), "utf8")
+    .catch(error => isMissingFile(error) ? "" : Promise.reject(error));
+  const timeline = timelineText
     .trim()
     .split(/\r?\n/)
     .filter(Boolean)
@@ -84,7 +86,7 @@ export async function readPrivateCapture(directoryInput: string): Promise<Privat
     if (!line) continue;
     const [epoch, streamId, sourceText, destinationText, sequenceText, lengthText, payloadText] =
       line.split("\t");
-    if (!payloadText || Number(lengthText) <= 0) continue;
+    if (!streamId || !payloadText || Number(lengthText) <= 0) continue;
     const source = Number(sourceText);
     const destination = Number(destinationText);
     const direction: Direction | undefined =
@@ -146,6 +148,10 @@ export async function readPrivateCapture(directoryInput: string): Promise<Privat
     validFrames,
     discardedBytes
   };
+}
+
+function isMissingFile(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
 export function markerTime(capture: PrivateCapture, marker: string): number | undefined {

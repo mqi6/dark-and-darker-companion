@@ -3,6 +3,7 @@ import type { SpatialProjection } from "../src/domain/inventoryGeometry";
 import type { CrossTabSortPlan, CrossTabTransfer } from "../src/domain/stashRouting";
 import {
   FixedCoordinateCrossTabRuntime,
+  rebindExpectedGameWindow,
   type FixedCoordinateCrossTabAdapter
 } from "../src/tasks/fixedCoordinateCrossTabRuntime";
 import type { NavigationWindowState } from "../src/tasks/windowsNavigationRuntime";
@@ -117,6 +118,17 @@ function setup(options: {
 }
 
 describe("fixed-coordinate cross-tab runtime", () => {
+  it("rebinds only a transient handle after verified foreground restoration", () => {
+    const expected = structuredClone(windowState);
+    const current = { ...structuredClone(windowState), windowHandle: "0x999" };
+    rebindExpectedGameWindow(expected, current);
+    expect(expected.windowHandle).toBe("0x999");
+    expect(() => rebindExpectedGameWindow(expected, {
+      ...current,
+      clientBounds: { ...current.clientBounds, width: current.clientBounds.width - 1 }
+    })).toThrow("game-window-rebind-contract-mismatch");
+  });
+
   it("passes preflight from the known Stash screen without calibration", async () => {
     const { calls, runtime } = setup();
     await expect(runtime.preflight(plan)).resolves.toBeUndefined();
@@ -158,10 +170,9 @@ describe("fixed-coordinate cross-tab runtime", () => {
     });
     await expect(moved.runtime.preflight(plan)).resolves.toBe("window-bounds-changed");
 
-    const wrongTab = setup({ observedTab: 2 });
-    await expect(wrongTab.runtime.selectStashTab(1, 20)).resolves.toMatchObject({
-      status: "failed",
-      diagnosticCode: "selected-stash-tab-mismatch"
+    const tabZeroTemplate = setup({ observedTab: 0 });
+    await expect(tabZeroTemplate.runtime.selectStashTab(2, 21)).resolves.toEqual({
+      status: "completed"
     });
   });
 

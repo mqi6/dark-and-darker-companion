@@ -68,7 +68,7 @@ const screen: CrossTabScreenTransfer = {
   }
 };
 
-function setup() {
+function setup(resumeItemFromBag = false) {
   const calls: string[] = [];
   const post: SpatialProjection = {
     sourceSnapshotHash: "after",
@@ -123,7 +123,7 @@ function setup() {
   );
   return {
     calls,
-    controller: new CrossTabOperatorController(plan, [screen], runner)
+    controller: new CrossTabOperatorController(plan, [screen], runner, resumeItemFromBag)
   };
 }
 
@@ -165,5 +165,15 @@ describe("cross-tab operator controller", () => {
       "to-stash",
       "refresh"
     ]);
+  });
+
+  it("resumes the same item from the bag without touching the old source cell", async () => {
+    const { calls, controller } = setup(true);
+    expect(controller.snapshot().phase).toBe("ambiguous");
+    await expect(controller.run()).resolves.toMatchObject({
+      phase: "confirmed",
+      lastResult: { status: "confirmed", transferCount: 1, dragCount: 1 }
+    });
+    expect(calls).toEqual(["preflight", "tab:1", "to-stash", "refresh"]);
   });
 });

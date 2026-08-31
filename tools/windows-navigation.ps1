@@ -52,7 +52,7 @@ function Resolve-GameWindowHandle([string]$value){
  $expected=Convert-WindowHandle $value
  if($expected-ne[IntPtr]::Zero){[uint32]$expectedPid=0;[void][NavNative]::GetWindowThreadProcessId($expected,[ref]$expectedPid);if($expectedPid-ne 0){$expectedProcess=Get-Process -Id $expectedPid -ErrorAction SilentlyContinue;if($expectedProcess-and$expectedProcess.ProcessName-ieq'DungeonCrawler'-and$expectedProcess.MainWindowHandle-eq$expected){return $expected}}}
  $candidates=@(Get-Process -Name DungeonCrawler -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle-ne[IntPtr]::Zero})
- if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return[IntPtr]$candidates[0].MainWindowHandle
+ if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return [IntPtr]$candidates[0].MainWindowHandle
 }
 function Get-State([IntPtr]$h=[IntPtr]::Zero) {
  if($h-eq[IntPtr]::Zero){$h=[NavNative]::GetForegroundWindow()};if($h-eq[IntPtr]::Zero){throw 'No window.'}

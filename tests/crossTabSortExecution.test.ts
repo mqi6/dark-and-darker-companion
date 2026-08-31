@@ -257,4 +257,22 @@ describe("cross-tab sort execution", () => {
       dragCount: 2
     });
   });
+
+  it("does not confirm when the refreshed quantity changed", async () => {
+    const plan = readyPlan({
+      transfers: [{ ...transfer, quantity: 2 }]
+    });
+    const { runtime } = fakeRuntime();
+    const runner = new CrossTabSortExecutionRunner(new GameInteractionLease(), runtime);
+    const result = await runner.execute({
+      plan,
+      approval: issueCrossTabLocalApproval(plan, 1)
+    });
+    expect(result).toMatchObject({
+      status: "ambiguous",
+      diagnosticCode: "post-state-quantity-mismatch",
+      transferCount: 1,
+      dragCount: 2
+    });
+  });
 });

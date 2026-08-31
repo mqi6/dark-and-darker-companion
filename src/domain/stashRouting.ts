@@ -80,6 +80,7 @@ export interface CrossTabTransfer {
   category: StashItemCategory;
   width: number;
   height: number;
+  quantity?: number;
   sourceInventoryId: number;
   sourceTabIndex: number;
   bagSlotId: number;
@@ -87,6 +88,47 @@ export interface CrossTabTransfer {
   targetTabIndex: number;
   targetSlotId: number;
   actions: readonly CrossTabLogicalAction[];
+}
+
+/** Builds the deliberately policy-free, single-item operator checkpoint plan. */
+export function planCrossTabSmokeTransfer(parameters: {
+  projection: SpatialProjection;
+  mapping: StashTabMapping;
+}): CrossTabSortPlan {
+  const policies: StashTabItemPolicy[] = parameters.mapping.entries.map(entry => ({
+    inventoryId: entry.inventoryId,
+    enabled: true,
+    allowedCategories: []
+  }));
+  const sourceContainers = parameters.projection.containers
+    .filter(container => container.status === "ready" && container.geometry.kind === "rectangular")
+    .sort((left, right) =>
+      (parameters.mapping.entries.find(entry => entry.inventoryId === left.inventoryId)?.tabIndex ?? 99) -
+      (parameters.mapping.entries.find(entry => entry.inventoryId === right.inventoryId)?.tabIndex ?? 99));
+  for (const source of sourceContainers) {
+    const sourceEntry = parameters.mapping.entries.find(entry => entry.inventoryId === source.inventoryId);
+    if (!sourceEntry) continue;
+    for (const item of [...source.placements].sort((a, b) => a.slotId - b.slotId || a.alias.localeCompare(b.alias))) {
+      for (const target of parameters.mapping.entries.filter(entry => entry.inventoryId !== source.inventoryId)) {
+        policies.find(policy => policy.inventoryId === target.inventoryId)!.allowedCategories = [classifyStashItem(item.metadata)];
+        const candidate = planCrossTabTransfers({
+          projection: parameters.projection,
+          mapping: parameters.mapping,
+          policies,
+          maximumTransfers: 1
+        });
+        policies.find(policy => policy.inventoryId === target.inventoryId)!.allowedCategories = [];
+        if (candidate.status === "ready" && candidate.transfers.length === 1 &&
+            candidate.transfers[0]!.itemAlias === item.alias) return candidate;
+      }
+    }
+  }
+  return {
+    status: "blocked",
+    reason: "no-allowed-target-tab",
+    detail: "No safe single cross-tab smoke transfer is available.",
+    diagnostics: []
+  };
 }
 
 export type CrossTabSortPlan =
@@ -371,6 +413,7 @@ export function planCrossTabTransfers(parameters: {
         category: classifyStashItem(item.metadata),
         width: item.width,
         height: item.height,
+        quantity: item.stackQuantity,
         sourceInventoryId: source.inventoryId,
         sourceTabIndex,
         bagSlotId,

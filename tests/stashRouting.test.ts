@@ -9,6 +9,7 @@ import {
 import {
   analyzeCharacterBag,
   classifyStashItem,
+  planCrossTabSmokeTransfer,
   planCrossTabTransfers,
   tabPolicyAllowsItem,
   type StashTabItemPolicy
@@ -138,6 +139,26 @@ describe("character bag capacity", () => {
 });
 
 describe("bag-backed cross-tab planner", () => {
+  it("prepares exactly one policy-free smoke transfer through the bag", () => {
+    const item = placement("smoke", 4, 0, metadata("id.item.smoke", "armor", undefined, 2, 2), 12);
+    const result = planCrossTabSmokeTransfer({
+      projection: projection([stash(4, [item]), stash(20, []), stash(21, []), bag()]),
+      mapping
+    });
+    expect(result.status).toBe("ready");
+    if (result.status !== "ready") return;
+    expect(result.transfers).toHaveLength(1);
+    expect(result.transfers[0]).toMatchObject({
+      itemAlias: "smoke",
+      quantity: 1,
+      sourceInventoryId: 4,
+      targetInventoryId: 20
+    });
+    expect(result.transfers[0]!.actions.map(action => action.kind)).toEqual([
+      "select-stash-tab", "drag-stash-to-bag", "select-stash-tab", "drag-bag-to-stash"
+    ]);
+  });
+
   it("routes a disallowed stash item through one reusable bag slot", () => {
     const armor = metadata("id.item.armor", "armor", "Chest", 2, 2);
     const result = planCrossTabTransfers({
