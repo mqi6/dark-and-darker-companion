@@ -42,6 +42,8 @@ export interface WindowsUiBridge {
     source: ScreenPoint;
     destination: ScreenPoint;
     durationMilliseconds: number;
+    pointerSettleMilliseconds?: number;
+    postDragMilliseconds?: number;
   }): Promise<MoveDispatchResult>;
 }
 
@@ -160,6 +162,8 @@ export class PowerShellWindowsUiBridge implements WindowsUiBridge {
     source: ScreenPoint;
     destination: ScreenPoint;
     durationMilliseconds: number;
+    pointerSettleMilliseconds?: number;
+    postDragMilliseconds?: number;
   }): Promise<MoveDispatchResult> {
     const args = [
       "-Drag",
@@ -172,7 +176,13 @@ export class PowerShellWindowsUiBridge implements WindowsUiBridge {
       "-SourceY", String(Math.round(parameters.source.y)),
       "-DestinationX", String(Math.round(parameters.destination.x)),
       "-DestinationY", String(Math.round(parameters.destination.y)),
-      "-DurationMilliseconds", String(Math.round(parameters.durationMilliseconds))
+      "-DurationMilliseconds", String(Math.round(parameters.durationMilliseconds)),
+      ...(parameters.pointerSettleMilliseconds === undefined ? [] : [
+        "-PointerSettleMilliseconds", String(Math.round(parameters.pointerSettleMilliseconds))
+      ]),
+      ...(parameters.postDragMilliseconds === undefined ? [] : [
+        "-PostDragMilliseconds", String(Math.round(parameters.postDragMilliseconds))
+      ])
     ];
     try {
       const result = await runPowerShell(this.helperPath, args);
