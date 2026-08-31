@@ -5,12 +5,15 @@ import { describe, expect, it } from "vitest";
 const helper = readFileSync(resolve(process.cwd(), "tools/windows-navigation.ps1"), "utf8");
 
 describe("Windows navigation input contract", () => {
-  it("matches the reviewed DnDTools click sequence", () => {
+  it("matches the reviewed DnDTools click sequence with configurable timing", () => {
     expect(helper).toContain("Move-MouseLikeDnDTools $X $Y");
     expect(helper).toContain("[NavNative]::MOVE-bor[NavNative]::ABSOLUTE-bor[NavNative]::VIRTUALDESK");
-    expect(helper).toContain("Start-Sleep -Milliseconds 50");
-    expect(helper).toContain("Start-Sleep -Milliseconds 30");
-    expect(helper).toContain("Start-Sleep -Milliseconds 150");
+    expect(helper).toContain("[int]$PointerSettleMilliseconds=50");
+    expect(helper).toContain("[int]$ClickHoldMilliseconds=30");
+    expect(helper).toContain("[int]$PostClickMilliseconds=150");
+    expect(helper).toContain("Move-MouseLikeDnDTools $X $Y $PointerSettleMilliseconds");
+    expect(helper).toContain("Start-Sleep -Milliseconds $ClickHoldMilliseconds");
+    expect(helper).toContain("Start-Sleep -Milliseconds $PostClickMilliseconds");
     expect(helper).toContain("inputMethod='dndtools-sendinput'");
   });
 
