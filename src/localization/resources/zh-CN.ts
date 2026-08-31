@@ -39,6 +39,28 @@ export const zhCN = {
     sortTabsDescription: "选择每次自动整理时哪些可见页面参与任务。",
     sortPolicyTitle: "各页允许的物品",
     sortPolicyDescription: "逐页开启或关闭，并选择该页可接收的物品类型。关闭的页不会作为来源或目标。",
+    sortSettingsTitle: "整理布局与速度",
+    packingMode: "排列方式",
+    packingModes: {
+      "compact-top-left": "左上角紧凑排列",
+      "category-rows": "同类物品同行，不足一行留空"
+    },
+    sortSpeed: "输入速度",
+    speedPresets: {
+      fast: "快速",
+      balanced: "平衡",
+      reliable: "可靠",
+      custom: "自定义"
+    },
+    timing: {
+      pointerSettleMilliseconds: "鼠标到位等待（毫秒）",
+      clickHoldMilliseconds: "点击按住时间（毫秒）",
+      postClickMilliseconds: "点击后等待（毫秒）",
+      tabSettleMilliseconds: "页签加载等待（毫秒）",
+      dragDurationMilliseconds: "拖动时间（毫秒）",
+      postDragMilliseconds: "拖动后等待（毫秒）"
+    },
+    singleSnapshotVerification: "整个计划只使用一次初始仓库数据，并在所有移动完成后自动刷新一次进行完整核对。",
     allowedCategories: "允许的物品类型",
     tabPolicyToggleLabel: "{{page}}：{{state}}",
     itemCategory: {
