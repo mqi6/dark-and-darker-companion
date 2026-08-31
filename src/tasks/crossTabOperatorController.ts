@@ -70,7 +70,7 @@ export class CrossTabOperatorController {
       const result = await this.runner.execute({
         plan: this.planValue,
         approval,
-        signal
+        ...(signal ? { signal } : {})
       });
       this.state.lastResult = result;
       this.state.phase = result.status === "dry-run"
