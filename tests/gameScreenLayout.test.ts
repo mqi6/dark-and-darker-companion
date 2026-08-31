@@ -29,7 +29,12 @@ describe("game screen layout", () => {
     expect(layout.stash).toMatchObject({
       gridTopLeft: { x: 1378, y: 199 },
       gridBottomRight: { x: 1864, y: 1009 },
-      playerBagGridTopLeft: { x: 690, y: 626 },
+      playerBagGridTopLeft: { x: 688, y: 625 },
+      playerBagGridBottomRight: { x: 1090, y: 823 },
+      playerBagColumns: 10,
+      playerBagRows: 5,
+      playerBagCellWidth: 40.2,
+      playerBagCellHeight: 39.6,
       cellPitch: 40.5,
       tabSpacing: 45
     });
@@ -61,11 +66,26 @@ describe("game screen layout", () => {
     expect(layout.stash).toMatchObject({
       gridTopLeft: { x: 918, y: 132 },
       playerBagGridTopLeft: { x: 457, y: 416 },
+      playerBagGridBottomRight: { x: 727, y: 549 },
+      playerBagCellWidth: 27,
+      playerBagCellHeight: 26.6,
       cellPitch: 27,
       tabSpacing: 31
     });
     expect(layout.stash.tabCenters[0]).toEqual({ x: 881, y: 139 });
     expect(layout.stash.tabCenters[7]).toEqual({ x: 881, y: 356 });
+  });
+
+
+  it("scales the fixed character bag bounds with the DnDTools transform", () => {
+    const layout = buildGameScreenLayout({
+      clientBounds: { left: 1920, top: 0, width: 1920, height: 1080 },
+      visibleStashTabs: 4
+    });
+    expect(layout.stash.playerBagGridTopLeft).toEqual({ x: 2608, y: 625 });
+    expect(layout.stash.playerBagGridBottomRight).toEqual({ x: 3010, y: 823 });
+    expect(layout.stash.playerBagCellWidth).toBeCloseTo(40.2);
+    expect(layout.stash.playerBagCellHeight).toBeCloseTo(39.6);
   });
 
   it("rejects unsupported visible-tab counts", () => {
