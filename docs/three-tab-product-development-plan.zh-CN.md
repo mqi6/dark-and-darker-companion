@@ -573,6 +573,8 @@ React UI
 
 ### Phase M1 — DarkerDB 合约与静态目录修复
 
+状态（2026-09-01）：**已完成 API 合约 checkpoint。** Facets、Classes、Attributes、item detail、Price Check 双形态 selection、安全多品质拆分、游标收集、AbortSignal、运行时诊断、百分比显示单位归一化和 patch/locale/resource 隔离缓存均已实现并回归。缓存接入 UI、请求 generation guard、全局预算和 round-robin 属于 M2。
+
 工作：
 
 - Facets / Classes / item detail / 完整 catalog collectors；
@@ -811,4 +813,3 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 - 将 API key、原始 PCAP 或玩家身份写入仓库；
 - 将陈旧或不完整数据表述为完整、实时、已确认成交；
 - 让任何 ambiguous action 自动变成 success。
-

@@ -13,9 +13,34 @@ import {
 import type { MarketCollection } from "./darkerdb";
 import type {
   DarkerDbMarketListing,
+  DarkerDbItemAttributeRange,
   DarkerDbPriceCheckBody,
   DarkerDbSimilarSale
 } from "./darkerdbContracts";
+
+export interface NormalizedDarkerDbRollRange {
+  attributeId: CanonicalId;
+  minimum: number;
+  maximum: number;
+  enchantedMinimum: number;
+  enchantedMaximum: number;
+  percentage: boolean;
+}
+
+export function normalizeDarkerDbRollRange(
+  range: DarkerDbItemAttributeRange,
+  source: "item-detail" | "price-check"
+): NormalizedDarkerDbRollRange {
+  const scale = source === "item-detail" && range.percentage ? 0.1 : 1;
+  return {
+    attributeId: canonicalAttributeId(range.attribute_id),
+    minimum: range.minimum * scale,
+    maximum: range.maximum * scale,
+    enchantedMinimum: range.enchanted_min * scale,
+    enchantedMaximum: range.enchanted_max * scale,
+    percentage: range.percentage
+  };
+}
 
 export type DarkerDbPriceReference =
   | {
@@ -169,6 +194,9 @@ export function mapDarkerDbPriceReference(
 }
 
 function canonicalAttributeId(attribute: string): CanonicalId {
+  if (attribute.startsWith("id.attribute.")) {
+    return attribute as CanonicalId;
+  }
   if (!/^[a-z0-9_]+$/.test(attribute)) {
     throw new Error(`Unsupported DarkerDB attribute ID: ${attribute}`);
   }

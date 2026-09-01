@@ -7,6 +7,46 @@ const canonicalIdSchema = z.custom<CanonicalId>(
 );
 const timestampSchema = z.iso.datetime();
 
+export const darkerDbAttributeSchema = z
+  .object({
+    id: canonicalIdSchema,
+    name: z.string().trim().min(1),
+    description: z.string(),
+    is_percentage: z.boolean(),
+    attribute_group: z.enum(["primary", "secondary"])
+  })
+  .passthrough();
+
+export const darkerDbClassSchema = z
+  .object({
+    id: canonicalIdSchema,
+    name: z.string().trim().min(1),
+    icon_url: z.string().url().nullish()
+  })
+  .passthrough();
+
+export const darkerDbFacetValueSchema = z
+  .object({
+    value: z.string().trim().min(1),
+    label: z.string().trim().min(1)
+  })
+  .passthrough();
+
+export const darkerDbFacetSchema = z
+  .object({
+    name: z.string().trim().min(1),
+    description: z.string(),
+    auth_required: z.boolean(),
+    values: z.array(darkerDbFacetValueSchema)
+  })
+  .passthrough();
+
+export const darkerDbFacetsBodySchema = z
+  .object({
+    facets: z.record(z.string(), darkerDbFacetSchema)
+  })
+  .passthrough();
+
 export const darkerDbGameplayItemSchema = z
   .object({
     id: canonicalIdSchema,
@@ -22,6 +62,28 @@ export const darkerDbGameplayItemSchema = z
     patch: z.string().trim().min(1).nullish()
   })
   .passthrough();
+
+export const darkerDbItemAttributeRangeSchema = z
+  .object({
+    attribute_id: z.string().trim().min(1),
+    minimum: z.number(),
+    maximum: z.number(),
+    enchanted_min: z.number(),
+    enchanted_max: z.number(),
+    percentage: z.boolean()
+  })
+  .passthrough()
+  .refine((range) => range.minimum <= range.maximum, {
+    message: "minimum must not exceed maximum"
+  })
+  .refine((range) => range.enchanted_min <= range.enchanted_max, {
+    message: "enchanted_min must not exceed enchanted_max"
+  });
+
+export const darkerDbItemDetailSchema = darkerDbGameplayItemSchema.extend({
+  primary_attributes: z.array(darkerDbItemAttributeRangeSchema),
+  secondary_attributes: z.array(darkerDbItemAttributeRangeSchema)
+});
 
 export const darkerDbFreshnessSchema = z
   .object({
@@ -174,7 +236,10 @@ export const darkerDbPriceCheckBodySchema = z
       .passthrough(),
     selection: z
       .object({
-        attributes: z.array(z.unknown()),
+        attributes: z.union([
+          z.array(z.unknown()),
+          z.record(z.string(), z.number())
+        ]),
         primary: z.array(z.unknown()),
         secondary: z.array(z.unknown())
       })
@@ -221,7 +286,13 @@ export const darkerDbPriceCheckResponseSchema = z
   .passthrough();
 
 export type DarkerDbFreshness = z.infer<typeof darkerDbFreshnessSchema>;
+export type DarkerDbAttribute = z.infer<typeof darkerDbAttributeSchema>;
+export type DarkerDbClass = z.infer<typeof darkerDbClassSchema>;
+export type DarkerDbFacet = z.infer<typeof darkerDbFacetSchema>;
+export type DarkerDbFacetsBody = z.infer<typeof darkerDbFacetsBodySchema>;
 export type DarkerDbGameplayItem = z.infer<typeof darkerDbGameplayItemSchema>;
+export type DarkerDbItemAttributeRange = z.infer<typeof darkerDbItemAttributeRangeSchema>;
+export type DarkerDbItemDetail = z.infer<typeof darkerDbItemDetailSchema>;
 export type DarkerDbMarketListing = z.infer<typeof darkerDbMarketListingSchema>;
 export type DarkerDbMarketResponse = z.infer<typeof darkerDbMarketResponseSchema>;
 export type DarkerDbPriceCheckBody = z.infer<typeof darkerDbPriceCheckBodySchema>;

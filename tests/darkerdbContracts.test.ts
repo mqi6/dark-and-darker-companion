@@ -13,6 +13,7 @@ import {
   mapDarkerDbListingToRecentSale,
   mapDarkerDbPriceReference,
   mapDarkerDbSimilarSaleToRecentSale,
+  normalizeDarkerDbRollRange,
   possibleSecondaryAttributesFromPriceCheck
 } from "../src/adapters/darkerdbMapping";
 import { indexLocalizedCatalog, localizationCatalogSchema } from "../src/domain/localizedCatalog";
@@ -91,6 +92,34 @@ describe("real DarkerDB live response contracts", () => {
     expect(possibleSecondaryAttributesFromPriceCheck(response.body)).toContain(
       "id.attribute.agility"
     );
+  });
+
+  it("accepts current object-shaped Price Check selections and normalizes item-detail percentages", async () => {
+    const raw = await fixture("price-check.json") as Record<string, unknown>;
+    const body = raw.body as Record<string, unknown>;
+    body.selection = {
+      attributes: { magic_penetration: 2.4 },
+      primary: [],
+      secondary: []
+    };
+    const response = darkerDbPriceCheckResponseSchema.parse(raw);
+    expect(response.body.selection.attributes).toEqual({ magic_penetration: 2.4 });
+
+    expect(normalizeDarkerDbRollRange({
+      attribute_id: "magic_penetration",
+      minimum: 15,
+      maximum: 30,
+      enchanted_min: 15,
+      enchanted_max: 30,
+      percentage: true
+    }, "item-detail")).toMatchObject({
+      attributeId: "id.attribute.magic_penetration",
+      minimum: 1.5,
+      maximum: 3,
+      enchantedMinimum: 1.5,
+      enchantedMaximum: 3,
+      percentage: true
+    });
   });
 
   it("maps bilingual Gear Search candidates and reports matches/evaluated/retrieved/total", async () => {

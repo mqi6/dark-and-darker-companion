@@ -1,5 +1,19 @@
 # Development Progress
 
+## Marketplace M1 API contract checkpoint — 2026-09-01
+
+- Added typed DarkerDB contracts and client methods for Facets, Classes, Attributes, and concrete item detail while retaining unknown upstream columns through passthrough validation.
+- Repaired the current Price Check contract drift: `selection.attributes` now accepts both the earlier array representation and the current attribute-keyed numeric object.
+- Removed the incorrect multi-rarity Market encoding. A direct Market request accepts exactly one rarity; multi-rarity family collection deterministically splits and deduplicates the selected rarities into separate requests. Slot unions remain comma encoded because that behavior is documented separately.
+- Added reusable bounded cursor collection that follows the response's opaque `pagination.next`, detects repeated cursors, reports an intentional page cap as incomplete, and does not assume the requested page size was honored.
+- Exposed pinned contract version, service version, game build, patch, request ID, elapsed time, timestamp, rate-limit/credit fields, and Retry-After as runtime diagnostics. HTTP failures retain those diagnostics instead of becoming empty results.
+- Added AbortSignal support to every DarkerDB client method and both page collectors. Request-generation/stale-result guards remain M2 orchestration work.
+- Added explicit item-detail percentage normalization into the same displayed units used by Market and Price Check, plus a five-minute in-memory catalog cache isolated by contract version, patch, locale, and resource.
+- Updated localization sync to consume the validated typed Attributes contract. All joins remain canonical-ID based; no localized name is used as an identity key.
+- Verification: strict typecheck, sanitized fixture validation, full test suite, and production build pass at this checkpoint.
+
+Next product phase: Marketplace M2 SearchSpec/query planner, overall 20-request/1,000-row budget, round-robin retrieval, per-family completeness, local K-of-N pipeline, runtime cache orchestration, and stale-response generation guards. No game Marketplace input, purchasing, stash-sort TODO, Price Check result-row calls, or live listing automation was added in M1.
+
 ## Three-workflow shell P0 — 2026-09-01
 
 - Replaced the former four-item primary navigation with exactly three product workflows: Stash, Marketplace Search, and Auto Listing.

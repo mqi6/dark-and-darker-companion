@@ -33,8 +33,8 @@ if (!apiKey) {
   const [itemsEn, itemsZh, attributesEn, attributesZh] = await Promise.all([
     fetchAll((cursor) => client.getItems<GameDataNameRecord[]>({ locale: "en", cursor, limit: 200 })),
     fetchAll((cursor) => client.getItems<GameDataNameRecord[]>({ locale: zhLocale, cursor, limit: 200 })),
-    fetchAll((cursor) => client.getAttributes<GameDataNameRecord[]>({ locale: "en", cursor, limit: 200 })),
-    fetchAll((cursor) => client.getAttributes<GameDataNameRecord[]>({ locale: zhLocale, cursor, limit: 200 }))
+    fetchAll((cursor) => client.getAttributes({ locale: "en", cursor, limit: 200 })),
+    fetchAll((cursor) => client.getAttributes({ locale: zhLocale, cursor, limit: 200 }))
   ]);
 
   const items = mergeLocalizedCatalog(itemsEn, itemsZh);
@@ -86,7 +86,7 @@ async function detectSimplifiedChineseLocale(
   let best: { locale: string; hanNames: number } | undefined;
   for (const locale of candidates) {
     try {
-      const page = await client.getAttributes<GameDataNameRecord[]>({ locale, limit: 50 });
+      const page = await client.getAttributes({ locale, limit: 50 });
       const hanNames = page.data.filter((record) => /\p{Script=Han}/u.test(record.name ?? "")).length;
       if (!best || hanNames > best.hanNames) {
         best = { locale, hanNames };

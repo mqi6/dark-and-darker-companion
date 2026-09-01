@@ -4,10 +4,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import {
   collectMarketItemFamilies,
+  collectDarkerDbCursorPages,
   collectMarketPages,
   DarkerDbClient,
   DarkerDbHttpError,
   PINNED_DARKERDB_API_VERSION,
+  splitMarketQueryByRarity,
+  type DarkerDbCursorPageSource,
   type MarketPageSource
 } from "../src/adapters/darkerdb";
 import { sanitizeDarkerDbSample } from "../src/adapters/darkerdbSample";
@@ -80,7 +83,7 @@ describe("DarkerDbClient", () => {
     expect(nonSpatial.data[0]?.inventory_width).toBeUndefined();
   });
 
-  it("encodes documented market filters and enforces the 50-row page cap", async () => {
+  it("encodes one documented market rarity and enforces the 50-row page cap", async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ body: [], pagination: { page: 2, num_pages: 2, total: 0 } }), {
         status: 200,
@@ -95,7 +98,7 @@ describe("DarkerDbClient", () => {
     await client.getMarket({
       itemId: "id.item.occultist_robe_4001",
       archetype: "id.archetype.occultist_robe",
-      rarities: ["epic", "legendary"],
+      rarity: "epic",
       slotTypes: ["chest"],
       listingState: "missing",
       hasSold: true,
@@ -111,7 +114,7 @@ describe("DarkerDbClient", () => {
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       item_id: "id.item.occultist_robe_4001",
       archetype: "id.archetype.occultist_robe",
-      rarity: "epic,legendary",
+      rarity: "epic",
       slot_type: "chest",
       listing_state: "missing",
       has_sold: "true",
@@ -124,6 +127,83 @@ describe("DarkerDbClient", () => {
     await expect(client.getMarket({ limit: 51 })).rejects.toThrow(
       "Market limit must be between 1 and 50."
     );
+  });
+
+  it("splits multiple rarities instead of sending an unsupported comma query", async () => {
+    expect(splitMarketQueryByRarity({
+      itemId: "id.item.occultist_robe_4001",
+      rarities: ["epic", "legendary", "epic"]
+    })).toEqual([
+      { itemId: "id.item.occultist_robe_4001", rarity: "epic" },
+      { itemId: "id.item.occultist_robe_4001", rarity: "legendary" }
+    ]);
+
+    const fetchImplementation = vi.fn<typeof fetch>();
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+    await expect(client.getMarket({ rarities: ["epic", "legendary"] })).rejects.toThrow(
+      "one rarity per request"
+    );
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
+
+  it("exposes envelope and rate-limit diagnostics and forwards cancellation", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({
+        version: "v1.0.0-rc.37",
+        build: "0.17.151.9472",
+        patch: 132,
+        request_id: "request-test",
+        elapsed: 0.012,
+        timestamp: "2026-09-01T00:00:00.000Z",
+        body: { facets: {} }
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": "60",
+          "X-RateLimit-Remaining": "59",
+          "X-Credits-Cost": "1",
+          "X-Credits-Remaining": "999"
+        }
+      })
+    );
+    const controller = new AbortController();
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+
+    const page = await client.getFacets({ signal: controller.signal });
+
+    expect(fetchImplementation.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+    expect(page.diagnostics).toEqual({
+      contractVersion: PINNED_DARKERDB_API_VERSION,
+      serviceVersion: "v1.0.0-rc.37",
+      build: "0.17.151.9472",
+      patch: 132,
+      requestId: "request-test",
+      elapsedSeconds: 0.012,
+      timestamp: "2026-09-01T00:00:00.000Z",
+      rateLimit: { limit: 60, remaining: 59, creditsCost: 1, creditsRemaining: 999 }
+    });
+  });
+
+  it("loads typed facets, classes, attributes, and item detail", async () => {
+    const responses = [
+      { body: { facets: { item_rarity: { name: "item_rarity", description: "Rarity", auth_required: false, values: [{ value: "rare", label: "Rare" }] } } } },
+      { body: [{ id: "id.class.fighter", name: "Fighter" }] },
+      { body: [{ id: "id.attribute.strength", name: "Strength", description: "Power", is_percentage: false, attribute_group: "primary" }] },
+      { body: { id: "id.item.robe_4001", name: "Robe", rarity: "rare", max_stack_size: 1, primary_attributes: [], secondary_attributes: [{ attribute_id: "magic_penetration", minimum: 15, maximum: 30, enchanted_min: 15, enchanted_max: 30, percentage: true }] } }
+    ];
+    const fetchImplementation = vi.fn<typeof fetch>();
+    for (const response of responses) {
+      fetchImplementation.mockResolvedValueOnce(new Response(JSON.stringify(response), {
+        status: 200, headers: { "Content-Type": "application/json" }
+      }));
+    }
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+
+    await expect(client.getFacets()).resolves.toMatchObject({ data: { facets: { item_rarity: { values: [{ value: "rare" }] } } } });
+    await expect(client.getClasses()).resolves.toMatchObject({ data: [{ id: "id.class.fighter" }] });
+    await expect(client.getAttributes({ group: "primary" })).resolves.toMatchObject({ data: [{ id: "id.attribute.strength" }] });
+    await expect(client.getItemDetail("id.item.robe_4001")).resolves.toMatchObject({ data: { secondary_attributes: [{ percentage: true }] } });
   });
 
   it("encodes attribute and gem price-check comparables", async () => {
@@ -163,6 +243,7 @@ describe("DarkerDbClient", () => {
         const page = query.page ?? 1;
         return Promise.resolve({
           data: [{ id: `listing-${query.itemId}-${page}` }],
+          diagnostics: { contractVersion: PINNED_DARKERDB_API_VERSION },
           page,
           numPages: 3,
           reportedTotal: 3
@@ -200,6 +281,7 @@ describe("DarkerDbClient", () => {
       getMarket: vi.fn((query) =>
         Promise.resolve({
           data: [{ id: String(query.itemId) }],
+          diagnostics: { contractVersion: PINNED_DARKERDB_API_VERSION },
           page: 1,
           numPages: 1,
           reportedTotal: 1
@@ -218,6 +300,45 @@ describe("DarkerDbClient", () => {
     expect(result.reportedTotal).toBe(2);
     expect(result.complete).toBe(true);
     expect(result.families).toHaveLength(2);
+  });
+
+  it("splits item-family rarity requests and follows cursor pagination until next is absent", async () => {
+    const marketClient: MarketPageSource<{ id: string }> = {
+      getMarket: vi.fn((query) => Promise.resolve({
+        data: [{ id: `${query.itemId}:${query.rarity}` }],
+        diagnostics: { contractVersion: PINNED_DARKERDB_API_VERSION },
+        page: 1,
+        numPages: 1,
+        reportedTotal: 1
+      }))
+    };
+    const market = await collectMarketItemFamilies(
+      marketClient,
+      ["id.item.robe"],
+      { rarities: ["rare", "epic"], limit: 50 }
+    );
+    expect(market.data).toEqual([
+      { id: "id.item.robe:rare" },
+      { id: "id.item.robe:epic" }
+    ]);
+    expect(market.families.map(({ itemId, rarity }) => ({ itemId, rarity }))).toEqual([
+      { itemId: "id.item.robe", rarity: "rare" },
+      { itemId: "id.item.robe", rarity: "epic" }
+    ]);
+
+    const cursorSource: DarkerDbCursorPageSource<{ id: string }> = {
+      getPage: vi.fn((cursor) => Promise.resolve({
+        data: [{ id: cursor ?? "first" }],
+        diagnostics: { contractVersion: PINNED_DARKERDB_API_VERSION },
+        ...(cursor === undefined ? { nextCursor: "cursor-2" } : {})
+      }))
+    };
+    await expect(collectDarkerDbCursorPages(cursorSource)).resolves.toMatchObject({
+      data: [{ id: "first" }, { id: "cursor-2" }],
+      pagesFetched: 2,
+      retrievedCount: 2,
+      complete: true
+    });
   });
 
   it("keeps authentication errors distinct from empty results", async () => {
