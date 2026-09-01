@@ -598,16 +598,18 @@ Retain existing boundaries and add:
 
 Fixtures must be sanitized, version/build/patch stamped, and contain no key, request ID, or player identity.
 
-## 10. Genuine product decisions for review
+## 10. Resolved product decisions — 2026-09-01
 
-These require the user's decision; the remaining uncertainties are research or implementation questions.
+Marketplace Search is a read-only DarkerDB purchase-assistance workflow. It returns qualifying candidate listings so the user can manually reproduce the search and buy in the game UI. It does not fill the game Marketplace, click listings, or purchase items.
 
-1. **Multi-class meaning.** Recommended: “usable by any selected class” (OR), matching DarkerDB's class-union behavior and unrestricted-item inclusion. Alternative: require usability by every selected class.
-2. **Item-name granularity.** Recommended: users select a family name such as Arcane Garb; rarity remains a separate filter that resolves concrete IDs. Alternative: expose every rarity variant as a separate name option.
-3. **Default retrieval budget.** Recommended: 20 requests / 1,000 retrieved listings overall, with “Load more” consuming another explicit bounded batch. A larger default increases latency and can exhaust the 60/min live scope.
-4. **Price Check density in results.** Recommended: show active total/unit prices for every row, but fetch valuation/recent comparables only when a user expands one row. Alternative: prefetch Price Check for the first few matches at significant request cost.
-5. **Default price sort.** Recommended: unit price ascending, then newest, then listing ID. Alternative: total price ascending, which is simpler but mixes stack quantities.
-6. **Server-impacting edits.** Recommended: explicit Search; only K/range/local-sort refinements use Apply locally. Alternative: debounce every edit into live requests, which is less predictable under the rate cap.
+1. **Multi-class meaning:** usable by any selected class (OR); unrestricted items match.
+2. **Item-name granularity:** users select a canonical family name such as Arcane Garb; rarity remains a separate filter that resolves concrete IDs.
+3. **Default retrieval budget:** 20 live requests / 1,000 retrieved listings per explicit Search; Load more consumes another explicit bounded batch.
+4. **API and local-filter workflow:** each Market request retrieves a bounded list for a strict item/rarity/slot/price family. The companion merges/deduplicates these lists and performs remaining advanced filtering locally. It does not call Price Check once per result row.
+5. **Default price sort/display:** unit price ascending, then newest, then listing ID; show both unit and total price.
+6. **Server-impacting edits:** only an explicit Search starts a new live listing query. Filter edits, result expansion, language changes, tab switches, and window focus changes do not query. K/range/local-sort changes may use Apply locally when the candidate superset remains valid.
+
+A result may offer a copyable in-game search summary. This is text assistance only and does not operate the game UI. DarkerDB freshness/incomplete warnings remain visible because the listing may no longer be available when the user searches manually.
 
 ### Questions that do not require a product decision
 
