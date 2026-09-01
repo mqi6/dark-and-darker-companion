@@ -5,7 +5,7 @@
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
-实施状态：**Phase P0、Marketplace M1 与 M2 已完成；下一步连续完成 Marketplace M3–M5。之后再进行仓库 operator 产品化集成与 Electron。**
+实施状态：**Phase P0、Marketplace M1–M3 已完成；下一步连续完成 Marketplace M4–M5。之后再进行仓库 operator 产品化集成与 Electron。**
 
 ## 0. 目标与范围
 
@@ -630,6 +630,8 @@ Electron renderer / React UI
 
 ### Phase M3 — Marketplace 筛选 UI
 
+状态（2026-09-01）：**已完成 UI checkpoint。** Marketplace 标签已替换静态假 count，改为由注入 canonical catalog 驱动的完整筛选草稿。已实现中英别名搜索、多名称/职业/品质/类别/栏位/护甲/武器/持握多选、单位/总价范围、自然滚动词条目录、逐词条 min/max、K、active chips、单项移除、全部清除，以及 Search / Refresh / Apply locally / Reset 的独立触发语义。浏览器产品壳当前明确使用小型脱敏 preview catalog，不伪装成 live 结果；M4/M5 再接入结果状态和真实只读查询。
+
 工作：
 
 - 完整过滤栏、多选、属性列表、min/max、K；
@@ -815,7 +817,7 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 | 桌面宿主 | 约 5%（React renderer 可复用） | 0% | Electron main/preload/IPC、Windows 打包与发布 |
 | 共享 shell | 约 70% | 约 40% | 桌面 runtime、真实 status/Activity、任务 controller 接入 |
 | 仓库整理 | alpha 约 75%；更广 v1 约 50% | 独立 localhost operator 可受控整理；产品 Stash tab 仍是 demo | D1/S0 产品集成；之后是速度、前台/刷新、名称/品质排序和恢复 |
-| Marketplace Search | 约 60% | 约 10% | M3 完整筛选 UI、M4 结果/状态、M5 live 只读验收 |
+| Marketplace Search | 约 72% | 约 35% | M4 结果/状态与运行时接线、M5 live 只读验收 |
 | 自动上架 | 定价/任务基础约 35% | live workflow 低于 15% | owned-item queue、复核 UI、动作/验证、独立 live checkpoint |
 
 这些百分比是用于规划的工程估计，不是按文件数计算。Marketplace 是当前最明确、风险最低、最适合先完成的完整用户工作流。

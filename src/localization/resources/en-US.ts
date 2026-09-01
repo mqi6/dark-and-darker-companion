@@ -107,16 +107,92 @@ export const enUS = {
   },
   search: {
     eyebrow: "MARKETPLACE SEARCH · LOCAL FILTER",
-    title: "Marketplace Search foundation",
-    description: "K-of-N is evaluated locally across multiple item families.",
+    title: "Marketplace item search",
+    description: "Pull a bounded DarkerDB listing batch, then finish advanced filtering locally. You reproduce the selected item manually in the game.",
     resultSummary: "{{matches}} of {{evaluated}} evaluated listings match",
     incompleteSummary: "Incomplete: {{retrieved}} of {{reported}} reported listings retrieved",
     impossibleRoll: "A naturally impossible roll counts as not matched.",
-    placeholderClass: "Ranger",
-    placeholderSlot: "Chest",
-    placeholderRarity: "Epic + Legendary",
-    placeholderKOfN: "2 of 4 attributes",
-    kOfN: "K-of-N"
+    groups: {
+      identity: "Item identity",
+      equipment: "Category and equipment type",
+      price: "Price range",
+      attributes: "Random attributes and K-of-N"
+    },
+    filters: {
+      itemNames: "Item names",
+      classes: "Usable by class",
+      rarities: "Rarity / quality",
+      itemTypes: "Item category",
+      slotTypes: "Equipment slot",
+      armorTypes: "Armor type",
+      weaponTypes: "Weapon type",
+      handTypes: "Hand type",
+      priceBasis: "Price basis",
+      minimumPrice: "Minimum gold",
+      maximumPrice: "Maximum gold",
+      searchWithin: "Search within {{label}}",
+      searchPlaceholder: "Filter options…",
+      noOptions: "No catalog options match."
+    },
+    price: {
+      unit: "Per-unit price",
+      total: "Whole-stack total"
+    },
+    attributes: {
+      help: "Search the naturally scrollable catalog, add any number of rules, and set an optional inclusive minimum and maximum for each.",
+      search: "Search attributes",
+      available: "Available attributes",
+      choose: "Choose an attribute",
+      add: "Add attribute",
+      selected: "Selected attribute rules",
+      none: "No attribute rules. Listings pass through this stage.",
+      requiredCount: "Required matches (K)",
+      passThrough: "No rules selected; K is 0.",
+      kSummary: "At least {{k}} of {{n}} selected attributes must match.",
+      possibleRange: "Possible range: {{minimum}}–{{maximum}}{{unit}}",
+      minimum: "Minimum",
+      maximum: "Maximum"
+    },
+    actions: {
+      explicitOnly: "Requests are explicit",
+      editNoRequest: "Editing filters never calls DarkerDB.",
+      reset: "Reset draft",
+      refresh: "Refresh last search",
+      applyLocal: "Apply locally",
+      search: "Search DarkerDB",
+      remove: "Remove {{label}}"
+    },
+    activeFilters: {
+      title: "Draft filter summary",
+      none: "No filters selected. Search will use the bounded broad query.",
+      semantic: "{{groups}} filter groups use AND; options inside each group use OR. {{attributes}} attribute rules, K={{k}}.",
+      clear: "Clear all"
+    },
+    catalog: {
+      "preview-fixture": "Offline preview catalog",
+      "darkerdb-cache": "Cached DarkerDB catalog",
+      "darkerdb-live": "Live DarkerDB catalog"
+    },
+    semantics: {
+      title: "How matching works",
+      groups: "Different filter groups use AND. Multiple choices inside one group use OR.",
+      classes: "An item passes if any selected class can use it; unrestricted items also pass."
+    },
+    status: {
+      title: "Search state",
+      notRun: "No Marketplace search has been submitted yet.",
+      search: "The current draft was submitted as a new explicit search.",
+      refresh: "The last submitted search was explicitly refreshed.",
+      local: "The current draft was applied to the existing candidate snapshot only.",
+      previewCatalog: "This browser checkpoint uses a small sanitized catalog fixture; it does not claim live Marketplace results.",
+      noSnapshot: "Apply locally remains unavailable until a candidate snapshot exists."
+    },
+    validation: {
+      number: "Enter a valid finite number or leave the field blank.",
+      nonnegative: "Price cannot be negative.",
+      range: "Minimum must not exceed maximum.",
+      k: "K must be between 1 and the number of selected rules, or 0 when no rules are selected."
+    }
   },
   settings: {
     open: "Open settings",

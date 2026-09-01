@@ -30,7 +30,7 @@ describe("application shell", () => {
     fireEvent.change(unitReference, { target: { value: "155" } });
 
     fireEvent.click(screen.getByRole("tab", { name: "Marketplace Search" }));
-    expect(screen.getByRole("heading", { name: "Marketplace Search foundation" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Marketplace item search" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "Auto Listing" }));
 
     expect(screen.getByLabelText("Per-unit reference")).toHaveValue("155");

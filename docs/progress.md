@@ -1,5 +1,19 @@
 # Development Progress
 
+## Marketplace M3 filter UI checkpoint — 2026-09-01
+
+- Replaced the Marketplace placeholder chips and fake `37/284/612` counts with a full catalog-driven filter workspace. The reusable panel accepts canonical catalog options; it does not hard-code filter values into JSX or join localized display names.
+- Added searchable, scrollable multi-select groups for item families, classes, rarity, category, slot, armor type, weapon type, and hand type. Multiple item names are retained as canonical family IDs; group semantics remain AND between groups and OR within a group.
+- Added unit-price/whole-stack price basis with optional inclusive minimum and maximum, immediate finite/nonnegative/range validation, and a removable visible price chip.
+- Added a searchable naturally scrollable attribute catalog, per-rule inclusive min/max editors, possible-range and percentage hints, remove controls, zero-rule pass-through, and bounded K-of-N editing.
+- Added draft summary chips, one-filter removal, Clear all, Reset draft, explicit Search, Refresh last submitted search, and Apply locally. Editing, removing, resetting, language changes, and focus do not invoke any request callback; Refresh replays the last committed identity filters while using the current display locale.
+- Added English/Simplified Chinese parity for every new control, status, validation message, matching explanation, and action. Catalog option search accepts both English and Chinese aliases regardless of current UI language.
+- Added desktop, tablet, and narrow-window layouts with a sticky explicit-action bar, standard checkbox/select/input/button semantics, visible focus states, field errors, disabled-state boundaries, and no dependency on custom arrow-key tab navigation.
+- Added a clearly labeled sanitized preview catalog for browser UI testing. It is not represented as complete/current DarkerDB data and produces no fake Marketplace result rows or counts.
+- Verification includes dedicated UI tests for no-request edits, canonical multi-name output, invalid-range blocking, K-of-N construction, last-query Refresh, local-only Apply, active-chip removal, bilingual alias search, removable price summary, and language switching.
+
+Next product phase: Marketplace M4 result cards/table, unit and total prices, match explanations, candidate/completeness/freshness/error states, manual in-game search summary, and wiring the M2 executor into explicit UI actions. M5 remains read-only live verification. Stash, Electron, game Marketplace input, buying, and automatic listing remain out of scope.
+
 ## Marketplace M2 query planner and local pipeline checkpoint — 2026-09-01
 
 - Replaced the narrow unused search model with a versioned, Zod-validated Marketplace SearchSpec covering canonical class/family selections, category/slot/armor/weapon/hand filters, rarity, unit/total price ranges, active state, deterministic sort, explicit budget, locale, and K-of-N roll rules.

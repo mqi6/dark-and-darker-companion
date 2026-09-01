@@ -107,16 +107,92 @@ export const zhCN = {
   },
   search: {
     eyebrow: "市场搜索 · 本地筛选",
-    title: "市场搜索基础",
-    description: "K-of-N 条件会在多个装备系列的候选结果上进行本地计算。",
+    title: "Marketplace 物品搜索",
+    description: "先从 DarkerDB 有界拉取 listing，再在本地完成高级筛选；用户根据结果自行在游戏内重建搜索。",
     resultSummary: "{{evaluated}} 件已计算候选中有 {{matches}} 件符合",
     incompleteSummary: "结果不完整：DarkerDB 报告 {{reported}} 件，仅获取 {{retrieved}} 件",
     impossibleRoll: "装备天然不可能出现的词条按未匹配处理。",
-    placeholderClass: "游侠",
-    placeholderSlot: "胸甲",
-    placeholderRarity: "史诗 + 传说",
-    placeholderKOfN: "4 条词条中至少 2 条",
-    kOfN: "K-of-N 词条匹配"
+    groups: {
+      identity: "物品身份",
+      equipment: "类别与装备类型",
+      price: "价格范围",
+      attributes: "随机词条与 K-of-N"
+    },
+    filters: {
+      itemNames: "物品名称",
+      classes: "可用职业",
+      rarities: "品质",
+      itemTypes: "物品类别",
+      slotTypes: "装备栏位",
+      armorTypes: "护甲类型",
+      weaponTypes: "武器类型",
+      handTypes: "持握类型",
+      priceBasis: "价格口径",
+      minimumPrice: "最低金币",
+      maximumPrice: "最高金币",
+      searchWithin: "在{{label}}中搜索",
+      searchPlaceholder: "筛选选项…",
+      noOptions: "目录中没有符合的选项。"
+    },
+    price: {
+      unit: "单位价格",
+      total: "整组总价"
+    },
+    attributes: {
+      help: "在自然滚动的目录中搜索并添加任意数量词条；每条规则可设置包含边界的最低值和最高值。",
+      search: "搜索词条",
+      available: "可选词条",
+      choose: "选择一个词条",
+      add: "添加词条",
+      selected: "已选词条规则",
+      none: "尚未选择词条，本阶段直接通过所有 listing。",
+      requiredCount: "至少匹配数量（K）",
+      passThrough: "没有词条规则，K 为 0。",
+      kSummary: "所选 {{n}} 条词条中至少需要 {{k}} 条匹配。",
+      possibleRange: "可能范围：{{minimum}}–{{maximum}}{{unit}}",
+      minimum: "最低值",
+      maximum: "最高值"
+    },
+    actions: {
+      explicitOnly: "请求只由明确操作触发",
+      editNoRequest: "编辑筛选条件不会调用 DarkerDB。",
+      reset: "重置草稿",
+      refresh: "刷新上次搜索",
+      applyLocal: "仅在本地应用",
+      search: "搜索 DarkerDB",
+      remove: "移除{{label}}"
+    },
+    activeFilters: {
+      title: "筛选草稿摘要",
+      none: "尚未选择筛选条件；搜索将使用有界的宽泛查询。",
+      semantic: "{{groups}} 个筛选组之间使用 AND，组内选项使用 OR；共 {{attributes}} 条词条规则，K={{k}}。",
+      clear: "全部清除"
+    },
+    catalog: {
+      "preview-fixture": "离线预览目录",
+      "darkerdb-cache": "DarkerDB 缓存目录",
+      "darkerdb-live": "DarkerDB 在线目录"
+    },
+    semantics: {
+      title: "匹配规则",
+      groups: "不同筛选组之间使用 AND；同一组中的多个选择使用 OR。",
+      classes: "物品可被任意一个所选职业使用即可通过；无职业限制的物品也通过。"
+    },
+    status: {
+      title: "搜索状态",
+      notRun: "尚未提交 Marketplace 搜索。",
+      search: "当前草稿已作为一次新的明确搜索提交。",
+      refresh: "已明确刷新上次提交的搜索。",
+      local: "当前草稿只应用于已有候选快照，没有调用 API。",
+      previewCatalog: "此浏览器 checkpoint 使用小型脱敏目录夹具，不代表 live Marketplace 结果。",
+      noSnapshot: "取得候选快照后才能使用“仅在本地应用”。"
+    },
+    validation: {
+      number: "请输入有效的有限数字，或将字段留空。",
+      nonnegative: "价格不能为负数。",
+      range: "最低值不能高于最高值。",
+      k: "有词条时 K 必须在 1 到词条数量之间；没有词条时 K 必须为 0。"
+    }
   },
   settings: {
     open: "打开设置",

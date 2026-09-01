@@ -10,6 +10,8 @@ import type { StashPackingMode } from "../domain/stashPacking";
 import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeometry";
 import { StashPreviewGrid } from "./StashPreviewGrid";
 import { StashSortSettings } from "./StashSortSettings";
+import { MarketplaceSearchPanel } from "./MarketplaceSearchPanel";
+import { marketplacePreviewCatalog } from "./marketplacePreviewCatalog";
 
 type Tab = "stash" | "marketplaceSearch" | "autoListing";
 
@@ -106,7 +108,7 @@ export function App() {
           aria-labelledby="tab-marketplaceSearch"
           hidden={activeTab !== "marketplaceSearch"}
         >
-          <MarketplaceSearchPanel />
+          <MarketplaceSearchPanel catalog={marketplacePreviewCatalog} />
         </section>
         <section
           role="tabpanel"
@@ -316,35 +318,6 @@ function AutoListingPanel() {
             <p>{t("auction.priceUnknownDetail")}</p>
           </>
         )}
-      </article>
-    </div>
-  );
-}
-
-function MarketplaceSearchPanel() {
-  const { t } = useTranslation();
-  return (
-    <div className="panel-grid">
-      <article className="card span-two">
-        <p className="eyebrow">{t("search.eyebrow")}</p>
-        <h2>{t("search.title")}</h2>
-        <p>{t("search.description")}</p>
-        <div className="query-chips">
-          <span>{t("search.placeholderClass")}</span>
-          <span>{t("search.placeholderSlot")}</span>
-          <span>{t("search.placeholderRarity")}</span>
-          <span>{t("search.placeholderKOfN")}</span>
-        </div>
-        <div className="summary-line">
-          <strong>{t("search.resultSummary", { matches: 37, evaluated: 284 })}</strong>
-          <span className="incomplete">
-            {t("search.incompleteSummary", { retrieved: 284, reported: 612 })}
-          </span>
-        </div>
-      </article>
-      <article className="card accent-card">
-        <h3>{t("search.kOfN")}</h3>
-        <p>{t("search.impossibleRoll")}</p>
       </article>
     </div>
   );
