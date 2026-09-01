@@ -179,7 +179,7 @@ The endpoint reports `page`, `num_pages`, `total`, and `next`. Totals above abou
 - similar sales and listings;
 - optional socket upgrade plans.
 
-It is not a bulk search endpoint. Calling it for every search row would exceed the live rate budget. Use it for range metadata when item selection changes and for an explicitly expanded/selected result, not for every retrieved listing.
+It is not a bulk search endpoint and is not part of the default Marketplace Search result workflow. Search results come from bounded Market listing batches plus local filtering; selecting or expanding a result does not call Price Check. Retain this endpoint for versioned range validation and the later, separate automatic-listing pricing workflow.
 
 The current live `selection.attributes` object conflicts with the checked-in array schema and must be fixed before Price Check is used in the screen.
 
@@ -350,7 +350,7 @@ Count header:
 | Result sort | Market sort plus local stable merge | Both | append `id` tie-break; stable comparator | Deterministic local fallback | Merging query families requires re-sort |
 | Paging/counts | Market pagination | Server/bounded local | retrieved raw, evaluated deduped, reported optional | Incomplete stays visible | >50k totals may be estimates |
 | Freshness | Market pagination freshness | Server metadata/UI | age seconds and timestamps | Stale warning; no empty certainty | Only exact item/archetype queries guarantee family freshness |
-| Price Check detail | Price Check | On-demand | selection object/array compatibility; range units | No automatic valuation fallback | Live scope 60/min; not per row |
+| Price Check | Price Check | Outside the default search-result workflow | selection object/array compatibility; range units | No automatic valuation fallback | Range validation or later automatic-listing pricing only; result rows/expansion do not call it |
 | Recent-sale reference | Market missing records or Price Check similar sales | Local pricing | unit price; confirmation preserved | Price unknown | Missing is inferred, not game-confirmed |
 | API version | Header/envelope | Adapter | pin dated contract | Block incompatible contract | Contract still needs live fixtures |
 | Rate budget | Response headers | Adapter/orchestrator | remaining/limit/credits | bounded wait/retry | Current client discards headers |
@@ -511,7 +511,7 @@ Pure deterministic stages:
 
 - Facets/classes/attributes/items: persistent patch/version-keyed cache; revalidate after five minutes or build/patch change.
 - Market pages: memory cache for 15 seconds by canonical query/page; stale-while-refresh only when clearly labeled.
-- Price Check: memory cache for 15 seconds by concrete item + normalized rolls + locale.
+- Price Check: memory cache for 15 seconds by concrete item + normalized rolls + locale when used by explicit range-validation or the later automatic-listing workflow; Marketplace result rows do not call it.
 - Local filter results: memory cache by candidate-set fingerprint + rule fingerprint.
 - Never cache auth errors as empty data.
 - Do not persist seller identity or the API key.
@@ -687,7 +687,7 @@ Work:
 - table/cards and expandable details;
 - counts/completeness/freshness;
 - loading, empty, stale, incomplete, rate, auth, partial, fatal states;
-- on-demand Price Check detail.
+- copyable manual in-game search summary; no result-row Price Check calls.
 
 Acceptance:
 
