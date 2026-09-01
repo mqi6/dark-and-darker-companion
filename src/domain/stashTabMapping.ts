@@ -170,3 +170,30 @@ export function mappingIsCurrent(
 export function resolveInventoryForTab(mapping: StashTabMapping, tabIndex: number): number | undefined {
   return mapping.entries.find((entry) => entry.tabIndex === tabIndex)?.inventoryId;
 }
+
+
+/**
+ * Ensures a character-specific UI mapping is compact and matches the number
+ * of buttons actually visible in the current navigation profile.
+ *
+ * A full ten-container protocol snapshot is not proof that ten tab buttons
+ * are visible. Mixing those concepts can click a valid button for the wrong
+ * inventory, so the operator must stop before dispatching input.
+ */
+export function assertCompactVisibleStashMapping(
+  mapping: StashTabMapping,
+  visibleStashTabs: number
+): void {
+  if (!Number.isInteger(visibleStashTabs) || visibleStashTabs < 1 || visibleStashTabs > 10) {
+    throw new RangeError("Visible stash tab count must be between 1 and 10.");
+  }
+  if (mapping.entries.length !== visibleStashTabs) {
+    throw new Error(
+      `visible-stash-mapping-mismatch: profile has ${visibleStashTabs} buttons but mapping has ${mapping.entries.length} entries`
+    );
+  }
+  const ordered = [...mapping.entries].sort((left, right) => left.tabIndex - right.tabIndex);
+  if (ordered.some((entry, index) => entry.tabIndex !== index)) {
+    throw new Error("visible-stash-mapping-not-compact");
+  }
+}
