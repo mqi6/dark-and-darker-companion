@@ -103,7 +103,7 @@ export function scheduleCompleteStashSort(
   const actions: ScheduledStashSortAction[] = [];
   let selectedTabIndex: number | undefined;
   let temporaryBufferCount = 0;
-  let held: HeldMove | undefined;
+  const held: HeldMove[] = [];
 
   const select = (tabIndex: number, inventoryId: number) => {
     if (selectedTabIndex === tabIndex) return;
@@ -112,40 +112,42 @@ export function scheduleCompleteStashSort(
   };
 
   while (pending.size > 0) {
-    if (held && destinationFree(held.move, occupancy)) {
-      select(held.move.destination.tabIndex, held.move.destination.inventoryId);
+    const readyHeld = held.find((value) => destinationFree(value.move, occupancy));
+    if (readyHeld) {
+      select(readyHeld.move.destination.tabIndex, readyHeld.move.destination.inventoryId);
       actions.push({
         kind: "drag-bag-to-stash",
-        itemAlias: held.move.alias,
-        width: held.move.width,
-        height: held.move.height,
+        itemAlias: readyHeld.move.alias,
+        width: readyHeld.move.width,
+        height: readyHeld.move.height,
         source: {
           inventoryId: CHARACTER_BAG_INVENTORY_ID,
-          point: held.point,
-          slotId: held.slotId
+          point: readyHeld.point,
+          slotId: readyHeld.slotId
         },
         destination: {
-          inventoryId: held.move.destination.inventoryId,
-          point: held.move.destination.point,
-          slotId: held.move.destination.slotId
+          inventoryId: readyHeld.move.destination.inventoryId,
+          point: readyHeld.move.destination.point,
+          slotId: readyHeld.move.destination.slotId
         }
       });
-      removeAlias(occupancy, CHARACTER_BAG_INVENTORY_ID, held.move.alias);
+      removeAlias(occupancy, CHARACTER_BAG_INVENTORY_ID, readyHeld.move.alias);
       placeAlias(
         occupancy,
-        held.move.destination.inventoryId,
-        held.move.alias,
-        held.move.destination.point,
-        held.move.width,
-        held.move.height
+        readyHeld.move.destination.inventoryId,
+        readyHeld.move.alias,
+        readyHeld.move.destination.point,
+        readyHeld.move.width,
+        readyHeld.move.height
       );
-      pending.delete(held.move.alias);
-      held = undefined;
+      pending.delete(readyHeld.move.alias);
+      held.splice(held.indexOf(readyHeld), 1);
       continue;
     }
 
+    const heldAliases = new Set(held.map((value) => value.move.alias));
     const executable = [...pending.values()]
-      .filter((move) => move.alias !== held?.move.alias)
+      .filter((move) => !heldAliases.has(move.alias))
       .find((move) => destinationFree(move, occupancy) &&
         (move.route === "same-tab" || findBagPoint(move, geometry, occupancy)));
 
@@ -237,18 +239,10 @@ export function scheduleCompleteStashSort(
       continue;
     }
 
-    if (!held) {
-      const cycleMove = [...pending.values()].find((move) =>
-        findBagPoint(move, geometry, occupancy)
-      );
-      if (!cycleMove) {
-        return {
-          status: "blocked",
-          diagnosticCode: "bag-has-no-cycle-buffer",
-          detail: "No character-bag rectangle can break the remaining placement cycle.",
-          actions
-        };
-      }
+    const cycleMove = [...pending.values()].find((move) =>
+      !heldAliases.has(move.alias) && findBagPoint(move, geometry, occupancy)
+    );
+    if (cycleMove) {
       const bagPoint = findBagPoint(cycleMove, geometry, occupancy)!;
       const bagSlotId = bagPoint.y * bagColumns(geometry) + bagPoint.x;
       select(cycleMove.source.tabIndex, cycleMove.source.inventoryId);
@@ -277,15 +271,23 @@ export function scheduleCompleteStashSort(
         cycleMove.width,
         cycleMove.height
       );
-      held = { move: cycleMove, point: bagPoint, slotId: bagSlotId };
+      held.push({ move: cycleMove, point: bagPoint, slotId: bagSlotId });
       temporaryBufferCount += 1;
       continue;
     }
 
+    if (held.length === pending.size) {
+      return {
+        status: "blocked",
+        diagnosticCode: "destination-remains-occupied",
+        detail: "All remaining items are buffered but their target rectangles still overlap.",
+        actions
+      };
+    }
     return {
       status: "blocked",
-      diagnosticCode: "destination-remains-occupied",
-      detail: `The destination for buffered item ${held.move.alias} remains occupied.`,
+      diagnosticCode: "bag-has-no-cycle-buffer",
+      detail: "No character-bag rectangle can break the remaining placement cycle.",
       actions
     };
   }
