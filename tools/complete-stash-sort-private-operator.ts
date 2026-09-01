@@ -36,11 +36,18 @@ type Settings = { mode: StashPackingMode; speed: AutomationSpeedPreset; custom?:
 
 class AutomaticPrivateProjectionRefresher {
   private version = Date.now();
-  constructor(private readonly root: string, private readonly profile: PrivateNavProfile, private readonly refreshPlan: PreparedMove003Refresh, private readonly capture: { interface: string; gameVersion: string; gameSha256: string; tsharkPath: string }) {}
+  constructor(
+    private readonly profile: PrivateNavProfile,
+    private readonly refreshPlan: PreparedMove003Refresh,
+    private readonly capture: { interface: string; gameVersion: string; gameSha256: string; tsharkPath: string },
+    private readonly adapter: PowerShellNavigationAdapter
+  ) {}
   async refreshCompleteProjection(signal?: AbortSignal): Promise<SpatialProjection> {
     if (signal?.aborted) throw new Error("operator-cancelled");
-    const adapter = new PowerShellNavigationAdapter(resolve("tools/windows-navigation.ps1"), this.profile, this.refreshPlan.window, resolve(this.root, "transition-screen.private.png"));
-    const currentWindow = await adapter.inspectWindow();
+    // Reuse the operator's adapter so a successful Focus request and every
+    // prior capture keep the current HWND/bounds. Creating a fresh adapter
+    // here forced a slow stale-handle discovery on every preview.
+    const currentWindow = await this.adapter.inspectWindow();
     const capture = startRefreshCapture(this.capture, signal);
     const classified = await adapter.classifyScreen();
     if (classified.status !== "classified") throw new Error(`initial-screen-${classified.status}`);
@@ -52,7 +59,7 @@ class AutomaticPrivateProjectionRefresher {
     await capture.ready;
     let navigation;
     try {
-      navigation = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), adapter).execute({
+      navigation = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), this.adapter).execute({
         plan,
         approval: { kind: "human-confirmation", planFingerprint: plan.planFingerprint },
         signal,
@@ -144,8 +151,8 @@ async function main() {
   ]);
   const mapping = stashTabMappingSchema.parse(await readJson(mappingPath));
   const capture = await readJson<{ interface: string; gameVersion: string; gameSha256: string; tsharkPath: string }>(manifestPath);
-  const refresher = new AutomaticPrivateProjectionRefresher(refreshRoot, profile, refreshPlan, capture);
   const navigation = new PowerShellNavigationAdapter(resolve("tools/windows-navigation.ps1"), profile, refreshPlan.window, resolve(refreshRoot, "operator-transition.private.png"));
+  const refresher = new AutomaticPrivateProjectionRefresher(profile, refreshPlan, capture, navigation);
   const controller = new PrivateCompleteController(mapping, refreshPlan.window, refresher, resolve("fixtures-private/runtime/complete-stash-sort"), navigation);
   const port = 4318, token = randomUUID(), server = createCompleteSortOperatorServer({ controller, token });
   server.listen(port, "127.0.0.1", () => console.log(`Complete stash sort operator: http://127.0.0.1:${port}`));
