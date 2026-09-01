@@ -19,6 +19,11 @@ export interface PrivateSortSession {
   plan: CompleteStashSortPlan;
   schedule: ScheduledStashSort;
   screenActions: readonly ScheduledStashSortScreenAction[];
+  tabRuntimeContract?: readonly {
+    tabIndex: number;
+    inventoryId: number;
+    click: { x: number; y: number };
+  }[];
   timing: SortInputTiming;
 }
 
@@ -146,6 +151,7 @@ export class PrivateSortSessionStore {
             actionIndex,
             actionKind: action.kind,
             expectedTab: action.tabIndex,
+            inventoryId: action.inventoryId,
             click: roundPoint(action.point)
           }
         : {
@@ -184,6 +190,14 @@ export class PrivateSortSessionStore {
       timing: session.timing,
       plan,
       schedule,
+      visibleTabs: session.tabRuntimeContract?.map(entry => ({
+        tabIndex: entry.tabIndex,
+        inventoryId: entry.inventoryId,
+        click: roundPoint(entry.click)
+      })) ?? session.policies.map((policy, tabIndex) => ({
+        tabIndex,
+        inventoryId: policy.inventoryId
+      })),
       screenActions
     }) + "\n";
     await mkdir(this.directory, { recursive: true });
