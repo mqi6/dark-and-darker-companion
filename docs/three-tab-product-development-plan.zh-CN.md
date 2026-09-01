@@ -5,7 +5,7 @@
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
-实施状态：**Phase P0 已完成；下一步是 Marketplace M1。**
+实施状态：**Phase P0 与 Marketplace M1 API checkpoint 已完成；下一步调整为桌面宿主与现有仓库 operator 产品化集成（D1/S0），之后继续 Marketplace M2。**
 
 ## 0. 目标与范围
 
@@ -17,7 +17,7 @@
 
 `Settings` 不再是第四个主标签页。语言、DarkerDB、捕获、坐标校准、自动化安全和诊断设置放入全局设置抽屉/页面，通过右上角齿轮进入。
 
-本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。当前优先级仍是 **Marketplace Search**；本阶段不实施仓库剩余 TODO，也不启动 live 自动上架。
+本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。Marketplace Search 仍是下一项新功能，但在继续 M2 前，先把已经通过 live 验证的仓库 Refresh/Preview/Run Sort operator 接入产品外壳，并建立桌面宿主边界。这不是恢复仓库排序算法 TODO；速度、名称/品质排序和恢复优化仍留在 S1。当前仍不启动 live 自动上架。
 
 ## 1. 已锁定的产品决定
 
@@ -61,6 +61,16 @@
 - 为实现 K-of-N 枚举所有 K 组合并大量 fan-out。
 
 Items、Attributes、Classes、Facets 是版本化静态目录。它们优先从本地 patch 缓存加载；目录刷新是单独的显式动作或应用启动时的有界版本检查，不属于 Marketplace listing 搜索 fan-out。
+
+### 1.4 桌面客户端与导航决定
+
+- 最终产品是独立 Windows 桌面客户端，不要求用户在普通浏览器中打开 localhost 页面。
+- 当前 React/Vite 页面继续作为 renderer 和快速 UI 预览；不重写视觉组件。
+- 推荐使用 Electron 作为桌面宿主，因为现有运行时、controller、文件访问、PowerShell、tshark 和子进程管理均为 Node/TypeScript。Tauri 会要求将这部分改写为 Rust，或额外打包并管理 Node sidecar，当前收益不足以抵消集成复杂度。
+- Electron main process 持有 Windows operator、API key、私有路径、抓包和 game-interaction lease；React renderer 不获得 Node、文件系统、shell 或任意子进程权限。
+- preload 只暴露窄、类型化、经过 Zod 验证的 Companion IPC API。启用 context isolation、renderer sandbox，并保持 `nodeIntegration: false`。
+- 桌面宿主和 IPC 边界在接入真实 Stash operator 时建立；安装器、图标、代码签名、自动更新和发布仍放到最后的 D2。
+- 自定义方向键/Home/End 标签导航不再是产品验收项。普通鼠标点击以及标准 Tab/Shift+Tab/Enter/Space 操作仍需可用；不为当前方向键问题单独安排修复阶段。
 
 ## 2. 整体信息架构
 
@@ -229,7 +239,7 @@ Marketplace 查询可在没有 game-interaction lease 时随时运行。仓库�
 | 结果不明确 | 必须暂停，不自动声称成功 |
 | 完成 | 自动进行一次完整刷新并核对最终状态 |
 
-### 3.5 尚未完成但不在当前 Marketplace 阶段实施的 TODO
+### 3.5 尚未完成且不属于 D1/S0 集成阶段的 TODO
 
 1. 加快 click/drag timing。
 2. 加快游戏切前台和角色重选/刷新。
@@ -524,8 +534,9 @@ Strength +2
 ## 7. 共享技术结构
 
 ```text
-React UI
-  -> application services / tab controllers
+Electron renderer / React UI
+  -> typed preload IPC bridge
+    -> Electron main / application services / tab controllers
     -> domain core
        - stash planner
        - marketplace query planner + local filter
@@ -536,6 +547,8 @@ React UI
        - GameInteractionAdapter
        - persistence/localization
 ```
+
+浏览器中的 Vite 模式保留为无特权 UI 预览，可使用 mock bridge；真实 Refresh/Preview/Run Sort 只在桌面宿主可用。
 
 原则：
 
@@ -549,7 +562,7 @@ React UI
 
 ## 8. 推荐开发顺序
 
-当前开发应先完成 Marketplace Search，再回到仓库剩余性能/排序 TODO，最后进入自动上架。
+当前开发顺序调整为：先建立最小桌面宿主并把已经工作的仓库 operator 接入 Stash 标签；再完成 Marketplace Search；之后回到仓库性能/排序质量 TODO，最后进入自动上架。桌面安装器与发布 polish 最后完成。
 
 ### Phase P0 — 三标签外壳与文档一致性
 
@@ -592,6 +605,33 @@ React UI
 - 不含 key/request ID/player identity；
 - 目录不按本地化名称 join。
 
+### Phase D1/S0 — 最小桌面宿主与仓库 operator 产品化集成
+
+这是下一实施阶段。它只整合已经存在的完整仓库整理链路，不修改 click/drag 速度、角色重选算法、排序顺序或 live 安全门。
+
+工作：
+
+- 建立 Electron main / preload / React renderer 三层；开发模式继续加载 Vite，生产模式加载本地构建资源；
+- 定义 transport-neutral `CompanionBridge` 与 `StashOperatorClient`，方法限定为 status、focus、refreshAndPreview、runPreparedSort、stop；
+- Electron main 直接复用现有 `PrivateCompleteController`、`CompleteStashSortPreparationController`、`CompleteStashSortOperatorController` 和执行 runner，不在 React 中复制整理逻辑；
+- 将旧 `completeSortOperatorServer` 的内联 HTML 降为诊断/回退工具；React Stash tab 成为正式产品 UI；
+- Stash tab 接入真实可见页/inventory ID、每页 On/Off、允许类别、packing mode、speed/custom timing；
+- “刷新并预览”执行既定角色重选与完整 command-44 状态刷新，生成 Before / Planned After；
+- 显示各页真实 12×20 布局、未知物品隔离、移动数、drag/action/cross-tab/temp-buffer 数和阻塞诊断；
+- 只有 ready snapshot/plan 才启用“开始整理”；点击后仍进行一次明确确认，运行 exact prepared plan，绝不自动重试；
+- Stop、进度、confirmed/already-sorted/blocked/cancelled/ambiguous 和私有日志路径进入共享 Activity/状态条；
+- 普通浏览器预览没有 desktop bridge 时显示“桌面运行时未连接”，真实按钮禁用，不伪造成功状态。
+
+验收：
+
+- Windows 桌面窗口看起来与当前三标签 UI 相同，不再要求用户手动打开浏览器；
+- 点击“刷新并预览”只执行一次既定完整刷新并展示真实 Before/After；
+- Preview 本身不拖动物品；Run Sort 必须依赖当前 exact preview，快照/角色/页集合变化使计划失效；
+- 旧 operator 已经具备的页隔离、前台检查、首错停止、最终完整刷新和精确 reconciliation 全部保留；
+- renderer 无 Node/shell/filesystem 权限，所有 IPC sender、输入和输出经过 allowlist 与 schema 验证；
+- Electron 窗口关闭或 renderer 崩溃时，正在准备的可取消任务被终止；已派发输入的 ambiguous 状态不得被伪装成 cancelled/success；
+- 现有 `npm run sort:operator` 可暂时保留作为开发诊断回退，直到桌面 Stash 流程通过同等 live 验收。
+
 ### Phase M2 — Marketplace query planner 与本地 pipeline
 
 工作：
@@ -620,7 +660,7 @@ React UI
 - 完整过滤栏、多选、属性列表、min/max、K；
 - draft、Search、Apply locally、Refresh、Reset；
 - active chips 和语义句；
-- responsive sheet 与键盘操作。
+- responsive sheet 与标准表单/按钮可访问性。
 
 验收：
 
@@ -628,7 +668,7 @@ React UI
 - 编辑、展开、切语言、切焦点不请求；
 - 不存在硬编码选项或假 count；
 - 无效范围不请求；
-- 中英文 keyboard/accessibility 通过。
+- 中英文点击与标准 Tab/Shift+Tab/Enter/Space 操作通过；不要求自定义方向键/Home/End 标签导航。
 
 ### Phase M4 — Marketplace 结果与状态
 
@@ -712,11 +752,23 @@ React UI
 
 Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录制都不自动授权 L3。
 
+### Phase D2 — 桌面打包与发布
+
+在三个工作流和 Windows runtime 接口稳定后进行：
+
+- Electron Forge Windows installer、应用名称/图标、单实例、窗口尺寸/位置恢复；
+- 打包 PowerShell/helper 资源，并验证安装目录含空格、非管理员启动和需要提升权限时的明确提示；
+- API key 使用操作系统安全存储方案，不写入 renderer、日志或普通配置文件；
+- 生产 CSP、自定义本地 protocol、禁用任意导航/新窗口、IPC sender 校验和依赖审计；
+- 代码签名与更新机制单独评估；未签名内部测试包必须明确标识。
+
+验收：干净 Windows 环境可安装、启动、更新/卸载；无需系统 Node.js；开发浏览器不是最终使用入口；打包不降低任何 game-interaction 安全门。
+
 ## 9. 测试计划
 
 ### 9.1 全局 UI
 
-- 三 tab 和设置入口的键盘导航；
+- 三 tab、设置入口和动作按钮的鼠标点击与标准 Tab/Shift+Tab/Enter/Space 操作；自定义方向键/Home/End 不作为 gate；
 - 切 tab 保留状态；
 - status/activity 的 aria-live 与焦点；
 - 44px 触控目标；
@@ -765,9 +817,10 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 
 | 区域 | 工程基础 | 用户可用程度 | 主要剩余 |
 | --- | ---: | ---: | --- |
-| 共享 shell | 约 55% | 约 30% | 当前仍是 4 tab；状态/Activity 大多占位；设置需重构 |
-| 仓库整理 | alpha 约 70%；更广 v1 约 45–50% | 已能完成受控整理，但仍需 operator polish | 速度、前台/刷新、名称/品质排序、生产坐标与恢复 |
-| Marketplace Search | 约 30% | 约 10% | 合约修复、planner、完整 UI、结果和状态 |
+| 桌面宿主 | 约 5%（React renderer 可复用） | 0% | Electron main/preload/IPC、Windows 打包与发布 |
+| 共享 shell | 约 70% | 约 40% | 桌面 runtime、真实 status/Activity、任务 controller 接入 |
+| 仓库整理 | alpha 约 75%；更广 v1 约 50% | 独立 localhost operator 可受控整理；产品 Stash tab 仍是 demo | D1/S0 产品集成；之后是速度、前台/刷新、名称/品质排序和恢复 |
+| Marketplace Search | 约 40% | 约 10% | M2 planner、完整 UI、结果和状态 |
 | 自动上架 | 定价/任务基础约 35% | live workflow 低于 15% | owned-item queue、复核 UI、动作/验证、独立 live checkpoint |
 
 这些百分比是用于规划的工程估计，不是按文件数计算。Marketplace 是当前最明确、风险最低、最适合先完成的完整用户工作流。
