@@ -48,6 +48,8 @@ export interface CompleteSortActionJournalEntry {
   actionKind: ScheduledStashSortScreenAction["kind"];
   itemAlias?: string;
   selectedTab?: number;
+  observedTab?: number;
+  observedScreen?: string;
   status: "start" | "completed" | "rejected" | "failed" | "cancelled" | "ambiguous";
   completedActionCount: number;
   completedDragCount: number;
@@ -140,7 +142,8 @@ export class CompleteStashSortExecutionRunner {
             completedActions,
             dragCount,
             diagnosticCode,
-            "adapterError" in result ? String(result.adapterError ?? "") || undefined : undefined
+            "adapterError" in result ? String(result.adapterError ?? "") || undefined : undefined,
+            result
           ));
           return possiblyChanged
             ? {
@@ -163,7 +166,8 @@ export class CompleteStashSortExecutionRunner {
         completedActions += 1;
         if (action.kind.startsWith("drag-")) dragCount += 1;
         await this.journal(journalEntry(
-          actionIndex, action, "completed", completedActions, dragCount
+          actionIndex, action, "completed", completedActions, dragCount,
+          undefined, undefined, result
         ));
       }
 
@@ -213,7 +217,8 @@ function journalEntry(
   completedActionCount: number,
   completedDragCount: number,
   diagnosticCode?: string,
-  adapterError?: string
+  adapterError?: string,
+  runtimeResult?: CrossTabRuntimeActionResult
 ): CompleteSortActionJournalEntry {
   return {
     actionIndex,
@@ -224,6 +229,12 @@ function journalEntry(
     status,
     completedActionCount,
     completedDragCount,
+    ...(runtimeResult?.observation?.observedTabIndex === undefined
+      ? {}
+      : { observedTab: runtimeResult.observation.observedTabIndex }),
+    ...(runtimeResult?.observation?.screen === undefined
+      ? {}
+      : { observedScreen: runtimeResult.observation.screen }),
     ...(diagnosticCode ? { diagnosticCode } : {}),
     ...(adapterError ? { adapterError } : {})
   };
