@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -20,6 +20,7 @@ import { CompleteStashSortPreparationController } from "../src/tasks/completeSta
 import { FixedCoordinateCrossTabRuntime } from "../src/tasks/fixedCoordinateCrossTabRuntime";
 import { WindowsNavigationSequenceRunner, type NavigationWindowState } from "../src/tasks/windowsNavigationRuntime";
 import type { PreparedMove003Refresh } from "../src/tasks/move003RefreshWorkflow";
+import { prepareMove003Refresh } from "../src/tasks/move003RefreshWorkflow";
 import type { SanitizedSemanticSnapshotV1 } from "../src/protocol/semanticSnapshot";
 import { createCompleteSortOperatorServer, type CompleteSortHttpController } from "./completeSortOperatorServer";
 import { PowerShellNavigationAdapter, type PrivateNavProfile } from "./windowsNavigationAdapter";
@@ -35,13 +36,34 @@ class AutomaticPrivateProjectionRefresher {
   constructor(private readonly root: string, private readonly profile: PrivateNavProfile, private readonly refreshPlan: PreparedMove003Refresh, private readonly capture: { interface: string; gameVersion: string; gameSha256: string; tsharkPath: string }) {}
   async refreshCompleteProjection(signal?: AbortSignal): Promise<SpatialProjection> {
     if (signal?.aborted) throw new Error("operator-cancelled");
-    const capturePromise = execFileAsync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve("tools/record-game-traffic.ps1"), "-Interface", this.capture.interface, "-GameVersion", this.capture.gameVersion, "-GameSha256", this.capture.gameSha256, "-SampleId", "REF-003", "-DurationSeconds", "18", "-TsharkPath", this.capture.tsharkPath], { encoding: "utf8", windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
-    await delay(900, signal);
     const adapter = new PowerShellNavigationAdapter(resolve("tools/windows-navigation.ps1"), this.profile, this.refreshPlan.window, resolve(this.root, "transition-screen.private.png"));
-    const navigation = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), adapter).execute({ plan: this.refreshPlan, approval: { kind: "human-confirmation", planFingerprint: this.refreshPlan.planFingerprint }, signal });
-    if (navigation.status !== "completed") throw new Error(`navigation-${navigation.status}`);
-    const captured = await capturePromise;
-    const session = captured.stdout.match(/Private session:\s*(.+)/)?.[1]?.trim();
+    const currentWindow = await adapter.inspectWindow();
+    const capture = startRefreshCapture(this.capture, signal);
+    const classified = await adapter.classifyScreen();
+    if (classified.status !== "classified") throw new Error(`initial-screen-${classified.status}`);
+    const plan = prepareMove003Refresh({
+      window: currentWindow,
+      visibleStashTabs: this.profile.visibleStashTabs,
+      startingScreen: classified.observation.screen
+    });
+    await capture.ready;
+    let navigation;
+    try {
+      navigation = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), adapter).execute({
+        plan,
+        approval: { kind: "human-confirmation", planFingerprint: plan.planFingerprint },
+        signal,
+        initialState: { window: currentWindow, classification: classified }
+      });
+    } finally {
+      capture.stop();
+    }
+    const captured = await capture.completed;
+    if (navigation.status !== "completed") {
+      const diagnostic = "diagnosticCode" in navigation ? navigation.diagnosticCode : navigation.status;
+      throw new Error(`navigation-${diagnostic}`);
+    }
+    const session = captured.match(/Private session:\s*(.+)/)?.[1]?.trim();
     if (!session) throw new Error("capture-session-not-reported");
     await execFileAsync(process.execPath, ["--import", "tsx", resolve("tools/analyze-private-move003-refresh.ts"), session], { encoding: "utf8", windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
     const snapshot = JSON.parse(await readFile(resolve(session, "semantic-snapshot.sanitized-private.json"), "utf8")) as SanitizedSemanticSnapshotV1;
@@ -122,7 +144,19 @@ function policies(settings: Settings, mapping: StashTabMapping): StashTabItemPol
 function parseSettings(value: unknown, mapping: StashTabMapping): Settings { const input = value as Partial<Settings>; if (input.mode !== "compact-top-left" && input.mode !== "category-rows") throw new Error("invalid-packing-mode"); if (!input.speed || !["fast", "balanced", "reliable", "custom"].includes(input.speed)) throw new Error("invalid-speed"); return { mode: input.mode, speed: input.speed, ...(input.custom ? { custom: input.custom } : {}), tabs: Array.isArray(input.tabs) ? input.tabs : mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: [...STASH_ITEM_CATEGORIES] })) }; }
 async function readJson<T>(path: string): Promise<T> { return JSON.parse((await readFile(path, "utf8")).replace(/^\uFEFF/, "")) as T; }
 async function newestNamed(root: string, name: string): Promise<string> { const found: Array<{ path: string; time: number }> = []; async function visit(dir: string, depth: number): Promise<void> { if (depth > 5) return; for (const entry of await readdir(dir, { withFileTypes: true })) { const path = resolve(dir, entry.name); if (entry.isDirectory()) await visit(path, depth + 1); else if (entry.name === name) found.push({ path, time: (await stat(path)).mtimeMs }); } } await visit(root, 0); found.sort((a, b) => b.time - a.time); if (!found[0]) throw new Error(`missing-${name}`); return found[0].path; }
-async function delay(ms: number, signal?: AbortSignal) { await new Promise<void>((done, reject) => { const timer = setTimeout(done, ms); signal?.addEventListener("abort", () => { clearTimeout(timer); reject(new Error("operator-cancelled")); }, { once: true }); }); }
+function startRefreshCapture(configuration: { interface: string; gameVersion: string; gameSha256: string; tsharkPath: string }, signal?: AbortSignal) {
+  const child = spawn("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", resolve("tools/record-game-traffic.ps1"), "-Interface", configuration.interface, "-GameVersion", configuration.gameVersion, "-GameSha256", configuration.gameSha256, "-SampleId", "REF-003", "-TsharkPath", configuration.tsharkPath], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+  let stdout = "", stderr = "", readyDone = false;
+  let resolveReady!: () => void, rejectReady!: (error: Error) => void;
+  const ready = new Promise<void>((resolvePromise, rejectPromise) => { resolveReady = resolvePromise; rejectReady = rejectPromise; });
+  const timeout = setTimeout(() => { if (!readyDone) rejectReady(new Error("capture-readiness-timeout")); }, 5_000);
+  child.stdout.setEncoding("utf8"); child.stderr.setEncoding("utf8");
+  child.stdout.on("data", chunk => { stdout += chunk; if (!readyDone && stdout.includes("tshark PID:")) { readyDone = true; clearTimeout(timeout); resolveReady(); } });
+  child.stderr.on("data", chunk => { stderr += chunk; });
+  const completed = new Promise<string>((resolvePromise, rejectPromise) => child.once("exit", code => { clearTimeout(timeout); if (code === 0) resolvePromise(stdout); else rejectPromise(new Error(`capture-process-failed:${stderr.trim().slice(0, 500)}`)); }));
+  signal?.addEventListener("abort", () => child.stdin.write("STOP\n"), { once: true });
+  return { ready, completed, stop: () => { if (!child.killed && child.stdin.writable) child.stdin.write("STOP\n"); } };
+}
 function operatorDiagnostic(error: unknown): string { const message = error instanceof Error ? error.message : ""; if (message.includes("No visible DungeonCrawler main window")) return "game-window-unavailable"; if (message.includes("Multiple DungeonCrawler")) return "multiple-game-windows"; if (message.includes("navigation-")) return message.match(/navigation-[a-z-]+/)?.[0] ?? "navigation-failed"; if (message.includes("capture")) return "complete-capture-failed"; return "refresh-preview-failed"; }
 function diagnosticMessage(code: string): string { switch (code) { case "game-window-unavailable": return "The operator cannot see a DungeonCrawler game window on its Windows desktop."; case "multiple-game-windows": return "Multiple game windows are visible; close the extra instance."; case "complete-capture-failed": return "The complete command-44 capture failed; see the private operator log."; default: return "Refresh and Preview failed; local Codex can inspect the private adapter error."; } }
 
