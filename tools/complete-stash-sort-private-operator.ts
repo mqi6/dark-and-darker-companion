@@ -8,6 +8,7 @@ import gameplayJson from "../fixtures/darkerdb/gameplay/catalog.json";
 import { resolveSortInputTiming, type AutomationSpeedPreset, type SortInputTiming } from "../src/domain/automationTiming";
 import { canonicalItemIdForGameDesignIdInCatalog, asGameDesignItemId } from "../src/domain/gameIdBridge";
 import type { ReducedGameState } from "../src/domain/gameStateReducer";
+import { buildGameScreenLayout } from "../src/domain/gameScreenLayout";
 import { gameplayCatalogSchema } from "../src/domain/gameplayCatalog";
 import { projectSpatialState, type SpatialProjection } from "../src/domain/inventoryGeometry";
 import type { CompleteStashSortPlan } from "../src/domain/completeStashSort";
@@ -114,12 +115,23 @@ class PrivateCompleteController implements CompleteSortHttpController {
   constructor(private readonly mapping: StashTabMapping, private readonly window: NavigationWindowState, private readonly refresher: AutomaticPrivateProjectionRefresher, private readonly sessionsRoot: string, private readonly navigation: PowerShellNavigationAdapter) {
     this.activity = new PrivateSortOperatorLog(sessionsRoot);
   }
-  snapshot() { return {
-    phase: this.phase,
-    diagnosticLogPath: resolve(this.sessionsRoot, "latest-sort.sanitized.jsonl"),
-    tabs: this.mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES })),
-    ...this.detail
-  }; }
+  snapshot() {
+    const visibleTabs = visibleTabRuntimeContract(this.mapping, this.window);
+    return {
+      phase: this.phase,
+      diagnosticLogPath: resolve(this.sessionsRoot, "latest-sort.sanitized.jsonl"),
+      tabContract: {
+        visibleTabCount: visibleTabs.length,
+        entries: visibleTabs
+      },
+      tabs: visibleTabs.map(entry => ({
+        ...entry,
+        enabled: true,
+        allowedCategories: STASH_ITEM_CATEGORIES
+      })),
+      ...this.detail
+    };
+  }
   async focus() {
     const state = await this.navigation.inspectWindow();
     this.detail = { ...this.detail, foreground: { status: "focused", processClass: state.processName.toLowerCase() === "dungeoncrawler" ? "verified-game-process" : "unexpected-process" } };
@@ -156,7 +168,16 @@ class PrivateCompleteController implements CompleteSortHttpController {
         resolve(this.sessionsRoot, "latest-sort.sanitized.jsonl")
       );
       this.currentStore = store;
-      await store.create({ initialProjection: result.initialProjection, policies: options.policies, packingMode: options.mode, plan: result.plan, schedule: result.schedule, screenActions: result.screenActions, timing: options.timing });
+      await store.create({
+        initialProjection: result.initialProjection,
+        policies: options.policies,
+        packingMode: options.mode,
+        plan: result.plan,
+        schedule: result.schedule,
+        screenActions: result.screenActions,
+        tabRuntimeContract: visibleTabRuntimeContract(this.mapping, this.window),
+        timing: options.timing
+      });
       const drag = new PowerShellWindowsUiBridge(resolve("tools/windows-supervised-move.ps1"));
       const fixed = new WindowsFixedCoordinateCrossTabAdapter(this.navigation, drag, this.window);
       const runtime = new FixedCoordinateCrossTabRuntime(fixed, this.refresher, this.window, this.mapping.entries.length, options.timing);
@@ -222,6 +243,21 @@ async function main() {
   const controller = new PrivateCompleteController(mapping, refreshPlan.window, refresher, resolve("fixtures-private/runtime/complete-stash-sort"), navigation);
   const port = 4318, token = randomUUID(), server = createCompleteSortOperatorServer({ controller, token });
   server.listen(port, "127.0.0.1", () => console.log(`Complete stash sort operator: http://127.0.0.1:${port}`));
+}
+
+function visibleTabRuntimeContract(
+  mapping: StashTabMapping,
+  window: NavigationWindowState
+) {
+  const layout = buildGameScreenLayout({
+    clientBounds: window.clientBounds,
+    visibleStashTabs: mapping.entries.length
+  });
+  return mapping.entries.map(entry => ({
+    tabIndex: entry.tabIndex,
+    inventoryId: entry.inventoryId,
+    click: layout.stash.tabCenters[entry.tabIndex]!
+  }));
 }
 
 function policies(settings: Settings, mapping: StashTabMapping): StashTabItemPolicy[] { return mapping.entries.map(entry => { const tab = settings.tabs.find(value => value.tabIndex === entry.tabIndex); return { inventoryId: entry.inventoryId, enabled: tab?.enabled ?? true, allowedCategories: (tab?.allowedCategories.filter(value => STASH_ITEM_CATEGORIES.includes(value as never)) ?? [...STASH_ITEM_CATEGORIES]) as StashTabItemPolicy["allowedCategories"] }; }); }
