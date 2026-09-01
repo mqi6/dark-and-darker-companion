@@ -113,7 +113,15 @@ class PrivateCompleteController implements CompleteSortHttpController {
         this.phase = "blocked";
         this.detail = {
           diagnosticCode: result.diagnosticCode,
-          ...(result.initialProjection && result.plan ? previewSummary(result.initialProjection, result.plan) : {})
+          ...(result.initialProjection && result.plan ? previewSummary(
+            result.initialProjection,
+            result.plan,
+            this.mapping,
+            result.options?.policies ?? options.policies,
+            result.quarantinedInventoryIds ?? []
+          ) : {}),
+          quarantinedTabCount: result.quarantinedInventoryIds?.length ?? 0,
+          unsupportedItemCount: result.unsupportedItemCount ?? 0
         };
         await this.record("preview-blocked", result.diagnosticCode);
         return this.snapshot();
@@ -126,7 +134,20 @@ class PrivateCompleteController implements CompleteSortHttpController {
       const runner = new CompleteStashSortExecutionRunner(new GameInteractionLease(), runtime, undefined, entry => store.append({ at: new Date().toISOString(), ...entry }), (projection, reconciliation) => store.savePostState(projection, reconciliation));
       this.prepared = new CompleteStashSortOperatorController(result, runner);
       this.phase = "ready";
-      this.detail = { ...previewSummary(result.initialProjection, result.plan), actionCount: result.schedule.actions.length, dragCount: result.schedule.dragCount, temporaryBagBufferCount: result.schedule.temporaryBufferCount };
+      this.detail = {
+        ...previewSummary(
+          result.initialProjection,
+          result.plan,
+          this.mapping,
+          result.options.policies,
+          result.quarantinedInventoryIds
+        ),
+        quarantinedTabCount: result.quarantinedInventoryIds.length,
+        unsupportedItemCount: result.unsupportedItemCount,
+        actionCount: result.schedule.actions.length,
+        dragCount: result.schedule.dragCount,
+        temporaryBagBufferCount: result.schedule.temporaryBufferCount
+      };
       await this.record("preview-ready", undefined, result.schedule.itemMoveCount, result.schedule.actions.length, result.schedule.dragCount);
       return this.snapshot();
     } catch (error) {
@@ -177,23 +198,62 @@ function startRefreshCapture(configuration: { interface: string; gameVersion: st
 }
 function operatorDiagnostic(error: unknown): string { const message = error instanceof Error ? error.message : ""; if (message.includes("No visible DungeonCrawler main window")) return "game-window-unavailable"; if (message.includes("Multiple DungeonCrawler")) return "multiple-game-windows"; if (message.includes("navigation-")) return message.match(/navigation-[a-z-]+/)?.[0] ?? "navigation-failed"; if (message.includes("capture")) return "complete-capture-failed"; return "refresh-preview-failed"; }
 function diagnosticMessage(code: string): string { switch (code) { case "game-window-unavailable": return "The operator cannot see a DungeonCrawler game window on its Windows desktop."; case "multiple-game-windows": return "Multiple game windows are visible; close the extra instance."; case "complete-capture-failed": return "The complete command-44 capture failed; see the private operator log."; default: return "Refresh and Preview failed; local Codex can inspect the private adapter error."; } }
-function previewSummary(projection: SpatialProjection, plan: Extract<CompleteStashSortPlan, { status: "ready" }>) {
+function previewSummary(
+  projection: SpatialProjection,
+  plan: Extract<CompleteStashSortPlan, { status: "ready" }>,
+  mapping: StashTabMapping,
+  policies: readonly StashTabItemPolicy[],
+  quarantinedInventoryIds: readonly number[]
+) {
   const containers = new Map(projection.containers.map(container => [container.inventoryId, container]));
+  const afterByInventory = new Map(plan.pages.map(page => [page.inventoryId, page]));
+  const policyByInventory = new Map(policies.map(policy => [policy.inventoryId, policy]));
+  const quarantined = new Set(quarantinedInventoryIds);
   const placement = (value: { x: number; y: number; width: number; height: number; category: string }) =>
     ({ x: value.x, y: value.y, width: value.width, height: value.height, category: value.category });
+  const pageStatus = (inventoryId: number) =>
+    quarantined.has(inventoryId)
+      ? "quarantined-unknown-items"
+      : policyByInventory.get(inventoryId)?.enabled === false
+        ? "disabled"
+        : "enabled";
+  const before = mapping.entries.map(entry => {
+    const source = containers.get(entry.inventoryId);
+    return {
+      tabIndex: entry.tabIndex,
+      columns: 12,
+      rows: 20,
+      status: pageStatus(entry.inventoryId),
+      itemCount: source?.placements.length ?? 0,
+      unsupportedItemCount: source?.diagnostics.filter(value =>
+        value.code === "item-id-unmapped" || value.code === "item-metadata-missing").length ?? 0,
+      placements: source?.placements.map(value =>
+        placement({ ...value, category: classifyStashItem(value.metadata) })) ?? []
+    };
+  });
+  const after = mapping.entries.map(entry => {
+    const target = afterByInventory.get(entry.inventoryId);
+    const source = before.find(page => page.tabIndex === entry.tabIndex)!;
+    return target
+      ? {
+          tabIndex: entry.tabIndex,
+          columns: 12,
+          rows: 20,
+          status: source.status,
+          itemCount: target.placements.length,
+          unsupportedItemCount: source.unsupportedItemCount,
+          placements: target.placements.map(placement)
+        }
+      : { ...source, placements: [...source.placements] };
+  });
   return {
     mode: plan.mode,
     moveCount: plan.moves.length,
     crossTabCount: plan.moves.filter(move => move.route === "via-character-bag").length,
     skippedCount: plan.skippedAliases.length,
     skippedDiagnostics: plan.diagnostics,
-    before: plan.pages.map(page => {
-      const source = containers.get(page.inventoryId);
-      return { tabIndex: page.tabIndex, columns: 12, rows: 20, itemCount: source?.placements.length ?? 0,
-        placements: source?.placements.map(value => placement({ ...value, category: classifyStashItem(value.metadata) })) ?? [] };
-    }),
-    after: plan.pages.map(page => ({ tabIndex: page.tabIndex, columns: 12, rows: 20,
-      itemCount: page.placements.length, placements: page.placements.map(placement) }))
+    before,
+    after
   };
 }
 
