@@ -37,6 +37,10 @@ describe("private sort session store", () => {
           actions: []
         },
         screenActions: [],
+        tabRuntimeContract: [
+          { tabIndex: 0, inventoryId: 4, click: { x: 1328, y: 211 } },
+          { tabIndex: 1, inventoryId: 5, click: { x: 1328, y: 256 } }
+        ],
         timing: SORT_INPUT_TIMING_PRESETS.fast
       });
       await store.append({
@@ -73,6 +77,7 @@ describe("private sort session store", () => {
       expect(store.sessionPath.endsWith("session.private.json")).toBe(true);
       const diagnostic = await readFile(latestDiagnosticPath, "utf8");
       expect(diagnostic).toContain('"event":"session-start"');
+      expect(diagnostic).toContain('"visibleTabs":[{"tabIndex":0,"inventoryId":4,"click":{"x":1328,"y":211}},{"tabIndex":1,"inventoryId":5,"click":{"x":1328,"y":256}}]');
       expect(diagnostic).toContain('"expectedTab":1');
       expect(diagnostic).toContain('"observedTab":1');
       expect(diagnostic).toContain('"diagnosticCode":"test-stop"');
