@@ -68,6 +68,24 @@ describe("NAV-001 Windows navigation runtime", () => {
     expect(classifyScreen).not.toHaveBeenCalledBefore(clickForeground);
     expect(result.status).not.toBe("blocked");
   });
+  it("does not repeat a full preflight between already verified adjacent steps", async () => {
+    const screens = ["lobby", "stash", "lobby", "character-selection", "lobby", "stash"] as const;
+    let screenIndex = 0;
+    const adapter: WindowsNavigationAdapter = {
+      async inspectWindow() { return windowState; },
+      async classifyScreen() { return { status: "classified", observation: { screen: screens[screenIndex]! } }; },
+      async clickForeground() { screenIndex += 1; return { status: "clicked" }; }
+    };
+    const inspectWindow = vi.spyOn(adapter, "inspectWindow");
+    const classifyScreen = vi.spyOn(adapter, "classifyScreen");
+    const result = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), adapter)
+      .execute({ plan, approval });
+    expect(result.status).toBe("completed");
+    // Five transition waits still verify state, but only the first action needs
+    // a separate preflight. Adjacent actions reuse the preceding verification.
+    expect(inspectWindow).toHaveBeenCalledTimes(6);
+    expect(classifyScreen).toHaveBeenCalledTimes(6);
+  });
   it("prepares the exact navigation-only sequence and compact fingerprint", () => {
     expect(plan.steps.map(step => step.control)).toEqual([
       "open-stash", "start-game", "return-to-character-selection",

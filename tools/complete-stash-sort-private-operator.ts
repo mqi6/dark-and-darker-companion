@@ -6,10 +6,11 @@ import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import gameplayJson from "../fixtures/darkerdb/gameplay/catalog.json";
 import { resolveSortInputTiming, type AutomationSpeedPreset, type SortInputTiming } from "../src/domain/automationTiming";
-import { canonicalItemIdForGameDesignId, asGameDesignItemId } from "../src/domain/gameIdBridge";
+import { canonicalItemIdForGameDesignIdInCatalog, asGameDesignItemId } from "../src/domain/gameIdBridge";
 import type { ReducedGameState } from "../src/domain/gameStateReducer";
 import { gameplayCatalogSchema } from "../src/domain/gameplayCatalog";
 import { projectSpatialState, type SpatialProjection } from "../src/domain/inventoryGeometry";
+import type { CompleteStashSortPlan } from "../src/domain/completeStashSort";
 import type { StashPackingMode } from "../src/domain/stashPacking";
 import { STASH_ITEM_CATEGORIES, type StashTabItemPolicy } from "../src/domain/stashRouting";
 import { stashTabMappingSchema, type StashTabMapping } from "../src/domain/stashTabMapping";
@@ -29,6 +30,8 @@ import { PowerShellWindowsUiBridge } from "./windowsSupervisedMoveRuntime";
 import { PrivateSortOperatorLog, PrivateSortSessionStore } from "./privateSortSessionStore";
 
 const execFileAsync = promisify(execFile);
+const gameplayCatalog = gameplayCatalogSchema.parse(gameplayJson);
+const gameplayItemIds = gameplayCatalog.items.map(item => item.id);
 type Settings = { mode: StashPackingMode; speed: AutomationSpeedPreset; custom?: Partial<SortInputTiming>; tabs: Array<{ tabIndex: number; enabled: boolean; allowedCategories: string[] }> };
 
 class AutomaticPrivateProjectionRefresher {
@@ -68,10 +71,10 @@ class AutomaticPrivateProjectionRefresher {
     await execFileAsync(process.execPath, ["--import", "tsx", resolve("tools/analyze-private-move003-refresh.ts"), session], { encoding: "utf8", windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
     const snapshot = JSON.parse(await readFile(resolve(session, "semantic-snapshot.sanitized-private.json"), "utf8")) as SanitizedSemanticSnapshotV1;
     const items = snapshot.containers.flatMap(container => container.items.map(item => {
-      const gameDesignItemId = asGameDesignItemId(item.gameDesignItemId), canonical = canonicalItemIdForGameDesignId(gameDesignItemId);
+      const gameDesignItemId = asGameDesignItemId(item.gameDesignItemId), canonical = canonicalItemIdForGameDesignIdInCatalog(gameDesignItemId, gameplayItemIds);
       return { alias: item.alias, gameDesignItemId, ...(canonical ? { darkerDbCanonicalItemId: canonical } : {}), inventoryId: item.inventoryId, slotId: item.slotId, stackQuantity: item.stackQuantity, ammoCount: item.ammoCount, contentsCount: item.contentsCount, primaryProperties: [], secondaryProperties: [], tradable: item.tradable, permittedAreas: item.permittedAreas };
     }));
-    const projected = projectSpatialState({ protocol: snapshot, items, diagnostics: [] } as ReducedGameState, gameplayCatalogSchema.parse(gameplayJson));
+    const projected = projectSpatialState({ protocol: snapshot, items, diagnostics: [] } as ReducedGameState, gameplayCatalog);
     return { ...projected, sourceVersion: ++this.version };
   }
 }
@@ -99,7 +102,15 @@ class PrivateCompleteController implements CompleteSortHttpController {
     try {
       const options = { mode: settings.mode, timing: resolveSortInputTiming({ preset: settings.speed, custom: settings.custom }), policies: policies(settings, this.mapping), excludedInventoryIds: [] };
       const result = await new CompleteStashSortPreparationController(this.refresher, this.mapping, this.window).refreshAndPreview(options, this.abort.signal);
-      if (result.status !== "ready") { this.phase = "blocked"; this.detail = { diagnosticCode: result.diagnosticCode }; return this.snapshot(); }
+      if (result.status !== "ready") {
+        this.phase = "blocked";
+        this.detail = {
+          diagnosticCode: result.diagnosticCode,
+          ...(result.initialProjection && result.plan ? previewSummary(result.initialProjection, result.plan) : {})
+        };
+        await this.record("preview-blocked", result.diagnosticCode);
+        return this.snapshot();
+      }
       const directory = resolve(this.sessionsRoot, `sort-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`), store = new PrivateSortSessionStore(directory);
       await store.create({ initialProjection: result.initialProjection, policies: options.policies, packingMode: options.mode, plan: result.plan, schedule: result.schedule, screenActions: result.screenActions, timing: options.timing });
       const drag = new PowerShellWindowsUiBridge(resolve("tools/windows-supervised-move.ps1"));
@@ -108,7 +119,7 @@ class PrivateCompleteController implements CompleteSortHttpController {
       const runner = new CompleteStashSortExecutionRunner(new GameInteractionLease(), runtime, undefined, entry => store.append({ at: new Date().toISOString(), ...entry }), (projection, reconciliation) => store.savePostState(projection, reconciliation));
       this.prepared = new CompleteStashSortOperatorController(result, runner);
       this.phase = "ready";
-      this.detail = { mode: result.plan.mode, moveCount: result.schedule.itemMoveCount, actionCount: result.schedule.actions.length, dragCount: result.schedule.dragCount, crossTabCount: result.plan.moves.filter(move => move.route === "via-character-bag").length, temporaryBagBufferCount: result.schedule.temporaryBufferCount, skippedCount: result.plan.skippedAliases.length, skippedDiagnostics: result.plan.diagnostics, before: { containerCount: result.initialProjection.containers.length }, after: result.plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: page.placements.length })) };
+      this.detail = { ...previewSummary(result.initialProjection, result.plan), actionCount: result.schedule.actions.length, dragCount: result.schedule.dragCount, temporaryBagBufferCount: result.schedule.temporaryBufferCount };
       await this.record("preview-ready", undefined, result.schedule.itemMoveCount, result.schedule.actions.length, result.schedule.dragCount);
       return this.snapshot();
     } catch (error) {
@@ -159,5 +170,17 @@ function startRefreshCapture(configuration: { interface: string; gameVersion: st
 }
 function operatorDiagnostic(error: unknown): string { const message = error instanceof Error ? error.message : ""; if (message.includes("No visible DungeonCrawler main window")) return "game-window-unavailable"; if (message.includes("Multiple DungeonCrawler")) return "multiple-game-windows"; if (message.includes("navigation-")) return message.match(/navigation-[a-z-]+/)?.[0] ?? "navigation-failed"; if (message.includes("capture")) return "complete-capture-failed"; return "refresh-preview-failed"; }
 function diagnosticMessage(code: string): string { switch (code) { case "game-window-unavailable": return "The operator cannot see a DungeonCrawler game window on its Windows desktop."; case "multiple-game-windows": return "Multiple game windows are visible; close the extra instance."; case "complete-capture-failed": return "The complete command-44 capture failed; see the private operator log."; default: return "Refresh and Preview failed; local Codex can inspect the private adapter error."; } }
+function previewSummary(projection: SpatialProjection, plan: Extract<CompleteStashSortPlan, { status: "ready" }>) {
+  const containers = new Map(projection.containers.map(container => [container.inventoryId, container]));
+  return {
+    mode: plan.mode,
+    moveCount: plan.moves.length,
+    crossTabCount: plan.moves.filter(move => move.route === "via-character-bag").length,
+    skippedCount: plan.skippedAliases.length,
+    skippedDiagnostics: plan.diagnostics,
+    before: plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: containers.get(page.inventoryId)?.placements.length ?? 0 })),
+    after: plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: page.placements.length }))
+  };
+}
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) await main();

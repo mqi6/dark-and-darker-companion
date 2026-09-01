@@ -126,9 +126,12 @@ export class WindowsNavigationSequenceRunner {
     try {
       for (const [stepIndex, step] of plan.steps.entries()) {
         if (parameters.signal?.aborted) return { status: "cancelled", clickCount };
+        const priorStep = stepIndex > 0 ? plan.steps[stepIndex - 1] : undefined;
         const problem = stepIndex === 0 && parameters.initialState
           ? validateInitialState(plan, step.requiresScreen, parameters.initialState)
-          : await this.preflight(plan, step.requiresScreen);
+          : priorStep?.expectedScreen === step.requiresScreen
+            ? undefined
+            : await this.preflight(plan, step.requiresScreen);
         if (problem) return { status: "blocked", diagnosticCode: problem, clickCount };
         this.log({ event: "dispatch", detail: step.control });
         const click = await this.adapter.clickForeground(step.point);
@@ -162,10 +165,6 @@ export class WindowsNavigationSequenceRunner {
     const deadline = Date.now() + step.timeoutMilliseconds;
     while (Date.now() < deadline) {
       if (signal?.aborted) return "cancelled";
-      const current = await this.adapter.inspectWindow();
-      if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
-      if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
-      if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
       const result = await this.adapter.classifyScreen();
       if (result.status === "classified") {
         const observation = result.observation;
@@ -173,7 +172,13 @@ export class WindowsNavigationSequenceRunner {
             (step.expectedCharacterSlotIndex === undefined ||
               observation.selectedCharacterSlotIndex === step.expectedCharacterSlotIndex) &&
             (step.expectedStashTabIndex === undefined ||
-              observation.selectedStashTabIndex === step.expectedStashTabIndex)) return undefined;
+              observation.selectedStashTabIndex === step.expectedStashTabIndex)) {
+          const current = await this.adapter.inspectWindow();
+          if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
+          if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
+          if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
+          return undefined;
+        }
       }
       await new Promise(resolve =>
         setTimeout(resolve, NAVIGATION_TRANSITION_POLL_MILLISECONDS));

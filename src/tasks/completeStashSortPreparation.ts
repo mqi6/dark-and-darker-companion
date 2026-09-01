@@ -22,7 +22,14 @@ export interface CompleteSortPreparationOptions {
 }
 
 export type CompleteSortPreparationResult =
-  | { status: "blocked"; diagnosticCode: string }
+  | {
+      status: "blocked";
+      diagnosticCode: string;
+      initialProjection?: SpatialProjection;
+      plan?: Extract<ReturnType<typeof planCompleteStashSort>, { status: "ready" }>;
+      schedule?: ReturnType<typeof scheduleCompleteStashSort>;
+      options?: CompleteSortPreparationOptions;
+    }
   | {
       status: "ready";
       initialProjection: SpatialProjection;
@@ -53,7 +60,14 @@ export class CompleteStashSortPreparationController {
     if (plan.status !== "ready") return { status: "blocked", diagnosticCode: plan.reason };
     const schedule = scheduleCompleteStashSort(plan, projection);
     if (schedule.status !== "ready") {
-      return { status: "blocked", diagnosticCode: schedule.diagnosticCode };
+      return {
+        status: "blocked",
+        diagnosticCode: schedule.diagnosticCode,
+        initialProjection: projection,
+        plan,
+        schedule,
+        options
+      };
     }
     const layout = buildGameScreenLayout({
       clientBounds: this.window.clientBounds,
