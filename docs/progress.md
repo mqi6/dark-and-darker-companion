@@ -1,5 +1,18 @@
 # Development Progress
 
+## Marketplace M2 query planner and local pipeline checkpoint — 2026-09-01
+
+- Replaced the narrow unused search model with a versioned, Zod-validated Marketplace SearchSpec covering canonical class/family selections, category/slot/armor/weapon/hand filters, rarity, unit/total price ranges, active state, deterministic sort, explicit budget, locale, and K-of-N roll rules.
+- Added canonical catalog resolution with group-AND/group-OR semantics and unrestricted-class matching. Selected item families resolve to exact concrete item IDs; broad multi-rarity searches use one safe query family per rarity; an empty catalog resolution makes no Market request and never broadens silently.
+- Added conservative API pushdown: active state, slot union, price, unit-price ordering, and only mandatory bounded secondary rules when K=N. K<N remains local and does not generate combinatorial query fan-out.
+- Added one global default budget of 20 live requests and 1,000 raw rows, fair round-robin pagination across request families, listing-ID deduplication, precise retrieved/evaluated/matched counts, per-family totals/completeness/freshness/errors, and aggregate server-reported total only when every family reports one.
+- Added per-concrete-item possible-roll lookup, zero-rule pass-through, missing/naturally-impossible false semantics, local price/active/catalog rechecks, and stable unit-price/created-time/listing-ID ordering.
+- Added a 15-second in-memory Market-page cache, AbortSignal propagation, immediate stop on 429/auth failures, and a monotonic generation coordinator that prevents an older request from publishing over a newer explicit Search.
+- Expanded the typed Items contract and added Marketplace catalog normalization for canonical family IDs, class restrictions, item/category/type fields, and normalized item-detail possible attributes. Missing family identity is omitted with a diagnostic rather than guessed from display names or suffixes.
+- Verification at this checkpoint covers SearchSpec normalization/validation, class union, family/rarity resolution, safe pushdown, K-of-N, impossible rolls, deterministic ordering, request and row caps, round-robin fairness, dedupe/counts, partial failures, rate limits, authoritative empty, cache reuse, request supersession, and catalog normalization.
+
+Next product phase: Marketplace M3 filter UI, followed immediately by M4 result/state UI and M5 read-only live verification. Stash operator integration and Electron remain after Marketplace M5; no game Marketplace input, buying, per-row Price Check, stash-sort TODO, or live listing automation was added in M2.
+
 ## Marketplace M1 API contract checkpoint — 2026-09-01
 
 - Added typed DarkerDB contracts and client methods for Facets, Classes, Attributes, and concrete item detail while retaining unknown upstream columns through passthrough validation.

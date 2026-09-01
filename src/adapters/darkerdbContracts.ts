@@ -50,6 +50,7 @@ export const darkerDbFacetsBodySchema = z
 export const darkerDbGameplayItemSchema = z
   .object({
     id: canonicalIdSchema,
+    archetype: canonicalIdSchema.nullish(),
     name: z.string(),
     rarity: z.string().trim().min(1),
     inventory_width: z.number().int().positive().nullish(),
@@ -58,7 +59,12 @@ export const darkerDbGameplayItemSchema = z
     slot_type: z.string().trim().min(1).nullish(),
     item_type: z.string().trim().min(1).nullish(),
     armor_type: z.string().trim().min(1).nullish(),
+    hand_type: z.string().trim().min(1).nullish(),
     weapon_type: z.string().trim().min(1).nullish(),
+    required_class: z
+      .union([z.string(), z.array(z.string().trim().min(1))])
+      .nullish(),
+    artifact_type: z.string().trim().min(1).nullish(),
     patch: z.string().trim().min(1).nullish()
   })
   .passthrough();

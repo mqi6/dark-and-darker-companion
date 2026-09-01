@@ -31,6 +31,11 @@ function candidate(id: string, rolls: MarketCandidate["item"]["rolls"], possible
 }
 
 describe("K-of-N filtering", () => {
+  it("passes through candidates when no attribute rules are enabled", () => {
+    const result = evaluateCandidate(candidate("plain", []), [], 0);
+    expect(result).toMatchObject({ passed: true, matchCount: 0, enabledRuleCount: 0 });
+  });
+
   it("passes a candidate with exactly K matching rolls", () => {
     const result = evaluateCandidate(
       candidate("plate", [

@@ -142,7 +142,14 @@ export function filterCandidates(
 }
 
 function validateRequiredCount(required: number, enabledRuleCount: number): void {
-  if (!Number.isInteger(required) || required < 1 || required > enabledRuleCount) {
-    throw new RangeError("requiredMatchCount must be between 1 and enabled rule count.");
+  const valid =
+    Number.isInteger(required) &&
+    (enabledRuleCount === 0
+      ? required === 0
+      : required >= 1 && required <= enabledRuleCount);
+  if (!valid) {
+    throw new RangeError(
+      "requiredMatchCount must be zero with no enabled rules, otherwise between 1 and enabled rule count."
+    );
   }
 }

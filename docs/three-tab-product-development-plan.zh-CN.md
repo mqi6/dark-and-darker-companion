@@ -5,7 +5,7 @@
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
-实施状态：**Phase P0 与 Marketplace M1 API checkpoint 已完成；下一步调整为桌面宿主与现有仓库 operator 产品化集成（D1/S0），之后继续 Marketplace M2。**
+实施状态：**Phase P0、Marketplace M1 与 M2 已完成；下一步连续完成 Marketplace M3–M5。之后再进行仓库 operator 产品化集成与 Electron。**
 
 ## 0. 目标与范围
 
@@ -17,7 +17,7 @@
 
 `Settings` 不再是第四个主标签页。语言、DarkerDB、捕获、坐标校准、自动化安全和诊断设置放入全局设置抽屉/页面，通过右上角齿轮进入。
 
-本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。Marketplace Search 仍是下一项新功能，但在继续 M2 前，先把已经通过 live 验证的仓库 Refresh/Preview/Run Sort operator 接入产品外壳，并建立桌面宿主边界。这不是恢复仓库排序算法 TODO；速度、名称/品质排序和恢复优化仍留在 S1。当前仍不启动 live 自动上架。
+本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。当前优先完整完成 Marketplace Search（M2–M5）。Marketplace 仅需要 DarkerDB HTTP、缓存和本地计算，因此继续使用 React/Vite 浏览器开发与验收，不依赖 Windows operator 或 Electron。完成 Marketplace 后，再把已经通过 live 验证的仓库 Refresh/Preview/Run Sort operator 接入产品外壳，并建立桌面宿主边界。当前仍不启动 live 自动上架。
 
 ## 1. 已锁定的产品决定
 
@@ -562,7 +562,7 @@ Electron renderer / React UI
 
 ## 8. 推荐开发顺序
 
-当前开发顺序调整为：先建立最小桌面宿主并把已经工作的仓库 operator 接入 Stash 标签；再完成 Marketplace Search；之后回到仓库性能/排序质量 TODO，最后进入自动上架。桌面安装器与发布 polish 最后完成。
+当前开发顺序是：完整完成 Marketplace Search M2–M5；再建立最小桌面宿主并把已经工作的仓库 operator 接入 Stash 标签；之后处理仓库性能/排序质量 TODO，最后进入自动上架。桌面安装器与发布 polish 最后完成。
 
 ### Phase P0 — 三标签外壳与文档一致性
 
@@ -605,34 +605,9 @@ Electron renderer / React UI
 - 不含 key/request ID/player identity；
 - 目录不按本地化名称 join。
 
-### Phase D1/S0 — 最小桌面宿主与仓库 operator 产品化集成
-
-这是下一实施阶段。它只整合已经存在的完整仓库整理链路，不修改 click/drag 速度、角色重选算法、排序顺序或 live 安全门。
-
-工作：
-
-- 建立 Electron main / preload / React renderer 三层；开发模式继续加载 Vite，生产模式加载本地构建资源；
-- 定义 transport-neutral `CompanionBridge` 与 `StashOperatorClient`，方法限定为 status、focus、refreshAndPreview、runPreparedSort、stop；
-- Electron main 直接复用现有 `PrivateCompleteController`、`CompleteStashSortPreparationController`、`CompleteStashSortOperatorController` 和执行 runner，不在 React 中复制整理逻辑；
-- 将旧 `completeSortOperatorServer` 的内联 HTML 降为诊断/回退工具；React Stash tab 成为正式产品 UI；
-- Stash tab 接入真实可见页/inventory ID、每页 On/Off、允许类别、packing mode、speed/custom timing；
-- “刷新并预览”执行既定角色重选与完整 command-44 状态刷新，生成 Before / Planned After；
-- 显示各页真实 12×20 布局、未知物品隔离、移动数、drag/action/cross-tab/temp-buffer 数和阻塞诊断；
-- 只有 ready snapshot/plan 才启用“开始整理”；点击后仍进行一次明确确认，运行 exact prepared plan，绝不自动重试；
-- Stop、进度、confirmed/already-sorted/blocked/cancelled/ambiguous 和私有日志路径进入共享 Activity/状态条；
-- 普通浏览器预览没有 desktop bridge 时显示“桌面运行时未连接”，真实按钮禁用，不伪造成功状态。
-
-验收：
-
-- Windows 桌面窗口看起来与当前三标签 UI 相同，不再要求用户手动打开浏览器；
-- 点击“刷新并预览”只执行一次既定完整刷新并展示真实 Before/After；
-- Preview 本身不拖动物品；Run Sort 必须依赖当前 exact preview，快照/角色/页集合变化使计划失效；
-- 旧 operator 已经具备的页隔离、前台检查、首错停止、最终完整刷新和精确 reconciliation 全部保留；
-- renderer 无 Node/shell/filesystem 权限，所有 IPC sender、输入和输出经过 allowlist 与 schema 验证；
-- Electron 窗口关闭或 renderer 崩溃时，正在准备的可取消任务被终止；已派发输入的 ambiguous 状态不得被伪装成 cancelled/success；
-- 现有 `npm run sort:operator` 可暂时保留作为开发诊断回退，直到桌面 Stash 流程通过同等 live 验收。
-
 ### Phase M2 — Marketplace query planner 与本地 pipeline
+
+状态（2026-09-01）：**已完成。** 已建立版本化 SearchSpec、规范目录 resolver、安全的 server/local split、全局 20-request/1,000-row 预算、查询族 round-robin、逐族完整性/错误/新鲜度、15 秒页缓存、AbortSignal/generation guard、逐物品 possible-roll 映射、K-of-N 和确定性排序。空目录解析不会回退为宽泛 Market 请求。
 
 工作：
 
@@ -702,6 +677,26 @@ Electron renderer / React UI
 - UI 结果与 adapter diagnostics 一致；
 - 用户可用 Companion 信息手动在游戏里重建搜索；
 - 没有游戏输入、购买或 listing automation。
+
+### Phase D1/S0 — 最小桌面宿主与仓库 operator 产品化集成
+
+仅在 Marketplace M2–M5 完成后开始。该阶段只整合已经存在的完整仓库整理链路，不修改 click/drag 速度、角色重选算法、排序顺序或 live 安全门。
+
+工作：
+
+- 建立 Electron main / preload / React renderer 三层；开发模式继续加载 Vite，生产模式加载本地构建资源；
+- 定义 transport-neutral `CompanionBridge` 与 `StashOperatorClient`，方法限定为 status、focus、refreshAndPreview、runPreparedSort、stop；
+- Electron main 直接复用现有仓库准备、operator controller 和执行 runner，不在 React 中复制整理逻辑；
+- 将旧 operator 内联 HTML 降为诊断/回退工具；React Stash tab 接入真实可见页、每页策略、Refresh/Preview、Before/After、Run Sort、Stop、进度和诊断；
+- 普通浏览器预览没有 desktop bridge 时显示“桌面运行时未连接”，真实按钮禁用，不伪造成功状态。
+
+验收：
+
+- Windows 桌面窗口保持当前三标签外观，不要求用户打开普通浏览器；
+- Preview 只做一次既定完整刷新而不拖动物品；Run Sort 依赖 exact current preview；
+- 已有页隔离、前台检查、首错停止、最终完整刷新、精确 reconciliation 和 ambiguous 安全规则全部保留；
+- renderer 无 Node/shell/filesystem 权限，IPC sender、输入和输出经过 allowlist 与 schema 验证；
+- `npm run sort:operator` 在桌面 Stash 通过同等 live 验收前保留为诊断回退。
 
 ### Phase S1 — 仓库剩余排序质量与性能
 
@@ -820,7 +815,7 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 | 桌面宿主 | 约 5%（React renderer 可复用） | 0% | Electron main/preload/IPC、Windows 打包与发布 |
 | 共享 shell | 约 70% | 约 40% | 桌面 runtime、真实 status/Activity、任务 controller 接入 |
 | 仓库整理 | alpha 约 75%；更广 v1 约 50% | 独立 localhost operator 可受控整理；产品 Stash tab 仍是 demo | D1/S0 产品集成；之后是速度、前台/刷新、名称/品质排序和恢复 |
-| Marketplace Search | 约 40% | 约 10% | M2 planner、完整 UI、结果和状态 |
+| Marketplace Search | 约 60% | 约 10% | M3 完整筛选 UI、M4 结果/状态、M5 live 只读验收 |
 | 自动上架 | 定价/任务基础约 35% | live workflow 低于 15% | owned-item queue、复核 UI、动作/验证、独立 live checkpoint |
 
 这些百分比是用于规划的工程估计，不是按文件数计算。Marketplace 是当前最明确、风险最低、最适合先完成的完整用户工作流。
