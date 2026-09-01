@@ -13,7 +13,11 @@ import { projectSpatialState, type SpatialProjection } from "../src/domain/inven
 import type { CompleteStashSortPlan } from "../src/domain/completeStashSort";
 import type { StashPackingMode } from "../src/domain/stashPacking";
 import { STASH_ITEM_CATEGORIES, classifyStashItem, type StashTabItemPolicy } from "../src/domain/stashRouting";
-import { stashTabMappingSchema, type StashTabMapping } from "../src/domain/stashTabMapping";
+import {
+  assertCompactVisibleStashMapping,
+  stashTabMappingSchema,
+  type StashTabMapping
+} from "../src/domain/stashTabMapping";
 import { GameInteractionLease } from "../src/tasks/taskMachine";
 import { CompleteStashSortExecutionRunner } from "../src/tasks/completeStashSortExecution";
 import { CompleteStashSortOperatorController } from "../src/tasks/completeStashSortOperatorController";
@@ -185,6 +189,7 @@ async function main() {
     readJson<PrivateNavProfile>(resolve(refreshRoot, "profile.private.json")), readJson<PreparedMove003Refresh>(resolve(refreshRoot, "plan.private.json")), newestNamed(resolve("fixtures-private"), "mapping.private.json"), newestNamed(resolve("fixtures-private"), "manifest.private.json")
   ]);
   const mapping = stashTabMappingSchema.parse(await readJson(mappingPath));
+  assertCompactVisibleStashMapping(mapping, profile.visibleStashTabs);
   const capture = await readJson<{ interface: string; gameVersion: string; gameSha256: string; tsharkPath: string }>(manifestPath);
   const navigation = new PowerShellNavigationAdapter(resolve("tools/windows-navigation.ps1"), profile, refreshPlan.window, resolve(refreshRoot, "operator-transition.private.png"));
   const refresher = new AutomaticPrivateProjectionRefresher(profile, refreshPlan, capture, navigation);
