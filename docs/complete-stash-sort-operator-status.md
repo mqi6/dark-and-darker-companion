@@ -1,19 +1,29 @@
 # Complete stash-sort operator status
 
-Status as of 2026-08-31:
+Status as of 2026-09-01:
 
-- The localhost operator can restore the rendered DungeonCrawler window, run the established character-reselection route, capture one complete command-44 state, and prepare a complete-sort preview without dispatching a sort action.
-- The preview renders each included 12x20 stash page twice: captured occupancy before sorting and calculated occupancy after packing. It uses category-colored footprints and does not expose item IDs or aliases in the page.
-- `Run Sort` is enabled only for a fully scheduled prepared plan. One click is the process-local approval for that plan; no copied fingerprint or terminal marker is required.
+- The localhost operator restores the rendered DungeonCrawler window, performs the established character-reselection refresh, captures one complete command-44 state, and prepares a complete-sort preview without dispatching a sort action.
+- Refresh reuses the operator's resolved game-window binding. A successful screen capture now supplies both classification and verified window geometry, so the runtime does not start a second PowerShell inspection after every transition.
+- Transition deadlines remain 10 seconds for ordinary screens and 30 seconds for Enter Lobby. They are maximum failure deadlines, not fixed sleeps; the next action begins as soon as the expected screen is classified.
+- The scheduler supports more than one simultaneous character-bag buffer. This resolves overlapping footprint cycles that previously produced `destination-remains-occupied`.
+- Every visible stash tab is rendered as a 12x20 before/after footprint graph. Enabled, disabled, and unknown-item quarantine pages are visually distinct.
+- A page containing an unmapped item or missing gameplay metadata is automatically quarantined for that run. The operator does not guess a 1x1 footprint and does not read from or write to that page; verified pages can still be sorted.
+- `Run Sort` remains enabled only for a fully scheduled prepared plan. One click is process-local approval for that exact plan; no copied fingerprint or terminal marker is required.
 - Private captures, projections, plans, screen data, coordinates, journals, and post-state evidence remain below `fixtures-private` and are gitignored.
 
-## Current issues
+## Expected local behavior
 
-1. The current local acceptance state reaches logical planning but schedule preparation reports `destination-remains-occupied`. The operator therefore remains blocked and correctly keeps `Run Sort` disabled. No drag was dispatched. This scheduler conflict still needs a generic reproduction and correction before a live complete-sort acceptance run.
-2. When the game has restarted, the first foreground request may require the full shared window enumeration and verified-process scan. A local measurement observed roughly 8.5 seconds for that stale-handle path. After the request resolves the current HWND, subsequent foreground checks in the same operator workflow use live-handle revalidation; the measured cost was roughly 0.7 seconds. The repeated near-ten-second delay between navigation steps is removed, but first discovery can still be slow.
-3. The preview is an occupancy/footprint view, not an item-detail browser. Category, footprint, tab, and position are shown; private aliases and canonical IDs intentionally are not.
-4. Operator progress is returned by the localhost API and persisted to private logs. A browser reload reconnects to process-local state, but restarting the operator discards an unexecuted in-memory approval and requires a new Refresh and Preview.
+The first game-window discovery after a game restart can still take several seconds because Windows must enumerate and verify the new top-level window. Once resolved, Focus, Refresh, transition observation, and sort execution reuse the live binding. Restart the operator after pulling this branch; an already-running Node process cannot load the new pipeline or graphical preview.
 
-## Acceptance boundary
+The preview exposes category, footprint, tab, position, page status, move count, cross-tab count, skipped diagnostics, and unknown-item counts. It intentionally omits private aliases and canonical IDs from the browser page.
 
-Do not treat a completed character-reselection route as sort readiness by itself. Readiness requires a newer complete projection, a ready logical plan, a conflict-free schedule, and generated screen actions. On any rejected, failed, ambiguous, or cancelled-after-dispatch action, execution stops immediately and requires a fresh preview rather than continuing from stale projected occupancy.
+## Verification
+
+GitHub Actions CI run 93 passed on commit `a9311d40b03fcc0dc65f02f9389eb0725ea2d12b`:
+
+- TypeScript typecheck
+- Fixture validation
+- 61 test files / 312 tests
+- Production build
+
+No live click, drag, game capture, or private fixture was required for these offline changes.
