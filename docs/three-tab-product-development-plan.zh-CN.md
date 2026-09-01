@@ -5,7 +5,7 @@
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
-实施状态：**Phase P0、Marketplace M1–M3 已完成；下一步连续完成 Marketplace M4–M5。之后再进行仓库 operator 产品化集成与 Electron。**
+实施状态：**Phase P0、Marketplace M1–M4 已完成；下一步完成 Marketplace M5 live 只读验收。之后再进行仓库 operator 产品化集成与 Electron。**
 
 ## 0. 目标与范围
 
@@ -649,6 +649,8 @@ Electron renderer / React UI
 
 ### Phase M4 — Marketplace 结果与状态
 
+状态（2026-09-01）：**已完成 runtime/result checkpoint。** M3 草稿已通过注入式 runtime 接入 M2 planner、20-request/1,000-row executor、缓存、取消和 stale-generation guard。现已提供桌面表格/窄屏卡片、单位价与总价、K/N 与 listing 词条详情、手动游戏内搜索摘要、精确 count/completeness/freshness/per-family diagnostics，以及 initial/loading/empty/stale/incomplete/rate/auth/partial/fatal/cancelled 状态。Refresh 强制绕过页缓存；Load more 每次把 retrieved ceiling 增加 1,000（最高 5,000）并复用旧分页；兼容的 K<N 草稿可在不可变候选快照上本地重筛，改变 server query 的草稿会要求重新 Search。浏览器壳仍明确使用脱敏 preview Market source；M5 才接真实双语目录和只读 DarkerDB runtime。
+
 工作：
 
 - 表格/cards、单位价/总价、属性匹配和 K/N；
@@ -817,7 +819,7 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 | 桌面宿主 | 约 5%（React renderer 可复用） | 0% | Electron main/preload/IPC、Windows 打包与发布 |
 | 共享 shell | 约 70% | 约 40% | 桌面 runtime、真实 status/Activity、任务 controller 接入 |
 | 仓库整理 | alpha 约 75%；更广 v1 约 50% | 独立 localhost operator 可受控整理；产品 Stash tab 仍是 demo | D1/S0 产品集成；之后是速度、前台/刷新、名称/品质排序和恢复 |
-| Marketplace Search | 约 72% | 约 35% | M4 结果/状态与运行时接线、M5 live 只读验收 |
+| Marketplace Search | 约 88% | 约 65% | M5 真实双语目录、API runtime 与 live 只读验收 |
 | 自动上架 | 定价/任务基础约 35% | live workflow 低于 15% | owned-item queue、复核 UI、动作/验证、独立 live checkpoint |
 
 这些百分比是用于规划的工程估计，不是按文件数计算。Marketplace 是当前最明确、风险最低、最适合先完成的完整用户工作流。

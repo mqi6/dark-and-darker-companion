@@ -215,6 +215,28 @@ describe("Marketplace bounded search execution", () => {
     expect(second).toMatchObject({ liveRequestCount: 0, cacheHitCount: 1 });
   });
 
+  it("bypasses the page cache for an explicit Refresh", async () => {
+    const getMarket = vi.fn(async (query: MarketQuery) =>
+      page([listing(getMarket.mock.calls.length, query.itemId!, 100)], {
+        page: 1,
+        numPages: 1,
+        reportedTotal: 1
+      })
+    );
+    const executor = new MarketplaceSearchExecutor({ getMarket });
+    const coordinator = new MarketplaceSearchCoordinator(executor);
+    const plan = createMarketplaceSearchPlan(
+      { version: 1, familyIds: ["id.archetype.test"] },
+      [catalog[0]!]
+    );
+
+    await coordinator.search(plan, [catalog[0]!]);
+    await coordinator.search(plan, [catalog[0]!]);
+    await coordinator.refresh(plan, [catalog[0]!]);
+
+    expect(getMarket).toHaveBeenCalledTimes(2);
+  });
+
   it("marks an older in-flight search superseded so it cannot publish stale data", async () => {
     let call = 0;
     const source = sourceFrom((query, options) => {

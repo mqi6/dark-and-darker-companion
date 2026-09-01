@@ -222,6 +222,7 @@ input:focus, select:focus { outline: 2px solid rgba(207,132,60,.35); border-colo
   max-width: 1480px;
   margin: 0 auto;
 }
+.marketplace-workspace { display: grid; gap: 18px; }
 .marketplace-main {
   min-width: 0;
   border: 1px solid #2a2c31;
@@ -463,6 +464,120 @@ input:focus, select:focus { outline: 2px solid rgba(207,132,60,.35); border-colo
 .marketplace-status-card { margin-top: 230px; }
 .marketplace-status-card p:last-child { margin-bottom: 0; }
 .muted-note { color: #777b82; font-size: 11px; }
+.marketplace-results {
+  max-width: 1480px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 22px;
+  border: 1px solid #2a2c31;
+  border-radius: 10px;
+  background: rgba(22, 24, 28, .92);
+  box-shadow: 0 14px 40px rgba(0,0,0,.18);
+}
+.marketplace-results-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.marketplace-results-heading h2 { margin-bottom: 0; }
+.marketplace-counts { display: grid; justify-items: end; gap: 4px; text-align: right; }
+.marketplace-counts strong { color: #e9c08d; font-size: 14px; }
+.marketplace-counts span { color: #858990; font-size: 11px; }
+.marketplace-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid #3c4652;
+  border-radius: 8px;
+  background: #151b21;
+}
+.marketplace-notice.warning { border-color: #6f552c; background: #211b12; }
+.marketplace-notice.danger { border-color: #6e3939; background: #211515; }
+.marketplace-notice strong,
+.marketplace-notice span,
+.marketplace-notice code { display: block; }
+.marketplace-notice strong { color: #e6e0d6; font-size: 12px; }
+.marketplace-notice span { margin-top: 3px; color: #a1a4aa; font-size: 11px; }
+.marketplace-notice code { margin-top: 6px; color: #d89b91; font-size: 10px; white-space: normal; }
+.marketplace-empty-state {
+  padding: 38px 20px;
+  border: 1px dashed #3a3d43;
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(12, 14, 17, .45);
+}
+.marketplace-empty-state strong { color: #ddd6ca; }
+.marketplace-empty-state p { max-width: 680px; margin: 8px auto 0; color: #858990; }
+.marketplace-result-skeleton { display: grid; gap: 8px; margin-top: 12px; }
+.marketplace-result-skeleton span {
+  display: block;
+  height: 54px;
+  border: 1px solid #2e333a;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #171a1f, #20242a, #171a1f);
+}
+.marketplace-result-table-wrap { overflow-x: auto; }
+.marketplace-result-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.marketplace-result-table th {
+  padding: 10px;
+  border-bottom: 1px solid #44474e;
+  color: #858990;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.marketplace-result-table td {
+  min-width: 88px;
+  padding: 12px 10px;
+  border-bottom: 1px solid #2e3137;
+  color: #c6c7ca;
+  vertical-align: top;
+}
+.marketplace-result-table td:first-child { min-width: 190px; }
+.marketplace-result-table td:nth-child(2) { min-width: 210px; }
+.marketplace-result-table td:last-child { min-width: 190px; }
+.marketplace-result-table td > strong,
+.marketplace-result-table td > small { display: block; }
+.marketplace-result-table td > small { margin-top: 5px; color: #696d74; font-size: 9px; overflow-wrap: anywhere; }
+.rarity-label { display: inline-block; margin-top: 5px; color: #b9a37f; font-size: 10px; text-transform: uppercase; }
+.rarity-label.rarity-rare { color: #73a9dc; }
+.rarity-label.rarity-epic { color: #ba80db; }
+.marketplace-result-table details { margin-top: 6px; }
+.marketplace-result-table summary,
+.marketplace-family-diagnostics summary { color: #d6a66c; cursor: pointer; font-size: 10px; }
+.marketplace-result-table ul { margin: 7px 0 0; padding-left: 17px; color: #93969d; font-size: 10px; }
+.manual-search-details pre {
+  max-width: 300px;
+  margin: 8px 0;
+  padding: 9px;
+  border: 1px solid #30333a;
+  border-radius: 6px;
+  color: #bbbcc0;
+  background: #0f1114;
+  font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+}
+.manual-search-details button { min-height: 32px; padding: 5px 8px; font-size: 10px; }
+.marketplace-result-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 15px;
+}
+.marketplace-result-footer > div { display: grid; gap: 3px; color: #74787f; font-size: 10px; }
+.marketplace-family-diagnostics { margin-top: 15px; border-top: 1px solid #30333a; padding-top: 13px; }
+.marketplace-family-diagnostics > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; }
+.marketplace-family-diagnostics article { display: grid; gap: 4px; padding: 10px; border: 1px solid #30333a; border-radius: 6px; background: #121417; }
+.marketplace-family-diagnostics article strong { color: #c9c4ba; font-size: 10px; overflow-wrap: anywhere; }
+.marketplace-family-diagnostics article span,
+.marketplace-family-diagnostics article code { color: #7f838a; font-size: 9px; white-space: normal; }
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -499,6 +614,17 @@ input:focus, select:focus { outline: 2px solid rgba(207,132,60,.35); border-colo
   .marketplace-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .marketplace-actions button { width: 100%; }
   .active-filter-summary > div:first-child span { text-align: left; }
+  .marketplace-results-heading,
+  .marketplace-result-footer { align-items: stretch; flex-direction: column; }
+  .marketplace-counts { justify-items: start; text-align: left; }
+  .marketplace-result-table-wrap { overflow: visible; }
+  .marketplace-result-table,
+  .marketplace-result-table tbody { display: block; }
+  .marketplace-result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .marketplace-result-table tr { display: grid; gap: 8px; margin-bottom: 12px; padding: 13px; border: 1px solid #34373d; border-radius: 8px; background: #121417; }
+  .marketplace-result-table td { display: grid; grid-template-columns: minmax(105px, .45fr) 1fr; min-width: 0 !important; padding: 4px 0; border: 0; }
+  .marketplace-result-table td::before { content: attr(data-label); color: #72767d; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; }
+  .manual-search-details pre { max-width: 100%; }
 }
 
 @media (max-width: 460px) {

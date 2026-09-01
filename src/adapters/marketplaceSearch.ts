@@ -47,6 +47,8 @@ export interface MarketplaceFamilyResult {
 }
 
 export interface MarketplaceSearchExecutionResult {
+  /** Every canonical listing evaluated locally, including K-of-N non-matches. */
+  evaluated: readonly MarketplaceListingEvaluation[];
   matches: readonly MarketplaceListingEvaluation[];
   retrievedCount: number;
   evaluatedCount: number;
@@ -116,6 +118,10 @@ export class MarketplaceSearchExecutor {
   ) {
     this.now = options.now ?? Date.now;
     this.cache = options.cache ?? new MarketplacePageCache(undefined, this.now);
+  }
+
+  clearCache(): void {
+    this.cache.clear();
   }
 
   async execute(
@@ -233,6 +239,7 @@ export class MarketplaceSearchExecutor {
     for (const listing of rawListings) {
       if (!deduplicated.has(listing.id)) deduplicated.set(listing.id, listing);
     }
+    const evaluatedListings: MarketplaceListingEvaluation[] = [];
     const matches: MarketplaceListingEvaluation[] = [];
     let evaluatedCount = 0;
     for (const listing of deduplicated.values()) {
@@ -249,9 +256,11 @@ export class MarketplaceSearchExecutor {
       const evaluated = evaluateMarketplaceListing(listing, item, candidate, plan.spec);
       if (evaluated !== undefined) {
         evaluatedCount += 1;
+        evaluatedListings.push(evaluated);
         if (evaluated.evaluation.passed) matches.push(evaluated);
       }
     }
+    evaluatedListings.sort(compareMarketplaceListings);
     matches.sort(compareMarketplaceListings);
 
     const familyResults = families.map((state) => state.result);
@@ -263,6 +272,7 @@ export class MarketplaceSearchExecutor {
       : undefined;
 
     return {
+      evaluated: evaluatedListings,
       matches,
       retrievedCount: rawListings.length,
       evaluatedCount,
@@ -321,6 +331,15 @@ export class MarketplaceSearchCoordinator {
         generation
       };
     }
+  }
+
+  async refresh(
+    plan: MarketplaceSearchPlan,
+    catalog: readonly MarketplaceCatalogItem[],
+    localizedNames?: ReadonlyMap<MarketplaceCatalogItem["id"], LocalizedGameText>
+  ): Promise<MarketplaceCoordinatedSearchResult> {
+    this.executor.clearCache();
+    return this.search(plan, catalog, localizedNames);
   }
 
   cancel(): void {
@@ -383,6 +402,7 @@ function isAbort(error: unknown): boolean {
 
 function emptyResult(fetchedAt: string): MarketplaceSearchExecutionResult {
   return {
+    evaluated: [],
     matches: [],
     retrievedCount: 0,
     evaluatedCount: 0,

@@ -37,9 +37,12 @@ interface MarketplaceDraft {
 export interface MarketplaceSearchPanelProps {
   catalog: MarketplaceFilterCatalog;
   hasCandidateSnapshot?: boolean;
+  busy?: boolean;
+  canApplyLocal?: (spec: MarketplaceSearchSpec) => boolean;
   onSearch?: (spec: MarketplaceSearchSpec) => void;
   onRefresh?: (spec: MarketplaceSearchSpec) => void;
   onApplyLocal?: (spec: MarketplaceSearchSpec) => void;
+  onCancel?: () => void;
 }
 
 export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
@@ -59,6 +62,8 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
     () => (validation.valid ? buildSpec(draft, locale) : undefined),
     [draft, locale, validation.valid]
   );
+  const localApplyAvailable = currentSpec !== undefined &&
+    (props.canApplyLocal?.(currentSpec) ?? props.hasCandidateSnapshot === true);
   const availableAttributes = useMemo(() => {
     const selected = new Set(draft.rules.map((rule) => rule.attributeId));
     const query = attributeQuery.trim().toLocaleLowerCase(locale);
@@ -77,6 +82,10 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
   };
 
   const submitSearch = () => {
+    if (props.busy === true) {
+      props.onCancel?.();
+      return;
+    }
     if (currentSpec === undefined) return;
     setSubmittedSpec(currentSpec);
     setLastAction("search");
@@ -92,7 +101,7 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
   };
 
   const applyLocal = () => {
-    if (currentSpec === undefined || props.hasCandidateSnapshot !== true) return;
+    if (currentSpec === undefined || !localApplyAvailable || props.busy === true) return;
     setLastAction("local");
     props.onApplyLocal?.(currentSpec);
   };
@@ -392,7 +401,7 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
             <button
               type="button"
               className="secondary-action"
-              disabled={submittedSpec === undefined}
+              disabled={submittedSpec === undefined || props.busy === true}
               onClick={refreshSearch}
             >
               {t("search.actions.refresh")}
@@ -400,7 +409,7 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
             <button
               type="button"
               className="secondary-action"
-              disabled={!validation.valid || props.hasCandidateSnapshot !== true}
+              disabled={!validation.valid || !localApplyAvailable || props.busy === true}
               onClick={applyLocal}
             >
               {t("search.actions.applyLocal")}
@@ -408,10 +417,10 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
             <button
               type="button"
               className="primary-action"
-              disabled={!validation.valid}
+              disabled={props.busy !== true && !validation.valid}
               onClick={submitSearch}
             >
-              {t("search.actions.search")}
+              {props.busy === true ? t("search.actions.cancel") : t("search.actions.search")}
             </button>
           </div>
         </div>
@@ -436,6 +445,9 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
           )}
           {props.hasCandidateSnapshot !== true && (
             <p className="muted-note">{t("search.status.noSnapshot")}</p>
+          )}
+          {props.hasCandidateSnapshot === true && !localApplyAvailable && (
+            <p className="muted-note">{t("search.status.localRequiresSearch")}</p>
           )}
         </article>
       </aside>

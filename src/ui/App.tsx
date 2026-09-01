@@ -10,8 +10,9 @@ import type { StashPackingMode } from "../domain/stashPacking";
 import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeometry";
 import { StashPreviewGrid } from "./StashPreviewGrid";
 import { StashSortSettings } from "./StashSortSettings";
-import { MarketplaceSearchPanel } from "./MarketplaceSearchPanel";
+import { MarketplaceSearchWorkspace } from "./MarketplaceSearchWorkspace";
 import { marketplacePreviewCatalog } from "./marketplacePreviewCatalog";
+import { createMarketplacePreviewCoordinator } from "./marketplacePreviewMarket";
 
 type Tab = "stash" | "marketplaceSearch" | "autoListing";
 
@@ -22,6 +23,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>("stash");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
+  const marketplaceRuntime = useMemo(() => createMarketplacePreviewCoordinator(), []);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
@@ -108,7 +110,10 @@ export function App() {
           aria-labelledby="tab-marketplaceSearch"
           hidden={activeTab !== "marketplaceSearch"}
         >
-          <MarketplaceSearchPanel catalog={marketplacePreviewCatalog} />
+          <MarketplaceSearchWorkspace
+            catalog={marketplacePreviewCatalog}
+            runtime={marketplaceRuntime}
+          />
         </section>
         <section
           role="tabpanel"

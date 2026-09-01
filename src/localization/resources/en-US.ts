@@ -160,6 +160,7 @@ export const enUS = {
       refresh: "Refresh last search",
       applyLocal: "Apply locally",
       search: "Search DarkerDB",
+      cancel: "Cancel request",
       remove: "Remove {{label}}"
     },
     activeFilters: {
@@ -185,13 +186,108 @@ export const enUS = {
       refresh: "The last submitted search was explicitly refreshed.",
       local: "The current draft was applied to the existing candidate snapshot only.",
       previewCatalog: "This browser checkpoint uses a small sanitized catalog fixture; it does not claim live Marketplace results.",
-      noSnapshot: "Apply locally remains unavailable until a candidate snapshot exists."
+      noSnapshot: "Apply locally remains unavailable until a candidate snapshot exists.",
+      localRequiresSearch: "This draft changes the server candidate query. Use Search instead of local apply."
     },
     validation: {
       number: "Enter a valid finite number or leave the field blank.",
       nonnegative: "Price cannot be negative.",
       range: "Minimum must not exceed maximum.",
       k: "K must be between 1 and the number of selected rules, or 0 when no rules are selected."
+    },
+    results: {
+      eyebrow: "READ-ONLY PURCHASE ASSISTANCE",
+      title: "Qualifying Marketplace listings",
+      completeCount: "{{retrieved}} listings retrieved · complete batch",
+      incompleteCount: "{{retrieved}} retrieved / {{reported}} server-reported",
+      totalUnavailable: "total unavailable",
+      initial: {
+        title: "Run an explicit search to see qualifying listings",
+        detail: "Results come from bounded DarkerDB Market pages and local filtering. Nothing is entered into the game."
+      },
+      loading: {
+        search: "Searching DarkerDB…",
+        refresh: "Refreshing the last search…",
+        "load-more": "Loading another bounded batch…",
+        detail: "The filter draft remains editable. A cancelled or superseded response cannot replace newer results."
+      },
+      fatal: {
+        title: "Marketplace search failed",
+        preserved: "The last successful results remain visible and may now be stale.",
+        noResults: "No result snapshot was published. This error is not treated as an empty market."
+      },
+      auth: {
+        title: "DarkerDB authentication failed",
+        detail: "Check the runtime API-key configuration. No empty-market conclusion was made."
+      },
+      rate: {
+        title: "DarkerDB rate limit reached",
+        detail: "The partial snapshot is preserved. Wait for the service limit to recover before refreshing."
+      },
+      incomplete: {
+        title: "These results are incomplete",
+        detail: "{{retrieved}} listings were retrieved from {{reported}} reported. Matches are only from the evaluated snapshot."
+      },
+      stale: {
+        title: "DarkerDB source data is stale",
+        detail: "{{count}} query families report stale data; the oldest age is {{age}} seconds. Listings remain reference-only."
+      },
+      partial: {
+        title: "Some item families failed",
+        detail: "{{count}} query families failed. Successful families are still shown with diagnostics."
+      },
+      localApplied: {
+        title: "Local filters applied",
+        detail: "The existing immutable candidate snapshot was re-evaluated without a DarkerDB request."
+      },
+      empty: {
+        catalogTitle: "No catalog variants satisfy this filter",
+        catalogDetail: "The canonical catalog resolved to an authoritative empty set, so no broad fallback request was sent.",
+        localTitle: "Server candidates were found, but none passed locally",
+        localDetail: "Adjust the K-of-N rules or ranges, then apply locally when the server candidate set remains compatible.",
+        staleTitle: "No usable listings were retrieved, but absence is not authoritative",
+        staleDetail: "The source is stale or incomplete. Refresh explicitly before concluding that the market is empty.",
+        authoritativeTitle: "No active listings match",
+        authoritativeDetail: "The bounded query completed and produced no locally qualifying active listings."
+      },
+      columns: {
+        item: "Item",
+        rolls: "Attributes and match",
+        quantity: "Qty",
+        unitPrice: "Unit price",
+        totalPrice: "Total price",
+        manual: "Manual in-game search"
+      },
+      matchK: "{{matched}} / {{total}} selected rules matched",
+      details: "Show listing attributes",
+      noRolls: "No listing attributes",
+      attributeGroups: {
+        primary: "Primary",
+        secondary: "Random",
+        other: "Other"
+      },
+      manual: {
+        open: "Show search summary",
+        item: "Item",
+        rarity: "Rarity",
+        rolls: "Attributes",
+        maximum: "Listing reference",
+        unit: "per unit",
+        total: "total",
+        copy: "Copy summary",
+        copied: "Copied",
+        copyFailed: "Copy failed"
+      },
+      fetchedAt: "Snapshot evaluated at {{value}}",
+      requestCounts: "{{live}} live requests · {{cache}} cache hits",
+      loadMore: "Load another bounded batch",
+      diagnostics: {
+        title: "Per-family retrieval diagnostics",
+        counts: "{{retrieved}} retrieved / {{reported}} reported",
+        complete: "Complete",
+        incomplete: "Incomplete",
+        freshness: "Freshness: {{status}} · age {{age}}s"
+      }
     }
   },
   settings: {

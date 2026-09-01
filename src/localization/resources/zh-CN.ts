@@ -160,6 +160,7 @@ export const zhCN = {
       refresh: "刷新上次搜索",
       applyLocal: "仅在本地应用",
       search: "搜索 DarkerDB",
+      cancel: "取消请求",
       remove: "移除{{label}}"
     },
     activeFilters: {
@@ -185,13 +186,108 @@ export const zhCN = {
       refresh: "已明确刷新上次提交的搜索。",
       local: "当前草稿只应用于已有候选快照，没有调用 API。",
       previewCatalog: "此浏览器 checkpoint 使用小型脱敏目录夹具，不代表 live Marketplace 结果。",
-      noSnapshot: "取得候选快照后才能使用“仅在本地应用”。"
+      noSnapshot: "取得候选快照后才能使用“仅在本地应用”。",
+      localRequiresSearch: "当前草稿会改变服务端候选查询，需要点击“搜索”，不能只在本地应用。"
     },
     validation: {
       number: "请输入有效的有限数字，或将字段留空。",
       nonnegative: "价格不能为负数。",
       range: "最低值不能高于最高值。",
       k: "有词条时 K 必须在 1 到词条数量之间；没有词条时 K 必须为 0。"
+    },
+    results: {
+      eyebrow: "只读购买辅助",
+      title: "符合条件的 Marketplace listings",
+      completeCount: "已获取 {{retrieved}} 条 listing · 本批完整",
+      incompleteCount: "已获取 {{retrieved}} / 服务端报告 {{reported}}",
+      totalUnavailable: "总数未知",
+      initial: {
+        title: "明确点击搜索后显示符合条件的 listing",
+        detail: "结果来自有界 DarkerDB Market 分页和本地筛选；Companion 不会在游戏内输入或购买。"
+      },
+      loading: {
+        search: "正在搜索 DarkerDB…",
+        refresh: "正在刷新上次搜索…",
+        "load-more": "正在加载下一批有界结果…",
+        detail: "加载时仍可编辑筛选草稿；已取消或被替代的响应无法覆盖新结果。"
+      },
+      fatal: {
+        title: "Marketplace 搜索失败",
+        preserved: "上一次成功结果仍会保留，但现在可能已经过期。",
+        noResults: "没有发布任何结果快照；此错误不会被当作市场为空。"
+      },
+      auth: {
+        title: "DarkerDB 身份验证失败",
+        detail: "请检查运行时 API key 配置；系统不会因此判断市场为空。"
+      },
+      rate: {
+        title: "已达到 DarkerDB 速率限制",
+        detail: "部分结果快照会被保留；请等待服务限额恢复后再刷新。"
+      },
+      incomplete: {
+        title: "当前结果不完整",
+        detail: "服务端报告 {{reported}} 条，实际获取 {{retrieved}} 条；匹配数仅来自已计算快照。"
+      },
+      stale: {
+        title: "DarkerDB 来源数据已经过期",
+        detail: "{{count}} 个查询族报告陈旧数据，最久为 {{age}} 秒；这些 listing 只能作为参考。"
+      },
+      partial: {
+        title: "部分物品族查询失败",
+        detail: "{{count}} 个查询族失败；成功物品族仍会显示，并保留逐族诊断。"
+      },
+      localApplied: {
+        title: "已应用本地筛选",
+        detail: "系统只重新计算已有的不可变候选快照，没有调用 DarkerDB。"
+      },
+      empty: {
+        catalogTitle: "目录中没有满足筛选条件的具体物品",
+        catalogDetail: "canonical 目录得到权威空集合，因此没有回退发送宽泛 Market 请求。",
+        localTitle: "服务端找到了候选，但没有 listing 通过本地筛选",
+        localDetail: "可调整 K-of-N 或数值范围；server 候选集仍兼容时可直接在本地应用。",
+        staleTitle: "没有取得可用 listing，但不能据此认定市场为空",
+        staleDetail: "来源过期或结果不完整；请明确刷新后再判断。",
+        authoritativeTitle: "没有符合条件的 active listing",
+        authoritativeDetail: "有界查询已经完整结束，且没有 listing 通过本地筛选。"
+      },
+      columns: {
+        item: "物品",
+        rolls: "词条与匹配",
+        quantity: "数量",
+        unitPrice: "单位价",
+        totalPrice: "总价",
+        manual: "游戏内手动搜索"
+      },
+      matchK: "所选规则匹配 {{matched}} / {{total}}",
+      details: "查看 listing 词条",
+      noRolls: "没有 listing 词条",
+      attributeGroups: {
+        primary: "主要属性",
+        secondary: "随机词条",
+        other: "其他"
+      },
+      manual: {
+        open: "查看搜索摘要",
+        item: "物品",
+        rarity: "品质",
+        rolls: "词条",
+        maximum: "Listing 价格参考",
+        unit: "每件",
+        total: "总价",
+        copy: "复制摘要",
+        copied: "已复制",
+        copyFailed: "复制失败"
+      },
+      fetchedAt: "快照计算时间：{{value}}",
+      requestCounts: "{{live}} 次在线请求 · {{cache}} 次缓存命中",
+      loadMore: "加载下一批有界结果",
+      diagnostics: {
+        title: "逐物品族获取诊断",
+        counts: "已获取 {{retrieved}} / 报告 {{reported}}",
+        complete: "完整",
+        incomplete: "不完整",
+        freshness: "新鲜度：{{status}} · {{age}} 秒"
+      }
     }
   },
   settings: {

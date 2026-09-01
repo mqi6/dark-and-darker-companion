@@ -1,5 +1,18 @@
 # Development Progress
 
+## Marketplace M4 results and runtime checkpoint — 2026-09-01
+
+- Connected the M3 filter draft to the M2 canonical query planner, bounded executor, cache, cancellation coordinator, and deterministic local evaluator through a renderer-safe injected runtime interface. The browser shell uses a clearly labeled sanitized preview Market source; live DarkerDB wiring remains the separate M5 checkpoint.
+- Added an immutable evaluated-candidate snapshot, including prior K-of-N non-matches, so compatible K<N rule/range changes can be recomputed locally without another request. Local apply is disabled whenever the draft would change the server candidate query, including mandatory K=N attribute pushdown.
+- Added explicit first Search, Refresh, Cancel, and Load more behavior. Refresh clears the 15-second page cache before replaying the last committed query; Load more expands the retrieved-row ceiling by another 1,000 (up to 5,000), reuses cached earlier pages, consumes a fresh bounded live-request budget, and reapplies any compatible local rules.
+- Added desktop table and narrow-window card presentation with canonical item identity, localized family/rarity/attribute labels, K/N match explanation, quantity, unit price, total price, expandable raw listing attributes, and a copyable manual in-game search summary. No result row or expansion calls Price Check, controls the game Marketplace, or offers Buy.
+- Added exact counts for matched/evaluated and complete/incomplete retrieved/server-reported totals, snapshot time, live/cache request counts, freshness age, and per-family retrieval diagnostics.
+- Added distinct initial, first-loading skeleton, refresh/loading-more, catalog-authoritative-empty, complete fresh empty, local-filter empty, stale empty, incomplete, stale, rate-limit, authentication, partial-family, fatal-with-preserved-results, cancelled, and superseded behavior. Errors are never rendered as an empty market.
+- Added English/Simplified Chinese parity and responsive result styling. Switching language re-renders canonical catalog labels without a Market request.
+- Added UI/runtime/domain tests for explicit-request boundaries, cache-bypassing Refresh, immutable local re-filtering, unsafe local-apply rejection, Load more budget expansion and rule replay, cancellation, counts, empty-state authority, stale/auth/rate/partial/fatal states, unit/total stack price display, and manual-summary copy.
+
+Next product phase: Marketplace M5 live read-only verification with the real bilingual catalog and runtime-injected API key. Stash integration, Electron, game Marketplace input, purchasing, Price Check-per-row, and automatic listing remain out of scope until Marketplace M5 is complete.
+
 ## Marketplace M3 filter UI checkpoint — 2026-09-01
 
 - Replaced the Marketplace placeholder chips and fake `37/284/612` counts with a full catalog-driven filter workspace. The reusable panel accepts canonical catalog options; it does not hard-code filter values into JSX or join localized display names.
@@ -12,7 +25,7 @@
 - Added a clearly labeled sanitized preview catalog for browser UI testing. It is not represented as complete/current DarkerDB data and produces no fake Marketplace result rows or counts.
 - Verification includes dedicated UI tests for no-request edits, canonical multi-name output, invalid-range blocking, K-of-N construction, last-query Refresh, local-only Apply, active-chip removal, bilingual alias search, removable price summary, and language switching.
 
-Next product phase: Marketplace M4 result cards/table, unit and total prices, match explanations, candidate/completeness/freshness/error states, manual in-game search summary, and wiring the M2 executor into explicit UI actions. M5 remains read-only live verification. Stash, Electron, game Marketplace input, buying, and automatic listing remain out of scope.
+Next product phase at this checkpoint was Marketplace M4 result/state UI and runtime wiring, followed by M5 read-only live verification. Stash, Electron, game Marketplace input, buying, and automatic listing remained out of scope.
 
 ## Marketplace M2 query planner and local pipeline checkpoint — 2026-09-01
 
