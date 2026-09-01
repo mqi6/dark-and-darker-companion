@@ -99,20 +99,23 @@ export class PrivateSortSessionStore {
       encoding: "utf8",
       mode: 0o600
     });
-    await this.appendDiagnostic({
-      event: "action",
-      at: event.at,
-      actionIndex: event.actionIndex,
-      actionKind: event.actionKind,
-      ...(event.selectedTab === undefined ? {} : { expectedTab: event.selectedTab }),
-      ...(event.observedTab === undefined ? {} : { observedTab: event.observedTab }),
-      ...(event.observedScreen === undefined ? {} : { observedScreen: event.observedScreen }),
-      status: event.status,
-      completedActionCount: event.completedActionCount,
-      completedDragCount: event.completedDragCount,
-      ...(event.diagnosticCode ? { diagnosticCode: event.diagnosticCode } : {}),
-      ...(event.adapterError ? { adapterError: event.adapterError.slice(0, 500) } : {})
-    });
+    await this.appendSanitizedJournal(event);
+  }
+
+  async rebuildDiagnosticFromExisting(): Promise<string> {
+    const session = await this.load();
+    await this.startDiagnostic(session);
+    let journal = "";
+    try {
+      journal = await readFile(this.journalPath, "utf8");
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+    }
+    for (const line of journal.split(/\r?\n/).filter(Boolean)) {
+      const event = JSON.parse(line) as PrivateSortJournalEvent;
+      await this.appendSanitizedJournal(event);
+    }
+    return this.latestDiagnosticPath ?? this.diagnosticPath;
   }
 
   async appendResult(result: {
@@ -189,6 +192,23 @@ export class PrivateSortSessionStore {
       await mkdir(resolve(this.latestDiagnosticPath, ".."), { recursive: true });
       await writeFile(this.latestDiagnosticPath, first, { encoding: "utf8", mode: 0o600 });
     }
+  }
+
+  private async appendSanitizedJournal(event: PrivateSortJournalEvent): Promise<void> {
+    await this.appendDiagnostic({
+      event: "action",
+      at: event.at,
+      actionIndex: event.actionIndex,
+      actionKind: event.actionKind,
+      ...(event.selectedTab === undefined ? {} : { expectedTab: event.selectedTab }),
+      ...(event.observedTab === undefined ? {} : { observedTab: event.observedTab }),
+      ...(event.observedScreen === undefined ? {} : { observedScreen: event.observedScreen }),
+      status: event.status,
+      completedActionCount: event.completedActionCount,
+      completedDragCount: event.completedDragCount,
+      ...(event.diagnosticCode ? { diagnosticCode: event.diagnosticCode } : {}),
+      ...(event.adapterError ? { adapterError: event.adapterError.slice(0, 500) } : {})
+    });
   }
 
   private async appendDiagnostic(value: unknown): Promise<void> {
