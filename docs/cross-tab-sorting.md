@@ -149,6 +149,20 @@ Both modes treat reserved regions and their intersecting items as fixed
 obstacles. Disabled and exception tabs are excluded from both source and
 destination planning.
 
+The current implementation groups only at the broad category/footprint level.
+It does not yet use exact canonical item identity or rarity as packing keys.
+This is an open product-quality requirement:
+
+1. use canonical item ID, never localized display name, to keep exact items
+   adjacent when geometry permits;
+2. sort rarity deterministically inside each exact-item group;
+3. preserve deterministic footprint-based fallback when strict adjacency would
+   make an otherwise valid layout impossible;
+4. expose the grouping in the graphical after-preview before input.
+
+Until this requirement is implemented, a successful run can still place two
+instances of the same exact item in different locations.
+
 ## Input speed
 
 The sort UI exposes Fast, Balanced, Reliable, and Custom profiles. Custom mode
@@ -156,6 +170,15 @@ edits pointer settle, click hold, post-click wait, tab settle, drag duration,
 and post-drag wait within validated limits. Timing changes affect only ordinary
 foreground UI input; they do not change coordinates, item identity, or the
 planned layout.
+
+The current live implementation is functionally accepted on visible tabs 0 and
+1, but click/drag cadence and character-reselection refresh remain too slow.
+Timing presets alone are not considered a complete fix: the runtime currently
+performs repeated window checks and helper-process work around ordinary actions.
+The performance backlog requires a persistent per-run input/navigation worker,
+stage and per-action timing in the sanitized log, no full foreground recovery
+when the verified game window is already foreground, and live benchmarks that
+separate configured waits from dispatch overhead.
 
 ## Private session data
 
