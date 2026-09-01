@@ -121,7 +121,13 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
       return {
         status: "failed",
         diagnosticCode: "stash-screen-lost-after-tab-click",
-        inputMayHaveBeenDispatched: true
+        inputMayHaveBeenDispatched: true,
+        observation: {
+          expectedTabIndex: tabIndex,
+          ...(classification.status === "classified"
+            ? { screen: classification.observation.screen }
+            : { screen: classification.status })
+        }
       };
     }
     const observedTab = classification.observation.selectedStashTabIndex;
@@ -129,10 +135,22 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
       return {
         status: "failed",
         diagnosticCode: "selected-stash-tab-mismatch",
-        inputMayHaveBeenDispatched: true
+        inputMayHaveBeenDispatched: true,
+        observation: {
+          screen: classification.observation.screen,
+          expectedTabIndex: tabIndex,
+          observedTabIndex: observedTab
+        }
       };
     }
-    return { status: "completed" };
+    return {
+      status: "completed",
+      observation: {
+        screen: classification.observation.screen,
+        expectedTabIndex: tabIndex,
+        ...(observedTab === undefined ? {} : { observedTabIndex: observedTab })
+      }
+    };
   }
 
   async dragStashToBag(
