@@ -58,12 +58,21 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
 
   async classifyScreen(): Promise<ScreenClassification> {
     const state = await this.run(["-Capture", "-OutputPath", this.capturePath]);
+    updateExpectedWindowState(this.expected, state);
+    const window: NavigationWindowState = {
+      windowHandle: state.windowHandle,
+      processName: state.processName,
+      clientBounds: state.clientBounds,
+      display: state.display,
+      primaryDisplay: state.primaryDisplay,
+      gameBuildFingerprint: this.profile.gameBuildFingerprint
+    };
     if (state.featureVersion !== NAVIGATION_FEATURE_VERSION || !state.feature) {
-      return { status: "unknown" };
+      return { status: "unknown", window };
     }
     const result = classifyNavigationFeature(state.feature, this.profile.templates);
-    if (result.status !== "classified") return result;
-    return { status: "classified", observation: result.observation };
+    if (result.status !== "classified") return { ...result, window };
+    return { status: "classified", observation: result.observation, window };
   }
 
   async clickForeground(
