@@ -44,12 +44,17 @@ class AutomaticPrivateProjectionRefresher {
   ) {}
   async refreshCompleteProjection(signal?: AbortSignal): Promise<SpatialProjection> {
     if (signal?.aborted) throw new Error("operator-cancelled");
+    const workflowStartedAt = Date.now();
+    const timing = (stage: string) =>
+      console.log(`[sort-refresh] ${stage} +${Date.now() - workflowStartedAt}ms`);
     // Reuse the operator's adapter so a successful Focus request and every
     // prior capture keep the current HWND/bounds. Creating a fresh adapter
     // here forced a slow stale-handle discovery on every preview.
     const currentWindow = await this.adapter.inspectWindow();
+    timing("window-ready");
     const capture = startRefreshCapture(this.capture, signal);
     const classified = await this.adapter.classifyScreen();
+    timing(`initial-screen-${classified.status}`);
     if (classified.status !== "classified") throw new Error(`initial-screen-${classified.status}`);
     const plan = prepareMove003Refresh({
       window: currentWindow,
@@ -57,9 +62,14 @@ class AutomaticPrivateProjectionRefresher {
       startingScreen: classified.observation.screen
     });
     await capture.ready;
+    timing("capture-ready");
     let navigation;
     try {
-      navigation = await new WindowsNavigationSequenceRunner(new GameInteractionLease(), this.adapter).execute({
+      navigation = await new WindowsNavigationSequenceRunner(
+        new GameInteractionLease(),
+        this.adapter,
+        event => timing(`navigation-${event.event}-${event.detail}`)
+      ).execute({
         plan,
         approval: { kind: "human-confirmation", planFingerprint: plan.planFingerprint },
         signal,
@@ -69,6 +79,8 @@ class AutomaticPrivateProjectionRefresher {
       capture.stop();
     }
     const captured = await capture.completed;
+    timing(`navigation-${navigation.status}`);
+    timing("capture-stopped");
     if (navigation.status !== "completed") {
       const diagnostic = "diagnosticCode" in navigation ? navigation.diagnosticCode : navigation.status;
       throw new Error(`navigation-${diagnostic}`);
@@ -76,12 +88,14 @@ class AutomaticPrivateProjectionRefresher {
     const session = captured.match(/Private session:\s*(.+)/)?.[1]?.trim();
     if (!session) throw new Error("capture-session-not-reported");
     await execFileAsync(process.execPath, ["--import", "tsx", resolve("tools/analyze-private-move003-refresh.ts"), session], { encoding: "utf8", windowsHide: true, maxBuffer: 4 * 1024 * 1024 });
+    timing("protocol-analysis-complete");
     const snapshot = JSON.parse(await readFile(resolve(session, "semantic-snapshot.sanitized-private.json"), "utf8")) as SanitizedSemanticSnapshotV1;
     const items = snapshot.containers.flatMap(container => container.items.map(item => {
       const gameDesignItemId = asGameDesignItemId(item.gameDesignItemId), canonical = canonicalItemIdForGameDesignIdInCatalog(gameDesignItemId, gameplayItemIds);
       return { alias: item.alias, gameDesignItemId, ...(canonical ? { darkerDbCanonicalItemId: canonical } : {}), inventoryId: item.inventoryId, slotId: item.slotId, stackQuantity: item.stackQuantity, ammoCount: item.ammoCount, contentsCount: item.contentsCount, primaryProperties: [], secondaryProperties: [], tradable: item.tradable, permittedAreas: item.permittedAreas };
     }));
     const projected = projectSpatialState({ protocol: snapshot, items, diagnostics: [] } as ReducedGameState, gameplayCatalog);
+    timing("projection-ready");
     return { ...projected, sourceVersion: ++this.version };
   }
 }
