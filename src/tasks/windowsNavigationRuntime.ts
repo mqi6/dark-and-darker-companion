@@ -21,9 +21,9 @@ export interface NavigationWindowState {
   gameBuildFingerprint: string;
 }
 export type ScreenClassification =
-  | { status: "classified"; observation: NavigationObservation }
-  | { status: "unknown" }
-  | { status: "ambiguous" };
+  | { status: "classified"; observation: NavigationObservation; window?: NavigationWindowState }
+  | { status: "unknown"; window?: NavigationWindowState }
+  | { status: "ambiguous"; window?: NavigationWindowState };
 export interface WindowsNavigationAdapter {
   inspectWindow(): Promise<NavigationWindowState>;
   classifyScreen(): Promise<ScreenClassification>;
@@ -173,7 +173,10 @@ export class WindowsNavigationSequenceRunner {
               observation.selectedCharacterSlotIndex === step.expectedCharacterSlotIndex) &&
             (step.expectedStashTabIndex === undefined ||
               observation.selectedStashTabIndex === step.expectedStashTabIndex)) {
-          const current = await this.adapter.inspectWindow();
+          // The capture that classified the expected screen already contains
+          // the window identity and bounds. Reuse it instead of starting a
+          // second PowerShell process after every successful transition.
+          const current = result.window ?? await this.adapter.inspectWindow();
           if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
           if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
           if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
