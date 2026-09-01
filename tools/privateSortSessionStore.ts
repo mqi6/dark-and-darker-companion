@@ -61,11 +61,16 @@ export class PrivateSortSessionStore {
   readonly sessionPath: string;
   readonly journalPath: string;
   readonly postStatePath: string;
+  readonly diagnosticPath: string;
 
-  constructor(readonly directory: string) {
+  constructor(
+    readonly directory: string,
+    private readonly latestDiagnosticPath?: string
+  ) {
     this.sessionPath = resolve(directory, "session.private.json");
     this.journalPath = resolve(directory, "journal.private.jsonl");
     this.postStatePath = resolve(directory, "post-state.private.json");
+    this.diagnosticPath = resolve(directory, "sort-diagnostic.sanitized.jsonl");
   }
 
   async create(parameters: Omit<PrivateSortSession, "schemaVersion" | "sessionId" | "createdAt">):
@@ -78,6 +83,7 @@ export class PrivateSortSessionStore {
     };
     await mkdir(this.directory, { recursive: true });
     await atomicJsonWrite(this.sessionPath, session);
+    await this.startDiagnostic(session);
     return session;
   }
 
@@ -91,11 +97,102 @@ export class PrivateSortSessionStore {
       encoding: "utf8",
       mode: 0o600
     });
+    await this.appendDiagnostic({
+      event: "action",
+      at: event.at,
+      actionIndex: event.actionIndex,
+      actionKind: event.actionKind,
+      ...(event.selectedTab === undefined ? {} : { expectedTab: event.selectedTab }),
+      status: event.status,
+      completedActionCount: event.completedActionCount,
+      completedDragCount: event.completedDragCount,
+      ...(event.diagnosticCode ? { diagnosticCode: event.diagnosticCode } : {}),
+      ...(event.adapterError ? { adapterError: event.adapterError.slice(0, 500) } : {})
+    });
+  }
+
+  async appendResult(result: {
+    status: string;
+    actionCount?: number;
+    dragCount?: number;
+    diagnosticCode?: string;
+  }): Promise<void> {
+    await this.appendDiagnostic({
+      event: "run-result",
+      at: new Date().toISOString(),
+      status: result.status,
+      ...(result.actionCount === undefined ? {} : { actionCount: result.actionCount }),
+      ...(result.dragCount === undefined ? {} : { dragCount: result.dragCount }),
+      ...(result.diagnosticCode ? { diagnosticCode: result.diagnosticCode } : {})
+    });
   }
 
   async savePostState(projection: SpatialProjection, reconciliation: unknown): Promise<void> {
     await mkdir(this.directory, { recursive: true });
     await atomicJsonWrite(this.postStatePath, { finalProjection: projection, reconciliation });
+  }
+
+  private async startDiagnostic(session: PrivateSortSession): Promise<void> {
+    const screenActions = session.screenActions.map((action, actionIndex) =>
+      action.kind === "select-stash-tab"
+        ? {
+            actionIndex,
+            actionKind: action.kind,
+            expectedTab: action.tabIndex,
+            click: roundPoint(action.point)
+          }
+        : {
+            actionIndex,
+            actionKind: action.kind,
+            source: roundPoint(action.source),
+            destination: roundPoint(action.destination)
+          });
+    const plan = session.plan.status === "ready"
+      ? {
+          status: session.plan.status,
+          moveCount: session.plan.moves.length,
+          skippedCount: session.plan.skippedAliases.length,
+          diagnosticCodes: session.plan.diagnostics.map((value) => value.code)
+        }
+      : {
+          status: session.plan.status,
+          diagnosticCodes: session.plan.diagnostics.map((value) => value.code)
+        };
+    const schedule = session.schedule.status === "ready"
+      ? {
+          status: session.schedule.status,
+          actionCount: session.schedule.actions.length,
+          dragCount: session.schedule.dragCount,
+          temporaryBufferCount: session.schedule.temporaryBufferCount
+        }
+      : {
+          status: session.schedule.status,
+          diagnosticCode: session.schedule.diagnosticCode
+        };
+    const first = JSON.stringify({
+      schemaVersion: "sort-diagnostic-v1",
+      event: "session-start",
+      at: session.createdAt,
+      packingMode: session.packingMode,
+      timing: session.timing,
+      plan,
+      schedule,
+      screenActions
+    }) + "\n";
+    await mkdir(this.directory, { recursive: true });
+    await writeFile(this.diagnosticPath, first, { encoding: "utf8", mode: 0o600 });
+    if (this.latestDiagnosticPath) {
+      await mkdir(resolve(this.latestDiagnosticPath, ".."), { recursive: true });
+      await writeFile(this.latestDiagnosticPath, first, { encoding: "utf8", mode: 0o600 });
+    }
+  }
+
+  private async appendDiagnostic(value: unknown): Promise<void> {
+    const line = `${JSON.stringify(value)}\n`;
+    await appendFile(this.diagnosticPath, line, { encoding: "utf8", mode: 0o600 });
+    if (this.latestDiagnosticPath) {
+      await appendFile(this.latestDiagnosticPath, line, { encoding: "utf8", mode: 0o600 });
+    }
   }
 }
 
@@ -106,4 +203,9 @@ async function atomicJsonWrite(path: string, value: unknown): Promise<void> {
     mode: 0o600
   });
   await rename(temporaryPath, path);
+}
+
+
+function roundPoint(point: { x: number; y: number }): { x: number; y: number } {
+  return { x: Math.round(point.x * 100) / 100, y: Math.round(point.y * 100) / 100 };
 }
