@@ -127,9 +127,15 @@ describe("fixed-coordinate cross-tab runtime", () => {
 
   it("selects a tab and dispatches fixed-coordinate drags without retry", async () => {
     const { calls, runtime } = setup();
-    await expect(runtime.selectStashTab(0, 4)).resolves.toEqual({ status: "completed" });
+    await expect(runtime.selectStashTab(0, 4)).resolves.toMatchObject({
+      status: "completed",
+      observation: { screen: "stash", expectedTabIndex: 0 }
+    });
     await expect(runtime.dragStashToBag(transfer)).resolves.toEqual({ status: "completed" });
-    await expect(runtime.selectStashTab(1, 20)).resolves.toEqual({ status: "completed" });
+    await expect(runtime.selectStashTab(1, 20)).resolves.toMatchObject({
+      status: "completed",
+      observation: { screen: "stash", expectedTabIndex: 1 }
+    });
     await expect(runtime.dragBagToStash(transfer)).resolves.toEqual({ status: "completed" });
 
     expect(calls.filter((call) => call.kind === "click").map((call) => call.value)).toEqual([
@@ -166,7 +172,8 @@ describe("fixed-coordinate cross-tab runtime", () => {
     const wrongTab = setup({ observedTab: 2 });
     await expect(wrongTab.runtime.selectStashTab(1, 20)).resolves.toMatchObject({
       status: "failed",
-      diagnosticCode: "selected-stash-tab-mismatch"
+      diagnosticCode: "selected-stash-tab-mismatch",
+      observation: { expectedTabIndex: 1, observedTabIndex: 2 }
     });
   });
 
