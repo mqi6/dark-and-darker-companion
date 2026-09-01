@@ -28,6 +28,8 @@ export interface PrivateSortJournalEvent {
   actionKind: string;
   itemAlias?: string;
   selectedTab?: number;
+  observedTab?: number;
+  observedScreen?: string;
   status: string;
   completedActionCount: number;
   completedDragCount: number;
@@ -103,6 +105,8 @@ export class PrivateSortSessionStore {
       actionIndex: event.actionIndex,
       actionKind: event.actionKind,
       ...(event.selectedTab === undefined ? {} : { expectedTab: event.selectedTab }),
+      ...(event.observedTab === undefined ? {} : { observedTab: event.observedTab }),
+      ...(event.observedScreen === undefined ? {} : { observedScreen: event.observedScreen }),
       status: event.status,
       completedActionCount: event.completedActionCount,
       completedDragCount: event.completedDragCount,
