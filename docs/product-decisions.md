@@ -14,12 +14,32 @@ The market endpoint documents `missing` as the practical disappearance/sale sign
 
 Users may reserve fixed rectangular grid regions. The planner may neither move their contents nor use their cells as temporary or final placement space.
 
-## Gear Search
+## Gear Search / Marketplace Search
 
-1. Show `matching listings / locally evaluated candidates`.
-2. If only part of the reported result set was retrieved, also show `retrieved / reported total` and an `Incomplete` label.
-3. A query may contain multiple specific gear names/families.
-4. If an item cannot naturally roll a configured attribute, the rule is false for that item, just like an absent roll. The item may still pass by satisfying K through other rules.
+Marketplace Search is a read-only purchase-assistance workflow:
+
+1. The companion searches DarkerDB data only. It does not operate the in-game Marketplace UI or buy an item.
+2. The user clicks **Search** to start a live Market query. Editing filters, expanding a result, changing language, switching tabs, or changing window focus does not start a listing query.
+3. Each Market request retrieves a bounded list for a strict item/rarity/slot/price family. The companion merges and deduplicates those lists, then evaluates remaining advanced filters locally.
+4. Multi-class means usable by any selected class (OR); unrestricted items match.
+5. Users select canonical item families/names; rarity is a separate multi-select resolved to concrete canonical item IDs.
+6. Default retrieval budget is 20 live requests and 1,000 retrieved listings per explicit search. Load more consumes another explicit bounded batch.
+7. Results do not make one Price Check call per listing. Price Check is not part of the default result-row workflow.
+8. Default ordering is unit price ascending with deterministic time/ID tie-breaks. Show both unit and total price.
+9. The result may provide text the user can copy to reproduce the search manually in the game, but it never clicks or fills the game UI.
+10. Show `matching listings / locally evaluated candidates`.
+11. If only part of the reported result set was retrieved, also show `retrieved / reported total` and an `Incomplete` label.
+12. A query may contain multiple specific gear families.
+13. If an item cannot naturally roll a configured attribute, the rule is false for that item, just like an absent roll. The item may still pass by satisfying K through other rules.
+
+Default server/local policy:
+
+- categorical and price constraints are pushed through the API when supported and semantically safe;
+- multiple rarities are split into safe requests rather than comma-joined;
+- K=N may push all enabled attribute rules;
+- K<N keeps non-mandatory attribute rules local;
+- no combinatorial K-of-N request fan-out;
+- the local evaluator remains authoritative for final inclusion.
 
 ## Languages
 
