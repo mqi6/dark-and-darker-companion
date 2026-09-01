@@ -49,7 +49,7 @@ class AutomaticPrivateProjectionRefresher {
     // here forced a slow stale-handle discovery on every preview.
     const currentWindow = await this.adapter.inspectWindow();
     const capture = startRefreshCapture(this.capture, signal);
-    const classified = await adapter.classifyScreen();
+    const classified = await this.adapter.classifyScreen();
     if (classified.status !== "classified") throw new Error(`initial-screen-${classified.status}`);
     const plan = prepareMove003Refresh({
       window: currentWindow,
