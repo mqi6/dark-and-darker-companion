@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SORT_INPUT_TIMING_PRESETS } from "../src/domain/automationTiming";
 import type { SpatialProjection } from "../src/domain/inventoryGeometry";
 import type { CrossTabSortPlan, CrossTabTransfer } from "../src/domain/stashRouting";
 import {
@@ -111,7 +112,7 @@ function setup(options: {
     },
     windowState,
     4,
-    0
+    SORT_INPUT_TIMING_PRESETS.fast
   );
   return { calls, projection, runtime };
 }
@@ -126,9 +127,15 @@ describe("fixed-coordinate cross-tab runtime", () => {
 
   it("selects a tab and dispatches fixed-coordinate drags without retry", async () => {
     const { calls, runtime } = setup();
-    await expect(runtime.selectStashTab(0, 4)).resolves.toEqual({ status: "completed" });
+    await expect(runtime.selectStashTab(0, 4)).resolves.toMatchObject({
+      status: "completed",
+      observation: { screen: "stash", expectedTabIndex: 0 }
+    });
     await expect(runtime.dragStashToBag(transfer)).resolves.toEqual({ status: "completed" });
-    await expect(runtime.selectStashTab(1, 20)).resolves.toEqual({ status: "completed" });
+    await expect(runtime.selectStashTab(1, 20)).resolves.toMatchObject({
+      status: "completed",
+      observation: { screen: "stash", expectedTabIndex: 1 }
+    });
     await expect(runtime.dragBagToStash(transfer)).resolves.toEqual({ status: "completed" });
 
     expect(calls.filter((call) => call.kind === "click").map((call) => call.value)).toEqual([
@@ -139,12 +146,16 @@ describe("fixed-coordinate cross-tab runtime", () => {
       {
         source: { x: 1398.25, y: 219.25 },
         destination: { x: 708.1, y: 644.8 },
-        durationMilliseconds: 350
+        durationMilliseconds: 160,
+        pointerSettleMilliseconds: 20,
+        postDragMilliseconds: 60
       },
       {
         source: { x: 708.1, y: 644.8 },
         destination: { x: 1438.75, y: 259.75 },
-        durationMilliseconds: 350
+        durationMilliseconds: 160,
+        pointerSettleMilliseconds: 20,
+        postDragMilliseconds: 60
       }
     ]);
   });
@@ -161,7 +172,8 @@ describe("fixed-coordinate cross-tab runtime", () => {
     const wrongTab = setup({ observedTab: 2 });
     await expect(wrongTab.runtime.selectStashTab(1, 20)).resolves.toMatchObject({
       status: "failed",
-      diagnosticCode: "selected-stash-tab-mismatch"
+      diagnosticCode: "selected-stash-tab-mismatch",
+      observation: { expectedTabIndex: 1, observedTabIndex: 2 }
     });
   });
 

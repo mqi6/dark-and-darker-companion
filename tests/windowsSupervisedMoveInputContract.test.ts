@@ -38,9 +38,11 @@ describe("Windows supervised drag input contract", () => {
       .toBeLessThan(source.indexOf("Windows did not grant foreground activation"));
   });
 
-  it("verifies source hover and performs one down/up sequence without retry", () => {
-    expect(source).toContain("Start-Sleep -Milliseconds 50");
-    expect(source).toContain("Start-Sleep -Milliseconds 150");
+  it("verifies source hover and performs one configurable down/up sequence without retry", () => {
+    expect(source).toContain("[int]$PointerSettleMilliseconds = 50");
+    expect(source).toContain("[int]$PostDragMilliseconds = 150");
+    expect(source).toContain("Start-Sleep -Milliseconds $PointerSettleMilliseconds");
+    expect(source).toContain("Start-Sleep -Milliseconds $PostDragMilliseconds");
     expect(source.match(/Send-LeftButton \(\[ForegroundMoveNative\]::MOUSEEVENTF_LEFTDOWN\)/g))
       .toHaveLength(1);
     expect(source).toContain("if ($inputDispatched)");

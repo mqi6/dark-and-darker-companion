@@ -50,11 +50,16 @@ function setup(result: Awaited<ReturnType<DragInputBridge["dispatchLeftDrag"]>>)
 describe("Windows fixed-coordinate cross-tab adapter", () => {
   it("forwards virtual-desktop clicks and bounds-bound drags", async () => {
     const { adapter, calls } = setup({ status: "dispatched" });
-    await adapter.clickForeground({ x: 3248, y: 256 });
+    await adapter.clickForeground(
+      { x: 3248, y: 256 },
+      { pointerSettleMilliseconds: 20, clickHoldMilliseconds: 15, postClickMilliseconds: 50 }
+    );
     await expect(adapter.dragForeground({
       source: { x: 3318, y: 219 },
       destination: { x: 2628, y: 645 },
-      durationMilliseconds: 350
+      durationMilliseconds: 350,
+      pointerSettleMilliseconds: 20,
+      postDragMilliseconds: 60
     })).resolves.toEqual({ status: "completed" });
     expect(calls).toEqual([
       { click: { x: 3248, y: 256 } },
@@ -64,7 +69,9 @@ describe("Windows fixed-coordinate cross-tab adapter", () => {
           expectedBounds: { left: 1920, top: 0, width: 1920, height: 1080 },
           source: { x: 3318, y: 219 },
           destination: { x: 2628, y: 645 },
-          durationMilliseconds: 350
+          durationMilliseconds: 350,
+          pointerSettleMilliseconds: 20,
+          postDragMilliseconds: 60
         }
       }
     ]);
@@ -79,7 +86,9 @@ describe("Windows fixed-coordinate cross-tab adapter", () => {
     await expect(adapter.dragForeground({
       source: { x: 1, y: 2 },
       destination: { x: 3, y: 4 },
-      durationMilliseconds: 350
+      durationMilliseconds: 350,
+      pointerSettleMilliseconds: 20,
+      postDragMilliseconds: 60
     })).resolves.toEqual({
       status: "failed",
       diagnosticCode: "ordinary-foreground-input-failed",

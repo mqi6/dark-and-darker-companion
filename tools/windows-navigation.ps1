@@ -14,7 +14,10 @@ param(
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$ExpectedWidth,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$ExpectedHeight,
   [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$X,
-  [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$Y
+  [Parameter(ParameterSetName='Click',Mandatory=$true)][int]$Y,
+  [Parameter(ParameterSetName='Click')][ValidateRange(0,500)][int]$PointerSettleMilliseconds=50,
+  [Parameter(ParameterSetName='Click')][ValidateRange(10,250)][int]$ClickHoldMilliseconds=30,
+  [Parameter(ParameterSetName='Click')][ValidateRange(20,2000)][int]$PostClickMilliseconds=150
 )
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Drawing
@@ -52,8 +55,9 @@ function Resolve-GameWindowHandle([string]$value){
  $expected=Convert-WindowHandle $value
  if($expected-ne[IntPtr]::Zero){[uint32]$expectedPid=0;[void][NavNative]::GetWindowThreadProcessId($expected,[ref]$expectedPid);if($expectedPid-ne 0){$expectedProcess=Get-Process -Id $expectedPid -ErrorAction SilentlyContinue;if($expectedProcess-and$expectedProcess.ProcessName-ieq'DungeonCrawler'-and$expectedProcess.MainWindowHandle-eq$expected){return $expected}}}
  $candidates=@(Get-Process -Name DungeonCrawler -ErrorAction SilentlyContinue|Where-Object{$_.MainWindowHandle-ne[IntPtr]::Zero})
- if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return[IntPtr]$candidates[0].MainWindowHandle
+ if($candidates.Count-eq 0){throw 'No visible DungeonCrawler main window is available.'};if($candidates.Count-ne 1){throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.'};return [IntPtr]$candidates[0].MainWindowHandle
 }
+. (Join-Path $PSScriptRoot 'windows-game-window.ps1')
 function Get-State([IntPtr]$h=[IntPtr]::Zero) {
  if($h-eq[IntPtr]::Zero){$h=[NavNative]::GetForegroundWindow()};if($h-eq[IntPtr]::Zero){throw 'No window.'}
  [uint32]$foregroundPid=0; [void][NavNative]::GetWindowThreadProcessId($h,[ref]$foregroundPid)
@@ -89,13 +93,13 @@ function Send-MouseInput([int]$dx,[int]$dy,[uint32]$flags){
  $sent=[NavNative]::SendInput(1,@($input),[Runtime.InteropServices.Marshal]::SizeOf([type][NavNative+INPUT]))
  if($sent-ne 1){$errorCode=[Runtime.InteropServices.Marshal]::GetLastWin32Error();throw "SendInput rejected mouse event (Win32 $errorCode)."}
 }
-function Move-MouseLikeDnDTools([int]$targetX,[int]$targetY){
+function Move-MouseLikeDnDTools([int]$targetX,[int]$targetY,[int]$settleMilliseconds=50){
  $screenLeft=[NavNative]::GetSystemMetrics(76);$screenTop=[NavNative]::GetSystemMetrics(77);$screenWidth=[NavNative]::GetSystemMetrics(78);$screenHeight=[NavNative]::GetSystemMetrics(79)
  if($targetX-lt$screenLeft-or$targetY-lt$screenTop-or$targetX-ge($screenLeft+$screenWidth)-or$targetY-ge($screenTop+$screenHeight)){throw 'DnDTools-compatible input requires the target inside the virtual desktop.'}
  $absoluteX=[int][Math]::Round(($targetX-$screenLeft)*65535/[Math]::Max(1,$screenWidth-1))
  $absoluteY=[int][Math]::Round(($targetY-$screenTop)*65535/[Math]::Max(1,$screenHeight-1))
  Send-MouseInput $absoluteX $absoluteY ([NavNative]::MOVE-bor[NavNative]::ABSOLUTE-bor[NavNative]::VIRTUALDESK)
- Start-Sleep -Milliseconds 50
+ if($settleMilliseconds-gt 0){Start-Sleep -Milliseconds $settleMilliseconds}
  $cursor=New-Object NavNative+POINT;if(-not[NavNative]::GetCursorPos([ref]$cursor)){throw 'GetCursorPos failed after SendInput movement.'}
  if([Math]::Abs($cursor.X-$targetX)-gt 2-or[Math]::Abs($cursor.Y-$targetY)-gt 2){throw 'SendInput cursor verification failed.'}
 }
@@ -157,11 +161,11 @@ $resolvedExpectedWindowHandle='0x{0:X}'-f$boundTarget.ToInt64()
 if($state.windowHandle-ne$resolvedExpectedWindowHandle-or$state.clientBounds.left-ne$ExpectedLeft-or$state.clientBounds.top-ne$ExpectedTop-or$state.clientBounds.width-ne$ExpectedWidth-or$state.clientBounds.height-ne$ExpectedHeight){throw 'Foreground window identity or client bounds changed.'}
 $buttonHeld=$false
 try{
- Move-MouseLikeDnDTools $X $Y
+ Move-MouseLikeDnDTools $X $Y $PointerSettleMilliseconds
  Send-MouseInput 0 0 ([NavNative]::DOWN);$buttonHeld=$true
- Start-Sleep -Milliseconds 30
+ Start-Sleep -Milliseconds $ClickHoldMilliseconds
  Send-MouseInput 0 0 ([NavNative]::UP);$buttonHeld=$false
- Start-Sleep -Milliseconds 150
+ Start-Sleep -Milliseconds $PostClickMilliseconds
  [ordered]@{status='clicked';inputMethod='dndtools-sendinput';mouseMoveEvents=1;mouseButtonEvents=2}|ConvertTo-Json -Compress
 }catch{
  if($buttonHeld){try{Send-MouseInput 0 0 ([NavNative]::UP)}catch{}}

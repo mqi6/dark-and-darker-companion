@@ -39,6 +39,28 @@ export const enUS = {
     sortTabsDescription: "Choose which visible tabs participate whenever automatic sorting runs.",
     sortPolicyTitle: "Allowed items by tab",
     sortPolicyDescription: "Enable each tab and choose which item types it may receive. Disabled tabs are never used as a source or destination.",
+    sortSettingsTitle: "Sorting layout and speed",
+    packingMode: "Layout",
+    packingModes: {
+      "compact-top-left": "Compact from top-left",
+      "category-rows": "One category per row group"
+    },
+    sortSpeed: "Input speed",
+    speedPresets: {
+      fast: "Fast",
+      balanced: "Balanced",
+      reliable: "Reliable",
+      custom: "Custom"
+    },
+    timing: {
+      pointerSettleMilliseconds: "Pointer settle (ms)",
+      clickHoldMilliseconds: "Click hold (ms)",
+      postClickMilliseconds: "After click (ms)",
+      tabSettleMilliseconds: "Tab load wait (ms)",
+      dragDurationMilliseconds: "Drag duration (ms)",
+      postDragMilliseconds: "After drag (ms)"
+    },
+    singleSnapshotVerification: "The complete plan uses one initial stash state and performs one automatic full refresh after all moves.",
     allowedCategories: "Allowed item types",
     tabPolicyToggleLabel: "{{page}}: {{state}}",
     itemCategory: {

@@ -21,9 +21,9 @@ export interface NavigationWindowState {
   gameBuildFingerprint: string;
 }
 export type ScreenClassification =
-  | { status: "classified"; observation: NavigationObservation }
-  | { status: "unknown" }
-  | { status: "ambiguous" };
+  | { status: "classified"; observation: NavigationObservation; window?: NavigationWindowState }
+  | { status: "unknown"; window?: NavigationWindowState }
+  | { status: "ambiguous"; window?: NavigationWindowState };
 export interface WindowsNavigationAdapter {
   inspectWindow(): Promise<NavigationWindowState>;
   classifyScreen(): Promise<ScreenClassification>;
@@ -109,6 +109,10 @@ export class WindowsNavigationSequenceRunner {
     plan: PreparedNavigationSequence;
     approval: NavigationApproval;
     signal?: AbortSignal;
+    initialState?: {
+      window: NavigationWindowState;
+      classification: Extract<ScreenClassification, { status: "classified" }>;
+    };
   }): Promise<NavigationRunResult> {
     const { plan } = parameters;
     if (parameters.approval.kind !== "human-confirmation" ||
@@ -120,9 +124,14 @@ export class WindowsNavigationSequenceRunner {
     }
     let clickCount = 0;
     try {
-      for (const step of plan.steps) {
+      for (const [stepIndex, step] of plan.steps.entries()) {
         if (parameters.signal?.aborted) return { status: "cancelled", clickCount };
-        const problem = await this.preflight(plan, step.requiresScreen);
+        const priorStep = stepIndex > 0 ? plan.steps[stepIndex - 1] : undefined;
+        const problem = stepIndex === 0 && parameters.initialState
+          ? validateInitialState(plan, step.requiresScreen, parameters.initialState)
+          : priorStep?.expectedScreen === step.requiresScreen
+            ? undefined
+            : await this.preflight(plan, step.requiresScreen);
         if (problem) return { status: "blocked", diagnosticCode: problem, clickCount };
         this.log({ event: "dispatch", detail: step.control });
         const click = await this.adapter.clickForeground(step.point);
@@ -156,10 +165,6 @@ export class WindowsNavigationSequenceRunner {
     const deadline = Date.now() + step.timeoutMilliseconds;
     while (Date.now() < deadline) {
       if (signal?.aborted) return "cancelled";
-      const current = await this.adapter.inspectWindow();
-      if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
-      if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
-      if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
       const result = await this.adapter.classifyScreen();
       if (result.status === "classified") {
         const observation = result.observation;
@@ -167,13 +172,38 @@ export class WindowsNavigationSequenceRunner {
             (step.expectedCharacterSlotIndex === undefined ||
               observation.selectedCharacterSlotIndex === step.expectedCharacterSlotIndex) &&
             (step.expectedStashTabIndex === undefined ||
-              observation.selectedStashTabIndex === step.expectedStashTabIndex)) return undefined;
+              observation.selectedStashTabIndex === step.expectedStashTabIndex)) {
+          // The capture that classified the expected screen already contains
+          // the window identity and bounds. Reuse it instead of starting a
+          // second PowerShell process after every successful transition.
+          const current = result.window ?? await this.adapter.inspectWindow();
+          if (current.windowHandle !== plan.window.windowHandle || current.processName.toLowerCase() !== "dungeoncrawler") return "foreground-window-mismatch";
+          if (!sameRectangle(current.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
+          if (!sameDisplay(current.display, plan.window.display)) return "display-geometry-changed";
+          return undefined;
+        }
       }
       await new Promise(resolve =>
         setTimeout(resolve, NAVIGATION_TRANSITION_POLL_MILLISECONDS));
     }
     return `transition-timeout-${step.control}`;
   }
+}
+
+function validateInitialState(
+  plan: PreparedNavigationSequence,
+  requiredScreen: Exclude<GameScreen, "unknown">,
+  state: {
+    window: NavigationWindowState;
+    classification: Extract<ScreenClassification, { status: "classified" }>;
+  }
+): string | undefined {
+  if (state.window.processName.toLowerCase() !== "dungeoncrawler" ||
+      state.window.windowHandle !== plan.window.windowHandle) return "foreground-window-mismatch";
+  if (!sameRectangle(state.window.clientBounds, plan.window.clientBounds)) return "window-bounds-changed";
+  if (!sameDisplay(state.window.display, plan.window.display)) return "display-geometry-changed";
+  if (state.window.gameBuildFingerprint !== plan.gameBuildFingerprint) return "game-build-changed";
+  return state.classification.observation.screen === requiredScreen ? undefined : "unexpected-screen";
 }
 
 export function compactNavigationFingerprint(value: unknown, prefix = "nav001"): string {

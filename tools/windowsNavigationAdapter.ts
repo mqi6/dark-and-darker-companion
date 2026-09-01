@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { ScreenPoint } from "../src/domain/stashScreenCalibration";
+import type { FixedCoordinateClickTiming } from "../src/tasks/fixedCoordinateCrossTabRuntime";
+import type { NavigationObservation } from "../src/tasks/gameNavigationMachine";
 import {
   classifyNavigationFeature,
   NAVIGATION_FEATURE_VERSION,
@@ -48,20 +50,40 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
     const state = await this.run([
       "-FocusGame", "-ExpectedWindowHandle", this.expected.windowHandle
     ]);
+    // Carry the handle resolved for this request into the remaining operations
+    // in the same adapter session. Each Focus/Refresh/Run still begins with a
+    // fresh inspect; clicks no longer repeat stale-handle enumeration.
+    updateExpectedWindowState(this.expected, state);
     return { ...state, gameBuildFingerprint: this.profile.gameBuildFingerprint };
   }
 
   async classifyScreen(): Promise<ScreenClassification> {
     const state = await this.run(["-Capture", "-OutputPath", this.capturePath]);
+    updateExpectedWindowState(this.expected, state);
+    const window: NavigationWindowState = {
+      windowHandle: state.windowHandle,
+      processName: state.processName,
+      clientBounds: state.clientBounds,
+      display: state.display,
+      primaryDisplay: state.primaryDisplay,
+      gameBuildFingerprint: this.profile.gameBuildFingerprint
+    };
     if (state.featureVersion !== NAVIGATION_FEATURE_VERSION || !state.feature) {
-      return { status: "unknown" };
+      return { status: "unknown", window };
     }
     const result = classifyNavigationFeature(state.feature, this.profile.templates);
-    if (result.status !== "classified") return result;
-    return { status: "classified", observation: result.observation };
+    if (result.status !== "classified") return { ...result, window };
+    return {
+      status: "classified",
+      observation: normalizeNavigationObservation(this.profile, result.observation),
+      window
+    };
   }
 
-  async clickForeground(point: ScreenPoint) {
+  async clickForeground(
+    point: ScreenPoint,
+    timing?: FixedCoordinateClickTiming
+  ) {
     const bounds = this.expected.clientBounds;
     try {
       const state = await this.run([
@@ -72,7 +94,12 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
         "-ExpectedWidth", String(bounds.width),
         "-ExpectedHeight", String(bounds.height),
         "-X", String(Math.round(point.x)),
-        "-Y", String(Math.round(point.y))
+        "-Y", String(Math.round(point.y)),
+        ...(timing ? [
+          "-PointerSettleMilliseconds", String(timing.pointerSettleMilliseconds),
+          "-ClickHoldMilliseconds", String(timing.clickHoldMilliseconds),
+          "-PostClickMilliseconds", String(timing.postClickMilliseconds)
+        ] : [])
       ]);
       return state as unknown as { status: "clicked" };
     } catch {
@@ -90,6 +117,13 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
   }
 }
 
+export function updateExpectedWindowState(expected: HelperState, current: HelperState): void {
+  expected.windowHandle = current.windowHandle;
+  expected.clientBounds = current.clientBounds;
+  expected.display = current.display;
+  expected.primaryDisplay = current.primaryDisplay;
+}
+
 export function classifyFeature(
   feature: number[],
   templates: PrivateScreenTemplate[]
@@ -97,6 +131,41 @@ export function classifyFeature(
   const result = classifyNavigationFeature(feature, templates);
   if (result.status !== "classified") return result;
   return { status: "classified", observation: result.observation };
+}
+
+/**
+ * A generic Stash screenshot can prove that Stash is open, but one tab-0
+ * screenshot cannot prove which of N tabs is selected. Only expose a selected
+ * tab observation when the profile contains calibrated templates for every
+ * visible tab. Otherwise deterministic click coordinates and the character
+ * mapping remain authoritative and the classifier verifies only the screen.
+ */
+export function normalizeNavigationObservation(
+  profile: PrivateNavProfile,
+  observation: NavigationObservation
+): NavigationObservation {
+  if (observation.screen !== "stash" ||
+      observation.selectedStashTabIndex === undefined ||
+      hasCompleteStashTabTemplateCoverage(profile)) {
+    return observation;
+  }
+  const { selectedStashTabIndex: _untrusted, ...screenOnly } = observation;
+  return screenOnly;
+}
+
+export function hasCompleteStashTabTemplateCoverage(profile: PrivateNavProfile): boolean {
+  const calibrated = new Set(
+    profile.templates
+      .filter(template =>
+        template.screen === "stash" &&
+        template.selectedStashTabIndex !== undefined
+      )
+      .map(template => template.selectedStashTabIndex!)
+  );
+  return Array.from(
+    { length: profile.visibleStashTabs },
+    (_, tabIndex) => calibrated.has(tabIndex)
+  ).every(Boolean);
 }
 
 export function validatePrivateNavProfile(
@@ -125,14 +194,27 @@ export function validatePrivateNavProfile(
   if (profile.templates.some(template => template.featureVersion !== NAVIGATION_FEATURE_VERSION)) {
     throw new Error("Private navigation templates must use feature version 2.");
   }
+  const invalidTabTemplate = profile.templates.find(template =>
+    template.selectedStashTabIndex !== undefined &&
+    (template.screen !== "stash" ||
+      !Number.isInteger(template.selectedStashTabIndex) ||
+      template.selectedStashTabIndex < 0 ||
+      template.selectedStashTabIndex >= profile.visibleStashTabs)
+  );
+  if (invalidTabTemplate) {
+    throw new Error("Selected Stash tab templates must reference a visible Stash tab.");
+  }
   const featureLength = profile.templates[0]?.feature.length ?? 0;
   if (featureLength === 0 || profile.templates.some(template =>
     template.feature.length !== featureLength || template.feature.some(value => !Number.isFinite(value)))) {
     throw new Error("Private navigation features must have one consistent, finite shape.");
   }
   for (const screen of ["character-selection", "lobby", "stash", "merchant"] as const) {
-    if (profile.templates.filter(template => template.screen === screen).length > 4) {
-      throw new Error("At most four private templates are allowed per screen.");
+    const maximumTemplates = screen === "stash"
+      ? profile.visibleStashTabs + 4
+      : 4;
+    if (profile.templates.filter(template => template.screen === screen).length > maximumTemplates) {
+      throw new Error(`Too many private templates for ${screen}.`);
     }
   }
 }

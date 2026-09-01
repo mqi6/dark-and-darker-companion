@@ -26,12 +26,13 @@ Do not add maps, build recommendations, automatic purchasing, unattended monitor
 - Confirmed listing failure: skip and continue by default. Ambiguous submission: pause.
 - Fixed rectangular stash regions are supported and unavailable to the planner.
 - Every visible stash tab has an independent automatic-sort on/off preference; verified tabs default on.
-- Every enabled stash tab has an allowed-item policy. Supported categories are gear, weapon, necklace/ring, money, money container, utility, and other; canonical item-ID overrides may refine a category.
+- Every enabled stash tab has an allowed-item policy. Supported categories are gear, weapon, necklace/ring, money, money container, utility, and other; canonical item-ID overrides may refine a category. Users may choose either compact top-left packing or category-row packing that starts every category on a fresh row and leaves the previous category row remainder empty.
 - A disabled or exception stash tab is neither a sorting source nor a sorting destination.
 - Cross-tab sorting must use source stash -> character bag -> target stash. Never model or execute a direct stash-to-stash drag.
+- Sort input timing provides fast, balanced, reliable, and bounded custom settings for pointer settle, click hold, post-click, tab settle, drag duration, and post-drag delays.
 - Normal execution uses the verified 1920x1080 reference layout with DnDTools-compatible scaling and client-window origin. Stash bounds remain the existing verified layout; the 10x5 character bag reference bounds are (688,625)-(1090,823). Manual point calibration is diagnostic-only and must not block ordinary preparation.
 - Derive the 10x5 character-bag occupancy from the complete successful character baseline. Capacity is spatial: a transfer requires a free rectangle matching the item's verified footprint; item count alone is insufficient.
-- Execute cross-tab moves one item at a time, use small bounded batches, never retry automatically, and reconcile every batch against a newer complete state obtained through the established automatic character-reselection refresh.
+- Build the complete sort from one fresh authoritative stash state, execute its dependency-ordered actions sequentially without intermediate character reselection, never retry input automatically, then perform exactly one automatic character-reselection refresh and full-state reconciliation after all moves.
 - Do not require a preselected unsupported-item exception page. Prompt for one only after an unsupported item is observed. While unsupported items exist, the chosen exception page is forced out of sorting without overwriting its normal tab preference.
 - Gear Search displays matches/evaluated and, when incomplete, retrieved/reported total.
 - Missing or naturally impossible roll means that rule does not match; other K-of-N rules may still let the item pass.

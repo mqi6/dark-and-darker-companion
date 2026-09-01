@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertCompactVisibleStashMapping,
   CANONICAL_STASH_INVENTORY_ORDER,
   createCanonicalStashTabMapping,
   createStashTabMapping,
@@ -76,6 +77,24 @@ describe("stash tab mapping", () => {
       "0.17.151.9472:sha256",
       CANONICAL_STASH_INVENTORY_ORDER
     )).toBe(false);
+  });
+
+  it("rejects a full protocol-container mapping for a four-button UI", () => {
+    const compact = createCanonicalStashTabMapping({
+      runtimeProfileKey: "character",
+      gameBuildFingerprint: "build",
+      visibleInventoryIds: [4, 20, 21, 30]
+    });
+    expect(() => assertCompactVisibleStashMapping(compact, 4)).not.toThrow();
+
+    const full = createStashTabMapping({
+      runtimeProfileKey: "character",
+      gameBuildFingerprint: "build",
+      availableInventoryIds: CANONICAL_STASH_INVENTORY_ORDER,
+      entries: FULL_STASH_TAB_MAPPING_ENTRIES
+    });
+    expect(() => assertCompactVisibleStashMapping(full, 4))
+      .toThrow("visible-stash-mapping-mismatch");
   });
 
   it("rejects duplicate tabs, duplicate inventories, absent pages, and unknown canonical pages", () => {

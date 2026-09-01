@@ -70,16 +70,17 @@ describe("fixed cross-tab screen plan", () => {
     expect(prepared.targetTab.point.x).toBe(3248);
   });
 
-  it("rejects an unavailable tab and batches larger than three", () => {
+  it("rejects an unavailable tab and accepts a complete multi-item plan", () => {
     expect(() => prepareCrossTabScreenTransfer({
       ...transfer,
       targetTabIndex: 4
     }, layout)).toThrow(/not visible/);
-    expect(() => prepareCrossTabScreenBatch([
+    expect(prepareCrossTabScreenBatch([
       transfer,
       { ...transfer, transferId: "2" },
       { ...transfer, transferId: "3" },
       { ...transfer, transferId: "4" }
-    ], layout)).toThrow(/one through three/);
+    ], layout)).toHaveLength(4);
+    expect(() => prepareCrossTabScreenBatch([], layout)).toThrow(/one through 2400/);
   });
 });

@@ -15,7 +15,9 @@ param(
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$SourceY,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$DestinationX,
     [Parameter(ParameterSetName = 'Drag', Mandatory = $true)][int]$DestinationY,
-    [Parameter(ParameterSetName = 'Drag')][ValidateRange(100, 2000)][int]$DurationMilliseconds = 350
+    [Parameter(ParameterSetName = 'Drag')][ValidateRange(100, 2000)][int]$DurationMilliseconds = 350,
+    [Parameter(ParameterSetName = 'Drag')][ValidateRange(0, 500)][int]$PointerSettleMilliseconds = 50,
+    [Parameter(ParameterSetName = 'Drag')][ValidateRange(20, 2000)][int]$PostDragMilliseconds = 150
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,6 +81,7 @@ function Resolve-GameWindowHandle([string]$ExpectedValue) {
     if ($candidates.Count -ne 1) { throw 'Multiple DungeonCrawler main windows are available; refusing ambiguous binding.' }
     return [IntPtr]$candidates[0].MainWindowHandle
 }
+. (Join-Path $PSScriptRoot 'windows-game-window.ps1')
 
 function Get-WindowInfo([IntPtr]$Handle) {
     if ($Handle -eq [IntPtr]::Zero) { throw 'No window is available.' }
@@ -231,7 +234,7 @@ try {
         throw 'Foreground window bounds changed.'
     }
     Move-Absolute $SourceX $SourceY
-    Start-Sleep -Milliseconds 50
+    if ($PointerSettleMilliseconds -gt 0) { Start-Sleep -Milliseconds $PointerSettleMilliseconds }
     $sourceCursorPoint = New-Object ForegroundMoveNative+POINT
     if (-not [ForegroundMoveNative]::GetCursorPos([ref]$sourceCursorPoint) -or
         [Math]::Abs($sourceCursorPoint.X - $SourceX) -gt 2 -or [Math]::Abs($sourceCursorPoint.Y - $SourceY) -gt 2) {
@@ -248,7 +251,7 @@ try {
         Start-Sleep -Milliseconds ([Math]::Max(1, [Math]::Floor($DurationMilliseconds / $steps)))
     }
     Send-LeftButton ([ForegroundMoveNative]::MOUSEEVENTF_LEFTUP)
-    Start-Sleep -Milliseconds 150
+    Start-Sleep -Milliseconds $PostDragMilliseconds
     [ordered]@{
         status = 'dispatched'
         inputMayHaveBeenDispatched = $true

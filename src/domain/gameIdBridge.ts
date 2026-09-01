@@ -61,5 +61,17 @@ export function canonicalItemIdForGameDesignId(gameId: GameDesignItemId): Darker
   const candidate = ITEM_EXCEPTIONS[gameId] ?? (normal ? `id.item.${snakeCase(normal)}` : undefined);
   return candidate as DarkerDbCanonicalItemId | undefined;
 }
+export function canonicalItemIdForGameDesignIdInCatalog(
+  gameId: GameDesignItemId,
+  canonicalIds: readonly string[]
+): DarkerDbCanonicalItemId | undefined {
+  const direct = canonicalItemIdForGameDesignId(gameId);
+  if (!direct) return undefined;
+  if (canonicalIds.includes(direct)) return direct;
+  const normalized = alphanumeric(direct);
+  const matches = canonicalIds.filter(id => alphanumeric(id) === normalized);
+  return matches.length === 1 ? matches[0] as DarkerDbCanonicalItemId : undefined;
+}
 function snakeCase(value: string): string { return value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2").replace(/[^A-Za-z0-9]+/g, "_").toLowerCase(); }
+function alphanumeric(value: string): string { return value.replace(/[^a-z0-9]/gi, "").toLowerCase(); }
 function pickDisplay(value: LocalizedGameText): Pick<LocalizedGameText, "en" | "zhCN" | "zhStatus"> { return { en: value.en, zhStatus: value.zhStatus, ...(value.zhCN ? { zhCN: value.zhCN } : {}) }; }

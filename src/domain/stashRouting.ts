@@ -164,9 +164,9 @@ export function planCrossTabTransfers(parameters: {
   policies: readonly StashTabItemPolicy[];
   maximumTransfers?: number;
 }): CrossTabSortPlan {
-  const maximumTransfers = parameters.maximumTransfers ?? 3;
-  if (!Number.isInteger(maximumTransfers) || maximumTransfers < 1 || maximumTransfers > 3) {
-    throw new RangeError("Cross-tab smoke batches must contain between one and three transfers.");
+  const maximumTransfers = parameters.maximumTransfers ?? 2400;
+  if (!Number.isInteger(maximumTransfers) || maximumTransfers < 1 || maximumTransfers > 2400) {
+    throw new RangeError("A complete sort may contain between one and 2400 cross-tab transfers.");
   }
 
   const diagnostics: CrossTabPlanDiagnostic[] = [];

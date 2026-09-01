@@ -22,10 +22,22 @@ export function issueCrossTabLocalApproval(
   return approval;
 }
 
+export interface CrossTabRuntimeObservation {
+  screen?: string;
+  expectedTabIndex?: number;
+  observedTabIndex?: number;
+}
+
 export type CrossTabRuntimeActionResult =
-  | { status: "completed" }
-  | { status: "cancelled" }
-  | { status: "failed"; diagnosticCode: string; inputMayHaveBeenDispatched?: boolean };
+  | { status: "completed"; observation?: CrossTabRuntimeObservation }
+  | { status: "cancelled"; observation?: CrossTabRuntimeObservation }
+  | {
+      status: "failed";
+      diagnosticCode: string;
+      inputMayHaveBeenDispatched?: boolean;
+      adapterError?: string;
+      observation?: CrossTabRuntimeObservation;
+    };
 
 export interface CrossTabSortRuntime {
   preflight(
@@ -90,13 +102,13 @@ export class CrossTabSortExecutionRunner {
     if (plan.transfers.length === 0) {
       return { status: "blocked", diagnosticCode: "no-cross-tab-transfers", transferCount: 0, dragCount: 0 };
     }
-    if (plan.transfers.length > 3 || !plan.independentTransfersOnly) {
-      return { status: "blocked", diagnosticCode: "unsafe-cross-tab-batch", transferCount: 0, dragCount: 0 };
+    if (plan.transfers.length > 2400 || !plan.independentTransfersOnly) {
+      return { status: "blocked", diagnosticCode: "unsafe-cross-tab-plan", transferCount: 0, dragCount: 0 };
     }
     if (approvalBindings.get(parameters.approval) !== planBinding(plan)) {
       return { status: "blocked", diagnosticCode: "local-approval-missing-or-stale", transferCount: 0, dragCount: 0 };
     }
-    if (!this.lease.acquire("SORT-SMOKE-001")) {
+    if (!this.lease.acquire("STASH-SORT")) {
       return { status: "blocked", diagnosticCode: "game-interaction-lease-unavailable", transferCount: 0, dragCount: 0 };
     }
 
@@ -192,7 +204,7 @@ export class CrossTabSortExecutionRunner {
         dragCount
       };
     } finally {
-      this.lease.release("SORT-SMOKE-001");
+      this.lease.release("STASH-SORT");
     }
   }
 }
@@ -226,7 +238,7 @@ export function reconcileCrossTabPlan(
 
   return {
     status: "confirmed",
-    evidenceId: `sort-smoke:${postState.sourceVersion}:${postState.sourceSnapshotHash.slice(0, 12)}`
+    evidenceId: `stash-sort:${postState.sourceVersion}:${postState.sourceSnapshotHash.slice(0, 12)}`
   };
 }
 

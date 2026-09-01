@@ -1,5 +1,11 @@
+import {
+  SORT_INPUT_TIMING_PRESETS,
+  validateSortInputTiming,
+  type SortInputTiming
+} from "../domain/automationTiming";
 import { buildGameScreenLayout, type GameScreenLayout } from "../domain/gameScreenLayout";
 import { prepareCrossTabScreenTransfer } from "../domain/crossTabScreenPlan";
+import type { ScheduledStashSortScreenAction } from "../domain/completeStashScreenPlan";
 import type { SpatialProjection } from "../domain/inventoryGeometry";
 import type { CrossTabSortPlan, CrossTabTransfer } from "../domain/stashRouting";
 import type { ScreenPoint, ScreenRectangle } from "../domain/stashScreenCalibration";
@@ -13,17 +19,26 @@ import type {
   ScreenClassification
 } from "./windowsNavigationRuntime";
 
+export interface FixedCoordinateClickTiming {
+  pointerSettleMilliseconds: number;
+  clickHoldMilliseconds: number;
+  postClickMilliseconds: number;
+}
+
 export interface FixedCoordinateDrag {
   source: ScreenPoint;
   destination: ScreenPoint;
   durationMilliseconds: number;
+  pointerSettleMilliseconds: number;
+  postDragMilliseconds: number;
 }
 
 export interface FixedCoordinateCrossTabAdapter {
   inspectWindow(): Promise<NavigationWindowState>;
   classifyScreen(): Promise<ScreenClassification>;
   clickForeground(
-    point: ScreenPoint
+    point: ScreenPoint,
+    timing: FixedCoordinateClickTiming
   ): Promise<{ status: "clicked" } | { status: "rejected"; diagnosticCode: string }>;
   dragForeground(drag: FixedCoordinateDrag): Promise<CrossTabRuntimeActionResult>;
 }
@@ -34,27 +49,21 @@ export interface CompleteSpatialProjectionRefresher {
 
 export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
   readonly layout: GameScreenLayout;
+  readonly timing: SortInputTiming;
 
   constructor(
     private readonly adapter: FixedCoordinateCrossTabAdapter,
     private readonly refresher: CompleteSpatialProjectionRefresher,
     private readonly expectedWindow: NavigationWindowState,
     visibleStashTabs: number,
-    private readonly tabSettleMilliseconds = 250,
-    private readonly dragDurationMilliseconds = 350
+    timing: SortInputTiming = SORT_INPUT_TIMING_PRESETS.balanced
   ) {
+    validateSortInputTiming(timing);
+    this.timing = { ...timing };
     this.layout = buildGameScreenLayout({
       clientBounds: expectedWindow.clientBounds,
       visibleStashTabs
     });
-    if (!Number.isFinite(tabSettleMilliseconds) ||
-        tabSettleMilliseconds < 0 || tabSettleMilliseconds > 2000) {
-      throw new RangeError("Tab settle delay must be between 0 and 2000 milliseconds.");
-    }
-    if (!Number.isFinite(dragDurationMilliseconds) ||
-        dragDurationMilliseconds < 100 || dragDurationMilliseconds > 2000) {
-      throw new RangeError("Drag duration must be between 100 and 2000 milliseconds.");
-    }
   }
 
   async preflight(
@@ -90,11 +99,15 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     if (problem) return { status: "failed", diagnosticCode: problem };
     const point = this.layout.stash.tabCenters[tabIndex];
     if (!point) return { status: "failed", diagnosticCode: "stash-tab-not-visible" };
-    const click = await this.adapter.clickForeground(point);
+    const click = await this.adapter.clickForeground(point, {
+      pointerSettleMilliseconds: this.timing.pointerSettleMilliseconds,
+      clickHoldMilliseconds: this.timing.clickHoldMilliseconds,
+      postClickMilliseconds: this.timing.postClickMilliseconds
+    });
     if (click.status === "rejected") {
       return { status: "failed", diagnosticCode: click.diagnosticCode };
     }
-    await cancellableDelay(this.tabSettleMilliseconds, signal);
+    await cancellableDelay(this.timing.tabSettleMilliseconds, signal);
     if (signal?.aborted) {
       return {
         status: "failed",
@@ -108,7 +121,13 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
       return {
         status: "failed",
         diagnosticCode: "stash-screen-lost-after-tab-click",
-        inputMayHaveBeenDispatched: true
+        inputMayHaveBeenDispatched: true,
+        observation: {
+          expectedTabIndex: tabIndex,
+          ...(classification.status === "classified"
+            ? { screen: classification.observation.screen }
+            : { screen: classification.status })
+        }
       };
     }
     const observedTab = classification.observation.selectedStashTabIndex;
@@ -116,10 +135,22 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
       return {
         status: "failed",
         diagnosticCode: "selected-stash-tab-mismatch",
-        inputMayHaveBeenDispatched: true
+        inputMayHaveBeenDispatched: true,
+        observation: {
+          screen: classification.observation.screen,
+          expectedTabIndex: tabIndex,
+          observedTabIndex: observedTab
+        }
       };
     }
-    return { status: "completed" };
+    return {
+      status: "completed",
+      observation: {
+        screen: classification.observation.screen,
+        expectedTabIndex: tabIndex,
+        ...(observedTab === undefined ? {} : { observedTabIndex: observedTab })
+      }
+    };
   }
 
   async dragStashToBag(
@@ -138,6 +169,42 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     return this.dispatchDrag(prepared.bagToStash, signal);
   }
 
+  async preflightScheduledScreenActions(
+    actions: readonly ScheduledStashSortScreenAction[],
+    signal?: AbortSignal
+  ): Promise<string | undefined> {
+    if (signal?.aborted) return "operator-cancelled";
+    if (actions.length === 0) return "complete-sort-has-no-actions";
+    for (const action of actions) {
+      const points = action.kind === "select-stash-tab"
+        ? [action.point]
+        : [action.source, action.destination];
+      if (points.some((point) => !insideClient(point, this.layout.clientBounds))) {
+        return "fixed-coordinate-plan-invalid";
+      }
+    }
+    const problem = await this.windowProblem();
+    if (problem) return problem;
+    const classification = await this.adapter.classifyScreen();
+    return classification.status === "classified" &&
+      classification.observation.screen === "stash"
+      ? undefined
+      : "stash-screen-not-observed";
+  }
+
+  async runScheduledScreenAction(
+    action: ScheduledStashSortScreenAction,
+    signal?: AbortSignal
+  ): Promise<CrossTabRuntimeActionResult> {
+    if (action.kind === "select-stash-tab") {
+      return this.selectStashTab(action.tabIndex, action.inventoryId, signal);
+    }
+    return this.dispatchDrag({
+      source: action.source,
+      destination: action.destination
+    }, signal);
+  }
+
   refreshCompletePostState(signal?: AbortSignal): Promise<SpatialProjection> {
     return this.refresher.refreshCompleteProjection(signal);
   }
@@ -151,7 +218,9 @@ export class FixedCoordinateCrossTabRuntime implements CrossTabSortRuntime {
     if (problem) return { status: "failed", diagnosticCode: problem };
     return this.adapter.dragForeground({
       ...drag,
-      durationMilliseconds: this.dragDurationMilliseconds
+      durationMilliseconds: this.timing.dragDurationMilliseconds,
+      pointerSettleMilliseconds: this.timing.pointerSettleMilliseconds,
+      postDragMilliseconds: this.timing.postDragMilliseconds
     });
   }
 
@@ -182,6 +251,12 @@ function sameRectangle(left: ScreenRectangle, right: ScreenRectangle): boolean {
 function sameDisplay(left: DisplayGeometry, right: DisplayGeometry): boolean {
   return left.left === right.left && left.top === right.top &&
     left.width === right.width && left.height === right.height;
+}
+
+function insideClient(point: ScreenPoint, bounds: ScreenRectangle): boolean {
+  return point.x >= bounds.left && point.y >= bounds.top &&
+    point.x < bounds.left + bounds.width &&
+    point.y < bounds.top + bounds.height;
 }
 
 async function cancellableDelay(milliseconds: number, signal?: AbortSignal): Promise<void> {
