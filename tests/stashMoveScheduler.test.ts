@@ -181,6 +181,43 @@ describe("complete stash move scheduler", () => {
     ]);
   });
 
+  it("buffers multiple items when large footprints form an overlapping cycle", () => {
+    const a = placement("a", 4, 0);
+    const b = {
+      ...placement("b", 4, 2),
+      width: 2,
+      metadata: { ...metadata, inventoryWidth: 2 }
+    };
+    const c = placement("c", 4, 1);
+    const moveA = move({
+      alias: "a", sourceInventoryId: 4, sourceTabIndex: 0, sourceSlotId: 0,
+      targetInventoryId: 4, targetTabIndex: 0, targetSlotId: 2
+    });
+    const moveB = {
+      ...move({
+        alias: "b", sourceInventoryId: 4, sourceTabIndex: 0, sourceSlotId: 2,
+        targetInventoryId: 4, targetTabIndex: 0, targetSlotId: 0
+      }),
+      width: 2
+    };
+    const moveC = move({
+      alias: "c", sourceInventoryId: 4, sourceTabIndex: 0, sourceSlotId: 1,
+      targetInventoryId: 4, targetTabIndex: 0, targetSlotId: 3
+    });
+
+    const result = scheduleCompleteStashSort(
+      plan([moveA, moveB, moveC]),
+      initial([a, b, c])
+    );
+
+    expect(result.status).toBe("ready");
+    if (result.status !== "ready") return;
+    expect(result.temporaryBufferCount).toBe(2);
+    expect(result.dragCount).toBe(5);
+    expect(result.actions.filter((action) => action.kind === "drag-stash-to-bag"))
+      .toHaveLength(2);
+  });
+
   it("coalesces repeated tab selection while keeping the item action order", () => {
     const result = scheduleCompleteStashSort(
       plan([
