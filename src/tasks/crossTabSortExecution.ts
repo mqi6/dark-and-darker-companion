@@ -22,10 +22,22 @@ export function issueCrossTabLocalApproval(
   return approval;
 }
 
+export interface CrossTabRuntimeObservation {
+  screen?: string;
+  expectedTabIndex?: number;
+  observedTabIndex?: number;
+}
+
 export type CrossTabRuntimeActionResult =
-  | { status: "completed" }
-  | { status: "cancelled" }
-  | { status: "failed"; diagnosticCode: string; inputMayHaveBeenDispatched?: boolean; adapterError?: string };
+  | { status: "completed"; observation?: CrossTabRuntimeObservation }
+  | { status: "cancelled"; observation?: CrossTabRuntimeObservation }
+  | {
+      status: "failed";
+      diagnosticCode: string;
+      inputMayHaveBeenDispatched?: boolean;
+      adapterError?: string;
+      observation?: CrossTabRuntimeObservation;
+    };
 
 export interface CrossTabSortRuntime {
   preflight(
