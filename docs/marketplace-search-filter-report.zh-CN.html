@@ -522,7 +522,7 @@
       <a href="#ui"><span class="n">07</span>UI 与交互设计</a>
       <a href="#technical"><span class="n">08</span>技术方案</a>
       <a href="#tests"><span class="n">09</span>测试与夹具</a>
-      <a href="#decisions"><span class="n">10</span>需要你决定</a>
+      <a href="#decisions"><span class="n">10</span>已确认决定</a>
       <a href="#phases"><span class="n">11</span>实施阶段</a>
       <a href="#estimate"><span class="n">12</span>完成度估算</a>
     </nav>
@@ -546,7 +546,7 @@
           <span class="meta">API 合约：2026-08-03</span>
         </div>
         <div class="hero-actions">
-          <a href="#decisions">查看 6 个待决策项</a>
+          <a href="#decisions">查看 6 个已确认决定</a>
           <button class="secondary" type="button" onclick="window.print()">打印报告</button>
         </div>
       </div>
@@ -560,7 +560,7 @@
           <div><div class="metric-value">≈10%</div><div class="metric-label">用户可见功能完成度<br>当前页面基本是静态占位</div></div>
         </article>
         <article class="card metric">
-          <div><div class="metric-value">6</div><div class="metric-label">真正需要产品决策的问题<br>其余应由研究或代码回答</div></div>
+          <div><div class="metric-value">6</div><div class="metric-label">Marketplace 产品决定已确认<br>2026-09-01 写回正式规格</div></div>
         </article>
       </div>
 
@@ -658,7 +658,7 @@
         <article class="card"><h3>Items</h3><p class="muted"><code>GET /v2/items</code> 提供当前 patch 目录，支持 archetype、精确名、品质、物品/护甲/手持/武器/栏位类型、尺寸、价格/评分、职业、制作/神器和属性范围。分页使用不透明 cursor。</p><ul class="compact"><li><code>required_class=a|b</code> 为并集；无职业限制的物品匹配所有职业。</li><li><code>archetypes=1</code> 将不同品质变体折叠为物品族。</li><li><code>GET /v2/items/{id}</code> 提供具体物品的主/次属性可能范围。</li><li>cursor 响应中的 total 应按“可选字段”处理。</li></ul></article>
         <article class="card"><h3>Attributes / Classes</h3><p class="muted"><code>/v2/attributes</code> 返回规范 ID、名称、描述、百分比标记和 primary/secondary 分组；<code>/v2/classes</code> 返回规范职业 ID 与本地化标签。</p><p>live 请求 limit=200，实际返回 limit=50、secondary 总数 51 并带 next cursor。客户端必须追随响应 cursor，不能假设文档上限被接受。</p></article>
         <article class="card"><h3>Market</h3><p class="muted"><code>/v2/market</code> 支持单个 item ID/archetype、单品质、逗号并集 slot、价格/单位价/数量/时间范围、主次属性范围、listing/lifecycle/loot state，以及按时间、总价、单位价或 ID 排序。每页 1–50。</p><ul class="compact"><li>多个属性过滤器在服务端是 AND。</li><li>仅当 K=N 时才能安全推送全部属性规则。</li><li>精确物品查询含 freshness；陈旧的空结果不代表市场确实为空。</li><li>超过约 50,000 的 total 可能是估算。</li></ul></article>
-        <article class="card"><h3>Price Check</h3><p class="muted"><code>/v2/price-checks</code> 对一个具体物品和指定 rolls 做估值，返回选择、可用属性范围、fair/low/high/quick-list、信心、active/30 天推断成交数，以及相似 listings/sales。</p><p>它不是批量搜索接口。只应在选择具体物品时取范围元数据，或用户展开某条结果时按需加载；不能为每一行预取。</p></article>
+        <article class="card"><h3>Price Check</h3><p class="muted"><code>/v2/price-checks</code> 对一个具体物品和指定 rolls 做估值，返回选择、可用属性范围、fair/low/high/quick-list、信心、active/30 天推断成交数，以及相似 listings/sales。</p><p>它不是批量搜索接口，也不进入 Marketplace Search 的默认结果流程。搜索结果来自 Market 批量 listings 与本地过滤；展开结果不调用 Price Check。该端点保留给静态范围验证或后续独立的自动上架定价流程。</p></article>
       </div>
 
       <h3>live 检查发现的三个关键缺陷</h3>
@@ -804,7 +804,7 @@
           <tr><td>结果排序</td><td>Market sort + 本地稳定合并</td><td>两者</td><td>ID tie-break + 稳定 comparator</td><td>本地确定性回退</td><td>合并多个 query family 后必须重排</td></tr>
           <tr><td>分页/计数</td><td>Market pagination</td><td>服务端 + 有界本地</td><td>retrieved raw；evaluated 去重；reported 可选</td><td>不完整保持可见</td><td>&gt;50k total 可能估算</td></tr>
           <tr><td>freshness</td><td>Market pagination freshness</td><td>服务端 metadata / UI</td><td>年龄秒数与时间戳</td><td>陈旧警告；空不确定</td><td>精确 item/archetype 才有族级保证</td></tr>
-          <tr><td>Price Check 详情</td><td>Price Check</td><td>按需</td><td>object/array 兼容 + 单位</td><td>没有自动估值回退</td><td>live 60/min；不可每行调用</td></tr>
+          <tr><td>Price Check</td><td>Price Check</td><td>不进入默认搜索结果；仅静态范围验证或后续自动上架</td><td>object/array 兼容 + 单位</td><td>没有自动估值回退</td><td>live 60/min；搜索结果行/展开都不调用</td></tr>
           <tr><td>近期成交参考</td><td>Market missing / similar sales</td><td>本地定价</td><td>单位价；保留确认状态</td><td>价格未知</td><td>missing 是推断，不是游戏确认</td></tr>
           <tr><td>API 版本</td><td>Header / envelope</td><td>Adapter</td><td>固定日期合约</td><td>不兼容就阻止</td><td>仍需 live fixtures</td></tr>
           <tr><td>请求预算</td><td>Rate headers</td><td>Adapter / orchestrator</td><td>remaining/limit/credits</td><td>有界等待/重试</td><td>当前 client 丢弃 headers</td></tr>
@@ -919,15 +919,15 @@
     </section>
 
     <section id="decisions">
-      <div class="section-head"><div><div class="section-kicker">10 / YOUR DECISION</div><h2>需要你决定的 6 个产品问题</h2></div><div class="badge partial">均附推荐方案</div></div>
-      <p class="muted">点击每项展开。报告把真正的产品选择放在这里；能通过代码、live API 或只读抓包回答的问题不会甩给你。</p>
+      <div class="section-head"><div><div class="section-kicker">10 / RESOLVED</div><h2>已确认的 6 个产品决定</h2></div><div class="badge complete">2026-09-01 已锁定</div></div>
+      <div class="callout good"><strong>最终工作流：</strong>用户点击“搜索”后，Companion 从 DarkerDB Market 批量拉取严格候选，在本地完成高级筛选；用户根据结果自己去游戏 Marketplace UI 搜索和购买。Companion 不操作游戏市场，也不自动购买。</div>
       <div class="grid">
-        <details class="card decision" open><summary><span class="decision-num">01</span><strong>多职业筛选是什么意思？</strong></summary><div class="decision-body">选择多个职业时，是“任意一个职业能用”还是“每个职业都能用”？<p class="recommend"><strong>推荐：</strong>任意所选职业可用（OR），并包含无职业限制物品。它符合 DarkerDB 的职业并集行为，也最符合用户筛选直觉。</p></div></details>
-        <details class="card decision"><summary><span class="decision-num">02</span><strong>物品名称选择到什么粒度？</strong></summary><div class="decision-body">是选择 Arcane Garb 这样的物品族，还是把每个品质变体都列成独立名称？<p class="recommend"><strong>推荐：</strong>名称选择物品族，品质作为独立筛选；内部再解析为 concrete IDs。列表更短，也更自然。</p></div></details>
-        <details class="card decision"><summary><span class="decision-num">03</span><strong>默认取回预算多大？</strong></summary><div class="decision-body">更大预算能多找结果，但会增加延迟并快速用完 live 60/min 配额。<p class="recommend"><strong>推荐：</strong>每次搜索最多 20 个请求 / 1,000 条 retrieved listings；“加载更多”再显式消费一批同等有界预算。</p></div></details>
-        <details class="card decision"><summary><span class="decision-num">04</span><strong>结果页要多密集地调用 Price Check？</strong></summary><div class="decision-body">是只显示 Market 价格，展开时再估值，还是预取首批结果的估值？<p class="recommend"><strong>推荐：</strong>每行显示 active 总价/单位价；只有用户展开某行时才加载估值和近期参照。避免大量请求。</p></div></details>
-        <details class="card decision"><summary><span class="decision-num">05</span><strong>默认价格排序按总价还是单位价？</strong></summary><div class="decision-body">总价更直观，但会把不同堆叠数量混在一起；单位价更适合比较价值。<p class="recommend"><strong>推荐：</strong>单位价升序 → 最新 → listing ID。界面始终同时标清总价与单位价。</p></div></details>
-        <details class="card decision"><summary><span class="decision-num">06</span><strong>何时真正发服务端请求？</strong></summary><div class="decision-body">每次编辑 debounce 自动请求，还是用户明确点“搜索”？<p class="recommend"><strong>推荐：</strong>显式 Search。只有 K、范围和本地排序等能复用候选的变化用“本地应用”。在 60/min 限流下更可预测。</p></div></details>
+        <details class="card decision" open><summary><span class="decision-num">01</span><strong>多职业使用 OR</strong></summary><div class="decision-body"><p class="recommend"><strong>已决定：</strong>物品可被任意一个所选职业使用即通过，并包含无职业限制物品。</p></div></details>
+        <details class="card decision"><summary><span class="decision-num">02</span><strong>名称选择物品族，品质独立</strong></summary><div class="decision-body"><p class="recommend"><strong>已决定：</strong>名称选择 Arcane Garb 这样的规范物品族；品质单独多选；内部解析为 concrete IDs。</p></div></details>
+        <details class="card decision"><summary><span class="decision-num">03</span><strong>默认预算 20 请求 / 1,000 listing</strong></summary><div class="decision-body"><p class="recommend"><strong>已决定：</strong>每次显式搜索使用一批有界预算；“加载更多”再明确消耗下一批。</p></div></details>
+        <details class="card decision"><summary><span class="decision-num">04</span><strong>批量 Market 数据 → 本地高级筛选</strong></summary><div class="decision-body">每个 Market API 请求拉回一个严格物品/品质/栏位/价格候选列表；Companion 合并、去重后，在本地完成职业、类别、高级类型和 K-of-N 等剩余筛选。<p class="recommend"><strong>已决定：</strong>结果行不逐条调用 Price Check，展开结果也不触发额外估值请求。</p></div></details>
+        <details class="card decision"><summary><span class="decision-num">05</span><strong>按单位价排序，同时显示总价</strong></summary><div class="decision-body"><p class="recommend"><strong>已决定：</strong>默认单位价升序 → 最新 → listing ID；每行同时明确显示单位价与整组总价。</p></div></details>
+        <details class="card decision"><summary><span class="decision-num">06</span><strong>只有点击“搜索”才请求</strong></summary><div class="decision-body"><p class="recommend"><strong>已决定：</strong>编辑筛选、展开结果、切语言、切标签或窗口焦点变化都不发新的 Market 请求；可复用候选时允许“本地应用”。</p></div></details>
       </div>
 
       <h3>不需要你做产品决策的问题</h3>
@@ -939,7 +939,7 @@
       <article class="phase card"><h3>M1 · 当前合约与规范目录</h3><p><strong>工作：</strong>新增 Facets/Classes adapter；验证完整 Items/Attributes 和 item detail；修 Price Check drift；保留 rate/version/build/patch headers；统一百分比；刷新中英目录。</p><p class="muted"><strong>验收：</strong>build 0.17.151.9472 / patch 132 的 live 脱敏夹具通过；不含 key/player；rarity comma 回归先红后绿；所有 UI 选项来自目录/facets；中英 key 与规范 ID 覆盖门禁通过。</p></article>
       <article class="phase card" style="margin-top:14px"><h3>M2 · SearchSpec 与 query planner</h3><p><strong>工作：</strong>新 SearchSpec、目录 resolver、语义安全 server/local planner、全局预算与 round-robin、取消、限流、缓存、确定性合并。</p><p class="muted"><strong>验收：</strong>AND/OR/K 纯函数测试通过；多名称/多品质正确拆请求；K&lt;N 不变成服务端 AND；旧请求不能发布；每族 count/completeness 精确。</p></article>
       <article class="phase card" style="margin-top:14px"><h3>M3 · 筛选 UI</h3><p><strong>工作：</strong>响应式布局、规范可搜索多选、词条规则编辑器与 K、draft/Search/Apply locally/Reset、active chips 与无障碍。</p><p class="muted"><strong>验收：</strong>中英文下全部键盘可用；切语言保持选择；无硬编码选项/结果；无效范围不发请求；窄屏无 shell 横向溢出。</p></article>
-      <article class="phase card" style="margin-top:14px"><h3>M4 · 结果与状态 UX</h3><p><strong>工作：</strong>桌面表格/窄屏卡片、展开详情、count/completeness/freshness、所有 loading/empty/stale/incomplete/rate/auth/partial/fatal 状态、按需 Price Check。</p><p class="muted"><strong>验收：</strong>每种状态有 fixture-driven 覆盖；stale empty 不声称权威空；incomplete 始终显示 retrieved/reported；合并顺序确定；堆叠标清总价/单位价。</p></article>
+      <article class="phase card" style="margin-top:14px"><h3>M4 · 结果与状态 UX</h3><p><strong>工作：</strong>桌面表格/窄屏卡片、展开详情、count/completeness/freshness、所有 loading/empty/stale/incomplete/rate/auth/partial/fatal 状态，以及可复制的游戏内手动搜索摘要。</p><p class="muted"><strong>验收：</strong>每种状态有 fixture-driven 覆盖；stale empty 不声称权威空；incomplete 始终显示 retrieved/reported；合并顺序确定；堆叠标清总价/单位价；结果行与展开操作都不调用 Price Check。</p></article>
       <article class="phase card" style="margin-top:14px"><h3>M5 · live 只读验收</h3><p><strong>工作：</strong>代表性 DarkerDB 搜索；可选短时被动 Marketplace request capture；绝不上架。</p><p class="muted"><strong>验收：</strong>覆盖单名多品质、多名、职业/类别/栏位、K=N、K&lt;N、stale 与主动 incomplete；UI count 与 adapter diagnostics 一致；不加入任何游戏输入或 listing automation。</p></article>
       <div class="callout danger" style="margin-top:16px">自动上架继续保留为后续独立阶段，并继续受既定人工检查点约束。</div>
     </section>
