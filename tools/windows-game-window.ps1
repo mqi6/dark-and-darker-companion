@@ -20,6 +20,19 @@ public static class SharedGameWindowNative {
 '@
 function Resolve-GameWindowHandle([string]$ExpectedValue) {
   $operatorSession = (Get-Process -Id $PID).SessionId
+  # Revalidate the last-known HWND first. This is not a cache: it is resolved
+  # to a live PID and checked on every request; enumeration is the stale fallback.
+  $expected = if ($ExpectedValue) { Convert-WindowHandle $ExpectedValue } else { [IntPtr]::Zero }
+  if ($expected -ne [IntPtr]::Zero) {
+    [uint32]$expectedPid = 0
+    [void][SharedGameWindowNative]::GetWindowThreadProcessId($expected, [ref]$expectedPid)
+    $expectedProcess = if ($expectedPid -ne 0) { Get-Process -Id $expectedPid -ErrorAction SilentlyContinue } else { $null }
+    if ($expectedProcess -and $expectedProcess.SessionId -eq $operatorSession -and
+        $expectedProcess.ProcessName -ieq 'DungeonCrawler' -and
+        [SharedGameWindowNative]::IsRoot($expected) -and
+        [SharedGameWindowNative]::HasClient($expected) -and
+        [SharedGameWindowNative]::IsRendered($expected)) { return $expected }
+  }
   $valid = @()
   foreach ($handle in [SharedGameWindowNative]::Candidates()) {
     [uint32]$candidatePid = 0

@@ -49,6 +49,10 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
     const state = await this.run([
       "-FocusGame", "-ExpectedWindowHandle", this.expected.windowHandle
     ]);
+    // Carry the handle resolved for this request into the remaining operations
+    // in the same adapter session. Each Focus/Refresh/Run still begins with a
+    // fresh inspect; clicks no longer repeat stale-handle enumeration.
+    updateExpectedWindowState(this.expected, state);
     return { ...state, gameBuildFingerprint: this.profile.gameBuildFingerprint };
   }
 
@@ -97,6 +101,13 @@ export class PowerShellNavigationAdapter implements WindowsNavigationAdapter {
     );
     return JSON.parse(result.stdout) as HelperState & Record<string, unknown>;
   }
+}
+
+export function updateExpectedWindowState(expected: HelperState, current: HelperState): void {
+  expected.windowHandle = current.windowHandle;
+  expected.clientBounds = current.clientBounds;
+  expected.display = current.display;
+  expected.primaryDisplay = current.primaryDisplay;
 }
 
 export function classifyFeature(

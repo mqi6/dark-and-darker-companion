@@ -12,7 +12,7 @@ import { gameplayCatalogSchema } from "../src/domain/gameplayCatalog";
 import { projectSpatialState, type SpatialProjection } from "../src/domain/inventoryGeometry";
 import type { CompleteStashSortPlan } from "../src/domain/completeStashSort";
 import type { StashPackingMode } from "../src/domain/stashPacking";
-import { STASH_ITEM_CATEGORIES, type StashTabItemPolicy } from "../src/domain/stashRouting";
+import { STASH_ITEM_CATEGORIES, classifyStashItem, type StashTabItemPolicy } from "../src/domain/stashRouting";
 import { stashTabMappingSchema, type StashTabMapping } from "../src/domain/stashTabMapping";
 import { GameInteractionLease } from "../src/tasks/taskMachine";
 import { CompleteStashSortExecutionRunner } from "../src/tasks/completeStashSortExecution";
@@ -172,14 +172,21 @@ function operatorDiagnostic(error: unknown): string { const message = error inst
 function diagnosticMessage(code: string): string { switch (code) { case "game-window-unavailable": return "The operator cannot see a DungeonCrawler game window on its Windows desktop."; case "multiple-game-windows": return "Multiple game windows are visible; close the extra instance."; case "complete-capture-failed": return "The complete command-44 capture failed; see the private operator log."; default: return "Refresh and Preview failed; local Codex can inspect the private adapter error."; } }
 function previewSummary(projection: SpatialProjection, plan: Extract<CompleteStashSortPlan, { status: "ready" }>) {
   const containers = new Map(projection.containers.map(container => [container.inventoryId, container]));
+  const placement = (value: { x: number; y: number; width: number; height: number; category: string }) =>
+    ({ x: value.x, y: value.y, width: value.width, height: value.height, category: value.category });
   return {
     mode: plan.mode,
     moveCount: plan.moves.length,
     crossTabCount: plan.moves.filter(move => move.route === "via-character-bag").length,
     skippedCount: plan.skippedAliases.length,
     skippedDiagnostics: plan.diagnostics,
-    before: plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: containers.get(page.inventoryId)?.placements.length ?? 0 })),
-    after: plan.pages.map(page => ({ tabIndex: page.tabIndex, itemCount: page.placements.length }))
+    before: plan.pages.map(page => {
+      const source = containers.get(page.inventoryId);
+      return { tabIndex: page.tabIndex, columns: 12, rows: 20, itemCount: source?.placements.length ?? 0,
+        placements: source?.placements.map(value => placement({ ...value, category: classifyStashItem(value.metadata) })) ?? [] };
+    }),
+    after: plan.pages.map(page => ({ tabIndex: page.tabIndex, columns: 12, rows: 20,
+      itemCount: page.placements.length, placements: page.placements.map(placement) }))
   };
 }
 

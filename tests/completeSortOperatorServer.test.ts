@@ -22,6 +22,8 @@ describe("complete sort localhost operator", () => {
       expect(page).toContain("Bring game to front");
       expect(page).toContain("Run Sort");
       expect(page).toContain("Category rows");
+      expect(page).toContain("Calculated after");
+      expect(page).toContain("renderPreview('before',s.before)");
       const script = page.match(/<script>([\s\S]*?)<\/script>/)?.[1];
       if (!script) throw new Error("script");
       expect(() => new Script(script)).not.toThrow();
