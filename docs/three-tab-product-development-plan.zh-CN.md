@@ -5,6 +5,8 @@
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
+实施状态：**Phase P0 已完成；下一步是 Marketplace M1。**
+
 ## 0. 目标与范围
 
 最终工具只有三个主要工作流标签页：
@@ -550,6 +552,8 @@ React UI
 当前开发应先完成 Marketplace Search，再回到仓库剩余性能/排序 TODO，最后进入自动上架。
 
 ### Phase P0 — 三标签外壳与文档一致性
+
+状态：**已完成（2026-09-01）**
 
 工作：
 

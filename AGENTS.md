@@ -36,6 +36,9 @@ Do not add maps, build recommendations, automatic purchasing, unattended monitor
 - Do not require a preselected unsupported-item exception page. Prompt for one only after an unsupported item is observed. While unsupported items exist, the chosen exception page is forced out of sorting without overwriting its normal tab preference.
 - Gear Search displays matches/evaluated and, when incomplete, retrieved/reported total.
 - Missing or naturally impossible roll means that rule does not match; other K-of-N rules may still let the item pass.
+- Marketplace Search is read-only purchase assistance: explicit Search pulls bounded DarkerDB Market listing batches, advanced filtering finishes locally, and the user manually reproduces the search in the game. Do not add game Marketplace input or automatic purchasing.
+- Marketplace live listing queries start only from explicit Search, Refresh, or Load more actions. Filter edits, result expansion, language/tab/focus changes do not query. Result rows and expansion do not call Price Check.
+- Marketplace Search defaults to a 20-request/1,000-retrieved-row batch, multi-class OR, canonical item-family selection with separate rarity, and unit-price ascending while showing both unit and total price.
 - UI and game data support English and Simplified Chinese. Join localized game data by canonical ID, never display name.
 
 ## Commands

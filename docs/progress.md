@@ -1,8 +1,21 @@
 # Development Progress
 
+## Three-workflow shell P0 — 2026-09-01
+
+- Replaced the former four-item primary navigation with exactly three product workflows: Stash, Marketplace Search, and Auto Listing.
+- Moved Settings out of primary navigation into a global right-side drawer; language switching remains available in English and Simplified Chinese.
+- Kept all three workflow panels mounted while switching tabs, so page draft/input state is preserved instead of being destroyed on navigation.
+- Added ARIA tab/list/panel relationships, roving keyboard focus with Arrow/Home/End, global-settings focus containment and restoration, and a persistent collapsible Activity region.
+- Extended the shared status surface with character and snapshot placeholders plus a disabled-state Emergency stop control. No game-changing task is authorized or connected by this shell work.
+- Removed the shell's fixed 920px minimum width and added tablet/narrow-window behavior for the top bar, tabs, workspace, settings drawer, forms, and Activity.
+- Replaced hard-coded shell/search placeholder text with parity-tested `en-US` / `zh-CN` resources.
+- Verification: strict typecheck passed; 61 test files / 320 tests passed; production Vite build passed.
+
+Next product phase: Marketplace M1 contract/catalog repair. No Marketplace query, game input, purchasing, stash-sort TODO, or live listing automation was added in P0.
+
 ## Completed offline foundation
 
-- Four-tab React shell with persistent status and Activity regions.
+- Three-workflow React shell with global Settings plus persistent status and Activity regions.
 - English and Simplified Chinese UI dictionaries and runtime switching.
 - Canonical-ID game-data localization merge with English fallback.
 - DarkerDB HTTP adapter for Items, Attributes, Market, and Price Check.

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { calculateListingPrice } from "../domain/pricing";
 import {
@@ -10,30 +11,79 @@ import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeom
 import { StashPreviewGrid } from "./StashPreviewGrid";
 import { StashSortSettings } from "./StashSortSettings";
 
-type Tab = "stash" | "auction" | "gearSearch" | "settings";
+type Tab = "stash" | "marketplaceSearch" | "autoListing";
 
-const tabs: readonly Tab[] = ["stash", "auction", "gearSearch", "settings"];
+const tabs: readonly Tab[] = ["stash", "marketplaceSearch", "autoListing"];
 
 export function App() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("stash");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activityCollapsed, setActivityCollapsed] = useState(false);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false);
+    settingsButtonRef.current?.focus();
+  }, []);
+  const moveTabFocus = (event: ReactKeyboardEvent<HTMLButtonElement>, tab: Tab) => {
+    const currentIndex = tabs.indexOf(tab);
+    let nextIndex: number | undefined;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = tabs.length - 1;
+    if (nextIndex === undefined) return;
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex]!;
+    setActiveTab(nextTab);
+    document.getElementById(`tab-${nextTab}`)?.focus();
+  };
 
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">v0.1 · OFFLINE FOUNDATION</p>
+        <div className="app-identity">
+          <p className="eyebrow">{t("app.phaseLabel")}</p>
           <h1>{t("app.title")}</h1>
         </div>
-        <StatusStrip />
+        <div className="topbar-controls">
+          <StatusStrip />
+          <div className="global-actions">
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={t("settings.open")}
+              title={t("settings.open")}
+              ref={settingsButtonRef}
+              onClick={() => setSettingsOpen(true)}
+            >
+              <span aria-hidden="true">⚙</span>
+            </button>
+            <button
+              type="button"
+              className="emergency-stop"
+              disabled
+              title={t("status.emergencyStopUnavailable")}
+            >
+              {t("status.emergencyStop")}
+            </button>
+          </div>
+        </div>
       </header>
 
-      <nav className="tabs" aria-label="Primary">
+      <nav className="tabs" aria-label={t("nav.primary")} role="tablist">
         {tabs.map((tab) => (
           <button
             type="button"
+            role="tab"
+            id={`tab-${tab}`}
+            aria-controls={`panel-${tab}`}
+            aria-selected={activeTab === tab}
+            tabIndex={activeTab === tab ? 0 : -1}
             className={activeTab === tab ? "tab active" : "tab"}
             onClick={() => setActiveTab(tab)}
+            onKeyDown={(event) => moveTabFocus(event, tab)}
             key={tab}
           >
             {t(`nav.${tab}`)}
@@ -42,18 +92,43 @@ export function App() {
       </nav>
 
       <section className="workspace">
-        {activeTab === "stash" && <StashPanel />}
-        {activeTab === "auction" && <AuctionPanel />}
-        {activeTab === "gearSearch" && <GearSearchPanel />}
-        {activeTab === "settings" && (
-          <SettingsPanel
-            language={i18n.language}
-            onLanguageChange={(language) => void i18n.changeLanguage(language)}
-          />
-        )}
+        <section
+          role="tabpanel"
+          id="panel-stash"
+          aria-labelledby="tab-stash"
+          hidden={activeTab !== "stash"}
+        >
+          <StashPanel />
+        </section>
+        <section
+          role="tabpanel"
+          id="panel-marketplaceSearch"
+          aria-labelledby="tab-marketplaceSearch"
+          hidden={activeTab !== "marketplaceSearch"}
+        >
+          <MarketplaceSearchPanel />
+        </section>
+        <section
+          role="tabpanel"
+          id="panel-autoListing"
+          aria-labelledby="tab-autoListing"
+          hidden={activeTab !== "autoListing"}
+        >
+          <AutoListingPanel />
+        </section>
       </section>
 
-      <ActivityPanel />
+      <ActivityPanel
+        collapsed={activityCollapsed}
+        onToggle={() => setActivityCollapsed((collapsed) => !collapsed)}
+      />
+      {settingsOpen && (
+        <SettingsDrawer
+          language={i18n.language}
+          onLanguageChange={(language) => void i18n.changeLanguage(language)}
+          onClose={closeSettings}
+        />
+      )}
     </main>
   );
 }
@@ -63,6 +138,8 @@ function StatusStrip() {
   const statuses = [
     [t("status.game"), t("status.notDetected"), "danger"],
     [t("status.capture"), t("status.stopped"), "muted"],
+    [t("status.character"), t("status.unknown"), "muted"],
+    [t("status.snapshot"), t("status.unavailable"), "muted"],
     [t("status.darkerdb"), t("status.notConfigured"), "warning"],
     [t("status.automation"), t("status.idle"), "success"]
   ] as const;
@@ -96,7 +173,7 @@ function StashPanel() {
   return (
     <div className="panel-grid">
       <article className="card span-two">
-        <p className="eyebrow">STASH · READ ONLY</p>
+        <p className="eyebrow">{t("stash.eyebrow")}</p>
         <h2>{t("stash.title")}</h2>
         <p>{t("stash.description")}</p>
         <div className="stash-preview-toolbar">
@@ -171,7 +248,7 @@ const demoSpatialContainer: SpatialContainer = {
   diagnostics: []
 };
 
-function AuctionPanel() {
+function AutoListingPanel() {
   const { t } = useTranslation();
   const [unitReferenceText, setUnitReferenceText] = useState("120");
   const [quantity, setQuantity] = useState(3);
@@ -195,7 +272,7 @@ function AuctionPanel() {
   return (
     <div className="panel-grid">
       <article className="card span-two">
-        <p className="eyebrow">AUCTION · DRY RUN</p>
+        <p className="eyebrow">{t("auction.eyebrow")}</p>
         <h2>{t("auction.title")}</h2>
         <div className="form-grid">
           <label>
@@ -231,7 +308,7 @@ function AuctionPanel() {
           <>
             <p>{t("auction.finalPrice")}</p>
             <strong className="price">{calculation.finalPrice}</strong>
-            <span>gold</span>
+            <span>{t("auction.gold")}</span>
           </>
         ) : (
           <>
@@ -244,19 +321,19 @@ function AuctionPanel() {
   );
 }
 
-function GearSearchPanel() {
+function MarketplaceSearchPanel() {
   const { t } = useTranslation();
   return (
     <div className="panel-grid">
       <article className="card span-two">
-        <p className="eyebrow">GEAR SEARCH · LOCAL FILTER</p>
+        <p className="eyebrow">{t("search.eyebrow")}</p>
         <h2>{t("search.title")}</h2>
         <p>{t("search.description")}</p>
         <div className="query-chips">
-          <span>Ranger</span>
-          <span>Chest</span>
-          <span>Epic + Legendary</span>
-          <span>2 of 4 rolls</span>
+          <span>{t("search.placeholderClass")}</span>
+          <span>{t("search.placeholderSlot")}</span>
+          <span>{t("search.placeholderRarity")}</span>
+          <span>{t("search.placeholderKOfN")}</span>
         </div>
         <div className="summary-line">
           <strong>{t("search.resultSummary", { matches: 37, evaluated: 284 })}</strong>
@@ -266,45 +343,122 @@ function GearSearchPanel() {
         </div>
       </article>
       <article className="card accent-card">
-        <h3>K-of-N</h3>
+        <h3>{t("search.kOfN")}</h3>
         <p>{t("search.impossibleRoll")}</p>
       </article>
     </div>
   );
 }
 
-function SettingsPanel(props: {
+function SettingsDrawer(props: {
   language: string;
   onLanguageChange: (language: "en-US" | "zh-CN") => void;
+  onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") props.onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [props.onClose]);
+
+  const keepFocusInside = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== "Tab") return;
+    const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
+      "button:not([disabled]), select:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"
+    );
+    if (!focusable?.length) return;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
-    <article className="card settings-card">
-      <p className="eyebrow">SETTINGS</p>
-      <h2>{t("settings.title")}</h2>
-      <label>
-        {t("settings.language")}
-        <select
-          value={props.language}
-          onChange={(event) => props.onLanguageChange(event.target.value as "en-US" | "zh-CN")}
-        >
-          <option value="en-US">{t("settings.english")}</option>
-          <option value="zh-CN">{t("settings.simplifiedChinese")}</option>
-        </select>
-      </label>
-    </article>
+    <div className="settings-layer">
+      <div
+        className="settings-backdrop"
+        aria-hidden="true"
+        onClick={props.onClose}
+      />
+      <aside
+        className="settings-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
+        ref={drawerRef}
+        onKeyDown={keepFocusInside}
+      >
+        <header className="settings-header">
+          <div>
+            <p className="eyebrow">{t("settings.eyebrow")}</p>
+            <h2 id="settings-title">{t("settings.title")}</h2>
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t("settings.close")}
+            ref={closeButtonRef}
+            onClick={props.onClose}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div className="settings-content">
+          <label>
+            {t("settings.language")}
+            <select
+              value={props.language}
+              onChange={(event) => props.onLanguageChange(event.target.value as "en-US" | "zh-CN")}
+            >
+              <option value="en-US">{t("settings.english")}</option>
+              <option value="zh-CN">{t("settings.simplifiedChinese")}</option>
+            </select>
+          </label>
+          <section className="settings-section" aria-labelledby="settings-data-title">
+            <h3 id="settings-data-title">{t("settings.dataTitle")}</h3>
+            <p>{t("settings.dataDescription")}</p>
+          </section>
+          <section className="settings-section" aria-labelledby="settings-safety-title">
+            <h3 id="settings-safety-title">{t("settings.safetyTitle")}</h3>
+            <p>{t("settings.safetyDescription")}</p>
+          </section>
+        </div>
+      </aside>
+    </div>
   );
 }
 
-function ActivityPanel() {
+function ActivityPanel(props: { collapsed: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   return (
-    <footer className="activity-panel">
-      <div>
-        <p className="eyebrow">{t("activity.title")}</p>
-        <p>{t("activity.ready")}</p>
+    <footer className={props.collapsed ? "activity-panel collapsed" : "activity-panel"}>
+      <div className="activity-summary">
+        <div>
+          <p className="eyebrow">{t("activity.title")}</p>
+          {!props.collapsed && <p aria-live="polite">{t("activity.ready")}</p>}
+        </div>
+        {!props.collapsed && <span className="activity-time">00:00:00</span>}
       </div>
-      <span className="activity-time">00:00:00</span>
+      <button
+        type="button"
+        className="activity-toggle"
+        aria-expanded={!props.collapsed}
+        onClick={props.onToggle}
+      >
+        {props.collapsed ? t("activity.expand") : t("activity.collapse")}
+      </button>
     </footer>
   );
 }

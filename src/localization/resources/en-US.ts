@@ -1,24 +1,32 @@
 export const enUS = {
   app: {
-    title: "Dark and Darker Companion"
+    title: "Dark and Darker Companion",
+    phaseLabel: "v0.1 · OFFLINE FOUNDATION"
   },
   nav: {
+    primary: "Primary workflows",
     stash: "Stash",
-    auction: "Auction",
-    gearSearch: "Gear Search",
-    settings: "Settings"
+    marketplaceSearch: "Marketplace Search",
+    autoListing: "Auto Listing"
   },
   status: {
     game: "Game",
     notDetected: "Not detected",
     capture: "Capture",
     stopped: "Stopped",
+    character: "Character",
+    unknown: "Unknown",
+    snapshot: "Snapshot",
+    unavailable: "Unavailable",
     darkerdb: "DarkerDB",
     notConfigured: "Not configured",
     automation: "Automation",
-    idle: "Idle"
+    idle: "Idle",
+    emergencyStop: "Emergency stop",
+    emergencyStopUnavailable: "No game-changing automation is running."
   },
   stash: {
+    eyebrow: "STASH · READ ONLY",
     title: "Stash workspace",
     description: "Logical storage preview uses protocol slots and validated item footprints; it does not use screen coordinates.",
     previewSource: "Synthetic offline footprint fixture",
@@ -87,29 +95,46 @@ export const enUS = {
     }
   },
   auction: {
-    title: "Auction pricing foundation",
+    eyebrow: "AUTO LISTING · DRY RUN",
+    title: "Auto Listing foundation",
     unitReference: "Per-unit reference",
     quantity: "Quantity",
     adjustment: "Percent below",
     finalPrice: "Final stack price",
     priceUnknown: "Price unknown",
-    priceUnknownDetail: "No automatic fallback was used. Refresh or enter a manual price."
+    priceUnknownDetail: "No automatic fallback was used. Refresh or enter a manual price.",
+    gold: "gold"
   },
   search: {
-    title: "Gear Search foundation",
+    eyebrow: "MARKETPLACE SEARCH · LOCAL FILTER",
+    title: "Marketplace Search foundation",
     description: "K-of-N is evaluated locally across multiple item families.",
     resultSummary: "{{matches}} of {{evaluated}} evaluated listings match",
     incompleteSummary: "Incomplete: {{retrieved}} of {{reported}} reported listings retrieved",
-    impossibleRoll: "A naturally impossible roll counts as not matched."
+    impossibleRoll: "A naturally impossible roll counts as not matched.",
+    placeholderClass: "Ranger",
+    placeholderSlot: "Chest",
+    placeholderRarity: "Epic + Legendary",
+    placeholderKOfN: "2 of 4 attributes",
+    kOfN: "K-of-N"
   },
   settings: {
+    open: "Open settings",
+    close: "Close settings",
+    eyebrow: "GLOBAL SETTINGS",
     title: "Settings",
     language: "Language",
     english: "English",
-    simplifiedChinese: "Simplified Chinese"
+    simplifiedChinese: "Simplified Chinese",
+    dataTitle: "Data and connections",
+    dataDescription: "DarkerDB, capture, cache, and diagnostics will be configured here as their live adapters are connected.",
+    safetyTitle: "Automation safety",
+    safetyDescription: "Input timing, screen calibration, and emergency-stop diagnostics remain global rather than belonging to one workflow."
   },
   activity: {
     title: "Activity",
-    ready: "Offline development shell ready. Live game adapters are not connected."
+    ready: "Offline development shell ready. Live game adapters are not connected.",
+    expand: "Expand activity",
+    collapse: "Collapse activity"
   }
 } as const;
