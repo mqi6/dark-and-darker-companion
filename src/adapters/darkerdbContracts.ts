@@ -10,8 +10,8 @@ const timestampSchema = z.iso.datetime();
 export const darkerDbAttributeSchema = z
   .object({
     id: canonicalIdSchema,
-    name: z.string().trim().min(1),
-    description: z.string(),
+    name: z.string().trim().min(1).optional(),
+    description: z.string().default(""),
     is_percentage: z.boolean(),
     attribute_group: z.enum(["primary", "secondary"])
   })
@@ -51,7 +51,7 @@ export const darkerDbGameplayItemSchema = z
   .object({
     id: canonicalIdSchema,
     archetype: canonicalIdSchema.nullish(),
-    name: z.string(),
+    name: z.string().default(""),
     rarity: z.string().trim().min(1),
     inventory_width: z.number().int().positive().nullish(),
     inventory_height: z.number().int().positive().nullish(),

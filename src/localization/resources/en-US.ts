@@ -20,6 +20,9 @@ export const enUS = {
     unavailable: "Unavailable",
     darkerdb: "DarkerDB",
     notConfigured: "Not configured",
+    connecting: "Connecting",
+    connected: "Connected",
+    connectionError: "Connection error",
     automation: "Automation",
     idle: "Idle",
     emergencyStop: "Emergency stop",
@@ -173,6 +176,14 @@ export const enUS = {
       "preview-fixture": "Offline preview catalog",
       "darkerdb-cache": "Cached DarkerDB catalog",
       "darkerdb-live": "Live DarkerDB catalog"
+    },
+    runtime: {
+      eyebrow: "Read-only DarkerDB connection",
+      loadingTitle: "Loading the live Marketplace catalog",
+      loadingDetail: "The local companion runtime is fetching canonical English and Simplified Chinese catalog data. No Marketplace listing query runs until you click Search.",
+      errorTitle: "The live Marketplace runtime is unavailable",
+      errorDetail: "Check the local operator and API key, then retry. The app will not silently replace live data with preview results.",
+      retry: "Retry catalog connection"
     },
     semantics: {
       title: "How matching works",

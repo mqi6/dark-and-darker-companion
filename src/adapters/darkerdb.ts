@@ -34,8 +34,8 @@ const envelopeSchema = z.object({
     .object({
       next: z.string().nullish(),
       total: z.number().int().nonnegative().optional(),
-      page: z.number().int().positive().optional(),
-      num_pages: z.number().int().nonnegative().optional(),
+      page: z.number().int().positive().nullish(),
+      num_pages: z.number().int().nonnegative().nullish(),
       freshness: darkerDbFreshnessSchema.optional()
     })
     .passthrough()
@@ -215,8 +215,25 @@ export class DarkerDbClient {
     }, z.array(darkerDbClassSchema), options);
   }
 
-  async getFacets(options: DarkerDbRequestOptions = {}): Promise<DarkerDbPage<DarkerDbFacetsBody>> {
-    return this.get("/v2/facets", {}, darkerDbFacetsBodySchema, options);
+  async getFacets(options?: DarkerDbRequestOptions): Promise<DarkerDbPage<DarkerDbFacetsBody>>;
+  async getFacets(
+    parameters: { locale?: string },
+    options?: DarkerDbRequestOptions
+  ): Promise<DarkerDbPage<DarkerDbFacetsBody>>;
+  async getFacets(
+    parametersOrOptions: { locale?: string } | DarkerDbRequestOptions = {},
+    explicitOptions: DarkerDbRequestOptions = {}
+  ): Promise<DarkerDbPage<DarkerDbFacetsBody>> {
+    const legacyOptions = "signal" in parametersOrOptions && !("locale" in parametersOrOptions)
+      ? parametersOrOptions
+      : undefined;
+    const locale = "locale" in parametersOrOptions ? parametersOrOptions.locale : undefined;
+    return this.get(
+      "/v2/facets",
+      { locale: locale ?? "en" },
+      darkerDbFacetsBodySchema,
+      legacyOptions ?? explicitOptions
+    );
   }
 
   async getItemDetail(
@@ -331,8 +348,8 @@ export class DarkerDbClient {
       ...(parsed.pagination?.total === undefined
         ? {}
         : { reportedTotal: parsed.pagination.total }),
-      ...(parsed.pagination?.page === undefined ? {} : { page: parsed.pagination.page }),
-      ...(parsed.pagination?.num_pages === undefined
+      ...(parsed.pagination?.page == null ? {} : { page: parsed.pagination.page }),
+      ...(parsed.pagination?.num_pages == null
         ? {}
         : { numPages: parsed.pagination.num_pages }),
       ...(parsed.pagination?.freshness === undefined

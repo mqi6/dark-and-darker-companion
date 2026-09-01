@@ -256,6 +256,21 @@ input:focus, select:focus { outline: 2px solid rgba(207,132,60,.35); border-colo
 }
 .catalog-badge.preview-fixture { border-color: #8b5c2d; color: #efbd74; }
 .catalog-badge span { color: #777b82; }
+
+.marketplace-runtime-state {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.marketplace-runtime-state code {
+  display: block;
+  margin-top: 16px;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  color: #efbd74;
+  background: rgba(0, 0, 0, 0.24);
+  border-radius: 6px;
+}
 .active-filter-summary {
   display: grid;
   gap: 12px;

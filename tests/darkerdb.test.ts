@@ -51,6 +51,53 @@ describe("DarkerDbClient", () => {
     expect(calledHeaders.get("X-API-Key")).toBe("secret-test-key");
   });
 
+  it("accepts null page metadata on cursor-paginated catalog endpoints", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({
+        body: [],
+        pagination: { next: null, total: 0, page: null, num_pages: null }
+      }), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+
+    await expect(client.getAttributes({ locale: "en" })).resolves.toEqual({
+      data: [],
+      reportedTotal: 0,
+      diagnostics: { contractVersion: PINNED_DARKERDB_API_VERSION }
+    });
+  });
+
+  it("keeps canonical attributes usable when DarkerDB omits display text", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ body: [{
+        id: "id.attribute.additional_weight_limit",
+        is_percentage: false,
+        attribute_group: "secondary"
+      }] }), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+
+    await expect(client.getAttributes({ locale: "en" })).resolves.toMatchObject({
+      data: [{ id: "id.attribute.additional_weight_limit", description: "" }]
+    });
+  });
+
+  it("accepts an untranslated item row so localized UI can fall back by canonical ID", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ body: [{
+        id: "id.item.untranslated_1001",
+        archetype: "id.item.untranslated",
+        rarity: "poor",
+        max_stack_size: 1
+      }] }), { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+    const client = new DarkerDbClient({ baseUrl: "https://example.test", fetchImplementation });
+
+    await expect(client.getGameplayItems({ locale: "zh-Hans" })).resolves.toMatchObject({
+      data: [{ id: "id.item.untranslated_1001", name: "" }]
+    });
+  });
+
   it("validates gameplay dimensions instead of accepting incomplete item metadata", async () => {
     const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ body: [{

@@ -20,6 +20,9 @@ export const zhCN = {
     unavailable: "不可用",
     darkerdb: "DarkerDB",
     notConfigured: "未配置",
+    connecting: "连接中",
+    connected: "已连接",
+    connectionError: "连接错误",
     automation: "自动任务",
     idle: "空闲",
     emergencyStop: "紧急停止",
@@ -173,6 +176,14 @@ export const zhCN = {
       "preview-fixture": "离线预览目录",
       "darkerdb-cache": "DarkerDB 缓存目录",
       "darkerdb-live": "DarkerDB 在线目录"
+    },
+    runtime: {
+      eyebrow: "DarkerDB 只读连接",
+      loadingTitle: "正在加载在线市场目录",
+      loadingDetail: "本地 Companion runtime 正在读取以 canonical ID 关联的英文和简体中文目录。只有点击“搜索”后才会请求 Marketplace listing。",
+      errorTitle: "在线 Marketplace runtime 不可用",
+      errorDetail: "请检查本地 operator 与 API key 后重试。应用不会悄悄用预览结果冒充在线数据。",
+      retry: "重试目录连接"
     },
     semantics: {
       title: "匹配规则",

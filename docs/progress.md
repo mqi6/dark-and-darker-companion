@@ -1,5 +1,19 @@
 # Development Progress
 
+## Marketplace M5 live-runtime checkpoint — 2026-09-01
+
+- Added a localhost read-only Marketplace operator. The Node process owns `DARKERDB_API_KEY`, the pinned DarkerDB client, catalog cache, query coordinator, and cancellation; the browser receives no key and can call only same-origin catalog/search/refresh/cancel endpoints.
+- Added live bilingual catalog collection for Items, Attributes, Classes, and localized Facets. All English/Simplified Chinese joins use canonical IDs. Current live catalog startup resolved 2,430 variants, 796 item families, 10 classes, and 58 attributes.
+- Corrected live contract drift discovered during this checkpoint: cursor envelopes may return null `page`/`num_pages`; one attribute currently omits name/description; untranslated item rows may omit name. These now preserve canonical identity and use display fallbacks instead of rejecting the whole catalog.
+- Bound filter values to the current Facets keys (`item_rarity`, `item.item_type`, `item.slot_type`, armor/weapon/hand variants). DarkerDB currently returns English Facet labels even for `zh-Hans`, so known values receive a display-only Chinese mapping and unknown future values fall back to English.
+- Added bounded, cached item-detail enrichment for searches with roll rules and at most 24 concrete variants. Broad searches do not fan out item-detail calls; missing possible-roll metadata retains the existing non-match semantics.
+- Added renderer runtime discovery, live catalog loading/error/retry states, accurate top-bar DarkerDB connection state, and explicit refusal to silently replace a failed live connection with preview data. Ordinary Vite browser development remains clearly labeled preview-only.
+- Refreshed all three sanitized live response fixtures. The current DarkerDB service reported `v1.0.0-rc.37`; the sampled Market family was stale, which exercises the existing stale-result UI rather than being represented as authoritative absence.
+- Completed live read-only scenarios through the production controller: single family with two rarities, two names, class/category/slot local narrowing, K=N pushdown, K<N local matching, bounded incomplete counts, cache reuse, and stale freshness. No game process, game input, buying, listing automation, or per-row Price Check was used.
+- Added catalog builder/cache, HTTP runtime, localhost origin/security, fallback, and runtime-selection tests. See `docs/marketplace-live-operator.zh-CN.md` for the runbook and observed counts.
+
+Next checkpoint: user UI review of the live localhost workflow and any resulting polish. Marketplace logic is otherwise ready to freeze before D1/S0 Stash operator integration and the later Electron host.
+
 ## Marketplace M4 results and runtime checkpoint — 2026-09-01
 
 - Connected the M3 filter draft to the M2 canonical query planner, bounded executor, cache, cancellation coordinator, and deterministic local evaluator through a renderer-safe injected runtime interface. The browser shell uses a clearly labeled sanitized preview Market source; live DarkerDB wiring remains the separate M5 checkpoint.

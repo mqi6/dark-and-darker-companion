@@ -1,11 +1,11 @@
 {
-  "version": "v1.0.0-rc.25",
+  "version": "v1.0.0-rc.37",
   "stage": "prod",
   "code": 200,
   "status": "OK",
   "debug": false,
-  "elapsed": 1.0812,
-  "timestamp": "2026-08-27T11:15:04Z",
+  "elapsed": 0.3956,
+  "timestamp": "2026-09-01T22:17:46Z",
   "request_id": "[redacted]",
   "meta": {
     "method": "GET",
@@ -34,19 +34,52 @@
     "available_attributes": {
       "primary": [
         {
-          "attribute_id": "armor_rating",
-          "label": "Armor Rating",
-          "minimum": 50,
-          "maximum": 51,
+          "attribute_id": "vigor",
+          "label": "Vigor",
+          "minimum": 2,
+          "maximum": 2,
           "enchanted_min": 0,
           "enchanted_max": 0,
-          "percentage": false
+          "percentage": false,
+          "model": {
+            "grade": "A",
+            "market_score": 75,
+            "confidence": "medium"
+          }
+        },
+        {
+          "attribute_id": "will",
+          "label": "Will",
+          "minimum": 1,
+          "maximum": 1,
+          "enchanted_min": 0,
+          "enchanted_max": 0,
+          "percentage": false,
+          "model": {
+            "grade": "B",
+            "market_score": 74,
+            "confidence": "medium"
+          }
         },
         {
           "attribute_id": "magic_resistance",
           "label": "Magic Resistance",
           "minimum": 50,
           "maximum": 50,
+          "enchanted_min": 0,
+          "enchanted_max": 0,
+          "percentage": false,
+          "model": {
+            "grade": "D",
+            "market_score": 32,
+            "confidence": "medium"
+          }
+        },
+        {
+          "attribute_id": "armor_rating",
+          "label": "Armor Rating",
+          "minimum": 50,
+          "maximum": 51,
           "enchanted_min": 0,
           "enchanted_max": 0,
           "percentage": false
@@ -59,55 +92,9 @@
           "enchanted_min": 0,
           "enchanted_max": 0,
           "percentage": false
-        },
-        {
-          "attribute_id": "vigor",
-          "label": "Vigor",
-          "minimum": 2,
-          "maximum": 2,
-          "enchanted_min": 0,
-          "enchanted_max": 0,
-          "percentage": false
-        },
-        {
-          "attribute_id": "will",
-          "label": "Will",
-          "minimum": 1,
-          "maximum": 1,
-          "enchanted_min": 0,
-          "enchanted_max": 0,
-          "percentage": false
         }
       ],
       "secondary": [
-        {
-          "attribute_id": "agility",
-          "label": "Agility",
-          "minimum": 1,
-          "maximum": 3,
-          "enchanted_min": 1,
-          "enchanted_max": 2,
-          "percentage": false,
-          "model": {
-            "grade": "S",
-            "market_score": 100,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "dexterity",
-          "label": "Dexterity",
-          "minimum": 1,
-          "maximum": 3,
-          "enchanted_min": 1,
-          "enchanted_max": 2,
-          "percentage": false,
-          "model": {
-            "grade": "S",
-            "market_score": 100,
-            "confidence": "medium"
-          }
-        },
         {
           "attribute_id": "knowledge",
           "label": "Knowledge",
@@ -123,8 +110,8 @@
           }
         },
         {
-          "attribute_id": "strength",
-          "label": "Strength",
+          "attribute_id": "agility",
+          "label": "Agility",
           "minimum": 1,
           "maximum": 3,
           "enchanted_min": 1,
@@ -132,27 +119,13 @@
           "percentage": false,
           "model": {
             "grade": "S",
-            "market_score": 100,
+            "market_score": 99,
             "confidence": "medium"
           }
         },
         {
-          "attribute_id": "magical_power",
-          "label": "Magical Power",
-          "minimum": 1,
-          "maximum": 2,
-          "enchanted_min": 1,
-          "enchanted_max": 1,
-          "percentage": false,
-          "model": {
-            "grade": "S",
-            "market_score": 95,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "resourcefulness",
-          "label": "Resourcefulness",
+          "attribute_id": "dexterity",
+          "label": "Dexterity",
           "minimum": 1,
           "maximum": 3,
           "enchanted_min": 1,
@@ -161,34 +134,6 @@
           "model": {
             "grade": "S",
             "market_score": 95,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "physical_damage_reduction",
-          "label": "Physical Damage Reduction",
-          "minimum": 0.7,
-          "maximum": 1.5,
-          "enchanted_min": 0.7,
-          "enchanted_max": 1.2,
-          "percentage": true,
-          "model": {
-            "grade": "A",
-            "market_score": 78,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "additional_memory_capacity",
-          "label": "Additional Memory Capacity",
-          "minimum": 2,
-          "maximum": 5,
-          "enchanted_min": 2,
-          "enchanted_max": 4,
-          "percentage": false,
-          "model": {
-            "grade": "B",
-            "market_score": 64,
             "confidence": "medium"
           }
         },
@@ -201,64 +146,36 @@
           "enchanted_max": 2.4,
           "percentage": true,
           "model": {
-            "grade": "B",
-            "market_score": 61,
-            "confidence": "medium"
+            "grade": "A",
+            "market_score": 85,
+            "confidence": "low"
           }
         },
         {
-          "attribute_id": "action_speed",
-          "label": "Action Speed",
+          "attribute_id": "strength",
+          "label": "Strength",
           "minimum": 1,
-          "maximum": 2,
+          "maximum": 3,
           "enchanted_min": 1,
-          "enchanted_max": 1.6,
-          "percentage": true,
-          "model": {
-            "grade": "C",
-            "market_score": 53,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "luck",
-          "label": "Luck",
-          "minimum": 15,
-          "maximum": 30,
-          "enchanted_min": 15,
-          "enchanted_max": 24,
+          "enchanted_max": 2,
           "percentage": false,
           "model": {
-            "grade": "C",
-            "market_score": 52,
+            "grade": "A",
+            "market_score": 84,
             "confidence": "medium"
           }
         },
         {
-          "attribute_id": "physical_damage_bonus",
-          "label": "Physical Damage Bonus",
+          "attribute_id": "magical_power",
+          "label": "Magical Power",
           "minimum": 1,
           "maximum": 2,
           "enchanted_min": 1,
-          "enchanted_max": 1.6,
-          "percentage": true,
+          "enchanted_max": 1,
+          "percentage": false,
           "model": {
-            "grade": "C",
-            "market_score": 40,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "projectile_damage_reduction",
-          "label": "Projectile Damage Reduction",
-          "minimum": 1,
-          "maximum": 2,
-          "enchanted_min": 1,
-          "enchanted_max": 1.6,
-          "percentage": true,
-          "model": {
-            "grade": "D",
-            "market_score": 31,
+            "grade": "B",
+            "market_score": 70,
             "confidence": "medium"
           }
         },
@@ -271,149 +188,9 @@
           "enchanted_max": 3.2,
           "percentage": true,
           "model": {
-            "grade": "D",
-            "market_score": 26,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "magical_damage_reduction",
-          "label": "Magical Damage Reduction",
-          "minimum": 0.7,
-          "maximum": 1.5,
-          "enchanted_min": 0.7,
-          "enchanted_max": 1.2,
-          "percentage": true,
-          "model": {
-            "grade": "D",
-            "market_score": 23,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "cooldown_reduction_bonus",
-          "label": "Cooldown Reduction Bonus",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 19,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "headshot_damage_bonus",
-          "label": "Headshot Damage Bonus",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 16,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "physical_power",
-          "label": "Physical Power",
-          "minimum": 1,
-          "maximum": 2,
-          "enchanted_min": 1,
-          "enchanted_max": 1,
-          "percentage": false,
-          "model": {
-            "grade": "F",
-            "market_score": 9,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "magical_interaction_speed",
-          "label": "Magical Interaction Speed",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 7,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "buff_duration_bonus",
-          "label": "Buff Duration Bonus",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 5,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "additional_armor_rating",
-          "label": "Additional Armor Rating",
-          "minimum": 7,
-          "maximum": 15,
-          "enchanted_min": 7,
-          "enchanted_max": 12,
-          "percentage": false,
-          "model": {
-            "grade": "F",
-            "market_score": 3,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "magic_penetration",
-          "label": "Magic Penetration",
-          "minimum": 1.5,
-          "maximum": 3,
-          "enchanted_min": 1.5,
-          "enchanted_max": 2.4,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 3,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "armor_penetration",
-          "label": "Armor Penetration",
-          "minimum": 1.5,
-          "maximum": 3,
-          "enchanted_min": 1.5,
-          "enchanted_max": 2.4,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 2,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "debuff_duration_bonus",
-          "label": "Debuff Duration Reduction",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 2,
-            "confidence": "medium"
+            "grade": "B",
+            "market_score": 62,
+            "confidence": "low"
           }
         },
         {
@@ -425,8 +202,190 @@
           "enchanted_max": 3.2,
           "percentage": true,
           "model": {
-            "grade": "F",
-            "market_score": 2,
+            "grade": "C",
+            "market_score": 59,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "physical_power",
+          "label": "Physical Power",
+          "minimum": 1,
+          "maximum": 2,
+          "enchanted_min": 1,
+          "enchanted_max": 1,
+          "percentage": false,
+          "model": {
+            "grade": "C",
+            "market_score": 55,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "magical_damage_reduction",
+          "label": "Magical Damage Reduction",
+          "minimum": 0.7,
+          "maximum": 1.5,
+          "enchanted_min": 0.7,
+          "enchanted_max": 1.2,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 54,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "undead_damage_bonus",
+          "label": "Undead Damage Bonus",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 52,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "magical_interaction_speed",
+          "label": "Magical Interaction Speed",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 47,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "resourcefulness",
+          "label": "Resourcefulness",
+          "minimum": 1,
+          "maximum": 3,
+          "enchanted_min": 1,
+          "enchanted_max": 2,
+          "percentage": false,
+          "model": {
+            "grade": "C",
+            "market_score": 46,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "magical_damage_bonus",
+          "label": "Magical Damage Bonus",
+          "minimum": 1,
+          "maximum": 2,
+          "enchanted_min": 1,
+          "enchanted_max": 1.6,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 44,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "buff_duration_bonus",
+          "label": "Buff Duration Bonus",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 42,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "physical_damage_reduction",
+          "label": "Physical Damage Reduction",
+          "minimum": 0.7,
+          "maximum": 1.5,
+          "enchanted_min": 0.7,
+          "enchanted_max": 1.2,
+          "percentage": true,
+          "model": {
+            "grade": "C",
+            "market_score": 40,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "magic_penetration",
+          "label": "Magic Penetration",
+          "minimum": 1.5,
+          "maximum": 3,
+          "enchanted_min": 1.5,
+          "enchanted_max": 2.4,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 39,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "additional_armor_rating",
+          "label": "Additional Armor Rating",
+          "minimum": 7,
+          "maximum": 15,
+          "enchanted_min": 7,
+          "enchanted_max": 12,
+          "percentage": false,
+          "model": {
+            "grade": "D",
+            "market_score": 38,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "additional_memory_capacity",
+          "label": "Additional Memory Capacity",
+          "minimum": 2,
+          "maximum": 5,
+          "enchanted_min": 2,
+          "enchanted_max": 4,
+          "percentage": false,
+          "model": {
+            "grade": "D",
+            "market_score": 38,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "regular_interaction_speed",
+          "label": "Regular Interaction Speed",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 36,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "cooldown_reduction_bonus",
+          "label": "Cooldown Reduction Bonus",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 34,
             "confidence": "medium"
           }
         },
@@ -439,51 +398,37 @@
           "enchanted_max": 10,
           "percentage": true,
           "model": {
-            "grade": "F",
-            "market_score": 2,
-            "confidence": "medium"
+            "grade": "D",
+            "market_score": 34,
+            "confidence": "low"
           }
         },
         {
-          "attribute_id": "magical_damage_bonus",
-          "label": "Magical Damage Bonus",
+          "attribute_id": "action_speed",
+          "label": "Action Speed",
           "minimum": 1,
           "maximum": 2,
           "enchanted_min": 1,
           "enchanted_max": 1.6,
           "percentage": true,
           "model": {
-            "grade": "F",
-            "market_score": 1,
-            "confidence": "medium"
+            "grade": "D",
+            "market_score": 31,
+            "confidence": "low"
           }
         },
         {
-          "attribute_id": "regular_interaction_speed",
-          "label": "Regular Interaction Speed",
+          "attribute_id": "debuff_duration_bonus",
+          "label": "Debuff Duration Reduction",
           "minimum": 2,
           "maximum": 4,
           "enchanted_min": 2,
           "enchanted_max": 3.2,
           "percentage": true,
           "model": {
-            "grade": "F",
-            "market_score": 1,
-            "confidence": "medium"
-          }
-        },
-        {
-          "attribute_id": "undead_damage_bonus",
-          "label": "Undead Damage Bonus",
-          "minimum": 2,
-          "maximum": 4,
-          "enchanted_min": 2,
-          "enchanted_max": 3.2,
-          "percentage": true,
-          "model": {
-            "grade": "F",
-            "market_score": 1,
-            "confidence": "medium"
+            "grade": "D",
+            "market_score": 29,
+            "confidence": "low"
           }
         },
         {
@@ -495,407 +440,114 @@
           "enchanted_max": 3.2,
           "percentage": true,
           "model": {
-            "grade": "F",
-            "market_score": 1,
-            "confidence": "medium"
+            "grade": "D",
+            "market_score": 28,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "luck",
+          "label": "Luck",
+          "minimum": 15,
+          "maximum": 30,
+          "enchanted_min": 15,
+          "enchanted_max": 24,
+          "percentage": false,
+          "model": {
+            "grade": "D",
+            "market_score": 26,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "headshot_damage_bonus",
+          "label": "Headshot Damage Bonus",
+          "minimum": 2,
+          "maximum": 4,
+          "enchanted_min": 2,
+          "enchanted_max": 3.2,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 25,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "physical_damage_bonus",
+          "label": "Physical Damage Bonus",
+          "minimum": 1,
+          "maximum": 2,
+          "enchanted_min": 1,
+          "enchanted_max": 1.6,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 24,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "projectile_damage_reduction",
+          "label": "Projectile Damage Reduction",
+          "minimum": 1,
+          "maximum": 2,
+          "enchanted_min": 1,
+          "enchanted_max": 1.6,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 24,
+            "confidence": "low"
+          }
+        },
+        {
+          "attribute_id": "armor_penetration",
+          "label": "Armor Penetration",
+          "minimum": 1.5,
+          "maximum": 3,
+          "enchanted_min": 1.5,
+          "enchanted_max": 2.4,
+          "percentage": true,
+          "model": {
+            "grade": "D",
+            "market_score": 23,
+            "confidence": "low"
           }
         }
       ]
     },
     "valuation": {
-      "fair_value": 192,
-      "low": 106,
-      "high": 811,
-      "lowest_ask": 55,
-      "quick_list": 54,
-      "confidence": "high"
+      "fair_value": 180,
+      "low": 180,
+      "high": 221,
+      "lowest_ask": 190,
+      "highest_reasonable_ask": 250,
+      "latest_listing": 100,
+      "quick_list": 180,
+      "confidence": "low"
     },
     "market": {
-      "sales_30d": 2118,
-      "inferred_sales_30d": 2118,
-      "active_listings": 350
+      "sales_30d": 1867,
+      "inferred_sales_30d": 1867,
+      "active_listings": 45
     },
     "similar_sales": [
       {
-        "listing_id": "18751513",
-        "price": 650,
+        "listing_id": "27648112",
+        "price": 139,
         "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
+        "sold_at": "2026-09-01T15:49:09Z",
         "evidence_type": "inferred_disappearance",
         "state_source": "inferred",
-        "sale_seconds": 570301,
-        "attributes": [
-          {
-            "attribute_id": "agility",
-            "label": "Agility",
-            "value": 1,
-            "formatted_value": "+1"
-          },
-          {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "23471145",
-        "price": 80,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 56831,
-        "attributes": [
-          {
-            "attribute_id": "headshot_damage_bonus",
-            "label": "Headshot Damage Bonus",
-            "value": 4,
-            "formatted_value": "+4%"
-          },
-          {
-            "attribute_id": "knowledge",
-            "label": "Knowledge",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "19713118",
-        "price": 1400,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 459601,
-        "attributes": [
-          {
-            "attribute_id": "agility",
-            "label": "Agility",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "resourcefulness",
-            "label": "Resourcefulness",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "19889322",
-        "price": 500,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 443361,
-        "attributes": [
-          {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 1,
-            "formatted_value": "+1"
-          },
-          {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "20004448",
-        "price": 420,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 432341,
-        "attributes": [
-          {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "physical_damage_reduction",
-            "label": "Physical Damage Reduction",
-            "value": 0.8,
-            "formatted_value": "+0.8%"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "20034173",
-        "price": 1777,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 429541,
-        "attributes": [
-          {
-            "attribute_id": "resourcefulness",
-            "label": "Resourcefulness",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "20540827",
-        "price": 300,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 380711,
+        "sale_seconds": 7789,
         "attributes": [
           {
             "attribute_id": "buff_duration_bonus",
             "label": "Buff Duration Bonus",
-            "value": 3.2,
-            "formatted_value": "+3.2%"
+            "value": 2.1,
+            "formatted_value": "+2.1%"
           },
-          {
-            "attribute_id": "knowledge",
-            "label": "Knowledge",
-            "value": 1,
-            "formatted_value": "+1"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "20648788",
-        "price": 998,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 369571,
-        "attributes": [
           {
             "attribute_id": "dexterity",
             "label": "Dexterity",
@@ -903,16 +555,10 @@
             "formatted_value": "+2"
           },
           {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
             "attribute_id": "armor_rating",
             "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
+            "value": 50,
+            "formatted_value": "+50"
           },
           {
             "attribute_id": "magic_resistance",
@@ -941,14 +587,20 @@
         ]
       },
       {
-        "listing_id": "20824926",
-        "price": 150,
+        "listing_id": "27662701",
+        "price": 140,
         "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
+        "sold_at": "2026-09-01T15:49:09Z",
         "evidence_type": "inferred_disappearance",
         "state_source": "inferred",
-        "sale_seconds": 353651,
+        "sale_seconds": 6469,
         "attributes": [
+          {
+            "attribute_id": "magical_damage_reduction",
+            "label": "Magical Damage Reduction",
+            "value": 1.5,
+            "formatted_value": "+1.5%"
+          },
           {
             "attribute_id": "magical_interaction_speed",
             "label": "Magical Interaction Speed",
@@ -956,12 +608,6 @@
             "formatted_value": "+3.2%"
           },
           {
-            "attribute_id": "regular_interaction_speed",
-            "label": "Regular Interaction Speed",
-            "value": 2.1,
-            "formatted_value": "+2.1%"
-          },
-          {
             "attribute_id": "armor_rating",
             "label": "Armor Rating",
             "value": 50,
@@ -994,72 +640,72 @@
         ]
       },
       {
-        "listing_id": "20847790",
-        "price": 1298,
+        "listing_id": "27800009",
+        "price": 144,
         "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
+        "sold_at": "2026-09-01T19:05:32Z",
         "evidence_type": "inferred_disappearance",
         "state_source": "inferred",
-        "sale_seconds": 351561,
+        "sale_seconds": 4112,
         "attributes": [
           {
-            "attribute_id": "demon_damage_bonus",
-            "label": "Demon Damage Bonus",
-            "value": 3.3,
-            "formatted_value": "+3.3%"
-          },
-          {
-            "attribute_id": "knowledge",
-            "label": "Knowledge",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
+            "attribute_id": "agility",
+            "label": "Agility",
             "value": 1,
             "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "21207340",
-        "price": 357,
-        "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
-        "evidence_type": "inferred_disappearance",
-        "state_source": "inferred",
-        "sale_seconds": 319871,
-        "attributes": [
+          },
           {
             "attribute_id": "magical_power",
             "label": "Magical Power",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
             "value": 1,
             "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27815206",
+        "price": 150,
+        "similarity": 100,
+        "sold_at": "2026-09-01T19:05:32Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 1892,
+        "attributes": [
+          {
+            "attribute_id": "magic_penetration",
+            "label": "Magic Penetration",
+            "value": 3,
+            "formatted_value": "+3%"
           },
           {
             "attribute_id": "strength",
@@ -1070,6 +716,165 @@
           {
             "attribute_id": "armor_rating",
             "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27575938",
+        "price": 150,
+        "similarity": 100,
+        "sold_at": "2026-09-01T15:49:09Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 15099,
+        "attributes": [
+          {
+            "attribute_id": "debuff_duration_bonus",
+            "label": "Debuff Duration Reduction",
+            "value": 2.3,
+            "formatted_value": "+2.3%"
+          },
+          {
+            "attribute_id": "undead_damage_bonus",
+            "label": "Undead Damage Bonus",
+            "value": 2.7,
+            "formatted_value": "+2.7%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27622749",
+        "price": 150,
+        "similarity": 100,
+        "sold_at": "2026-09-01T15:49:09Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 10089,
+        "attributes": [
+          {
+            "attribute_id": "dexterity",
+            "label": "Dexterity",
+            "value": 1,
+            "formatted_value": "+1"
+          },
+          {
+            "attribute_id": "physical_damage_reduction",
+            "label": "Physical Damage Reduction",
+            "value": 0.7,
+            "formatted_value": "+0.7%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27646495",
+        "price": 150,
+        "similarity": 100,
+        "sold_at": "2026-09-01T15:49:09Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 7949,
+        "attributes": [
+          {
+            "attribute_id": "action_speed",
+            "label": "Action Speed",
+            "value": 1,
+            "formatted_value": "+1%"
+          },
+          {
+            "attribute_id": "dexterity",
+            "label": "Dexterity",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
             "value": 50,
             "formatted_value": "+50"
           },
@@ -1100,25 +905,237 @@
         ]
       },
       {
-        "listing_id": "21221658",
-        "price": 180,
+        "listing_id": "27691883",
+        "price": 150,
         "similarity": 100,
-        "sold_at": "2026-08-27T10:45:51Z",
+        "sold_at": "2026-09-01T15:49:09Z",
         "evidence_type": "inferred_disappearance",
         "state_source": "inferred",
-        "sale_seconds": 318311,
+        "sale_seconds": 3919,
         "attributes": [
           {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 1,
-            "formatted_value": "+1"
+            "attribute_id": "action_speed",
+            "label": "Action Speed",
+            "value": 1.1,
+            "formatted_value": "+1.1%"
           },
           {
-            "attribute_id": "projectile_damage_reduction",
-            "label": "Projectile Damage Reduction",
-            "value": 1.5,
-            "formatted_value": "+1.5%"
+            "attribute_id": "luck",
+            "label": "Luck",
+            "value": 27,
+            "formatted_value": "+27"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27571932",
+        "price": 150,
+        "similarity": 100,
+        "sold_at": "2026-09-01T12:49:34Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 4774,
+        "attributes": [
+          {
+            "attribute_id": "memory_capacity_bonus",
+            "label": "Memory Capacity Bonus",
+            "value": 7.7,
+            "formatted_value": "+7.7%"
+          },
+          {
+            "attribute_id": "undead_damage_reduction",
+            "label": "Undead Damage Reduction",
+            "value": 3.2,
+            "formatted_value": "+3.2%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27510935",
+        "price": 151,
+        "similarity": 100,
+        "sold_at": "2026-09-01T11:28:15Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 7715,
+        "attributes": [
+          {
+            "attribute_id": "armor_penetration",
+            "label": "Armor Penetration",
+            "value": 1.7,
+            "formatted_value": "+1.7%"
+          },
+          {
+            "attribute_id": "resourcefulness",
+            "label": "Resourcefulness",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27794427",
+        "price": 155,
+        "similarity": 100,
+        "sold_at": "2026-09-01T19:05:32Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 4882,
+        "attributes": [
+          {
+            "attribute_id": "armor_penetration",
+            "label": "Armor Penetration",
+            "value": 3,
+            "formatted_value": "+3%"
+          },
+          {
+            "attribute_id": "spell_casting_speed",
+            "label": "Spell Casting Speed",
+            "value": 1.6,
+            "formatted_value": "+1.6%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27538877",
+        "price": 155,
+        "similarity": 100,
+        "sold_at": "2026-09-01T15:49:09Z",
+        "evidence_type": "inferred_disappearance",
+        "state_source": "inferred",
+        "sale_seconds": 19719,
+        "attributes": [
+          {
+            "attribute_id": "armor_penetration",
+            "label": "Armor Penetration",
+            "value": 2.2,
+            "formatted_value": "+2.2%"
+          },
+          {
+            "attribute_id": "buff_duration_bonus",
+            "label": "Buff Duration Bonus",
+            "value": 3.8,
+            "formatted_value": "+3.8%"
           },
           {
             "attribute_id": "armor_rating",
@@ -1155,22 +1172,74 @@
     ],
     "similar_listings": [
       {
-        "listing_id": "23899439",
-        "price": 333,
+        "listing_id": "27564941",
+        "price": 190,
         "similarity": 100,
-        "listed_at": "2026-08-27T10:41:50Z",
+        "listed_at": "2026-09-01T11:16:30Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "agility",
-            "label": "Agility",
+            "attribute_id": "luck",
+            "label": "Luck",
+            "value": 19,
+            "formatted_value": "+19"
+          },
+          {
+            "attribute_id": "regular_interaction_speed",
+            "label": "Regular Interaction Speed",
+            "value": 3.4,
+            "formatted_value": "+3.4%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
             "value": 2,
             "formatted_value": "+2"
           },
           {
-            "attribute_id": "knowledge",
-            "label": "Knowledge",
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27788042",
+        "price": 200,
+        "similarity": 100,
+        "listed_at": "2026-09-01T17:29:20Z",
+        "evidence_type": "observed_listing",
+        "state_source": "observed",
+        "attributes": [
+          {
+            "attribute_id": "additional_memory_capacity",
+            "label": "Additional Memory Capacity",
+            "value": 4,
+            "formatted_value": "+4"
+          },
+          {
+            "attribute_id": "strength",
+            "label": "Strength",
             "value": 2,
             "formatted_value": "+2"
           },
@@ -1207,24 +1276,24 @@
         ]
       },
       {
-        "listing_id": "23895956",
-        "price": 98,
+        "listing_id": "27337302",
+        "price": 200,
         "similarity": 100,
-        "listed_at": "2026-08-27T10:34:20Z",
+        "listed_at": "2026-09-01T02:40:10Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "magical_damage_bonus",
-            "label": "Magical Damage Bonus",
-            "value": 1.3,
-            "formatted_value": "+1.3%"
+            "attribute_id": "luck",
+            "label": "Luck",
+            "value": 16,
+            "formatted_value": "+16"
           },
           {
-            "attribute_id": "undead_damage_bonus",
-            "label": "Undead Damage Bonus",
-            "value": 2.8,
-            "formatted_value": "+2.8%"
+            "attribute_id": "magical_interaction_speed",
+            "label": "Magical Interaction Speed",
+            "value": 3.1,
+            "formatted_value": "+3.1%"
           },
           {
             "attribute_id": "armor_rating",
@@ -1259,24 +1328,24 @@
         ]
       },
       {
-        "listing_id": "23894137",
-        "price": 199,
+        "listing_id": "27497828",
+        "price": 210,
         "similarity": 100,
-        "listed_at": "2026-08-27T10:30:20Z",
+        "listed_at": "2026-09-01T08:50:30Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 3,
-            "formatted_value": "+3"
+            "attribute_id": "agility",
+            "label": "Agility",
+            "value": 1,
+            "formatted_value": "+1"
           },
           {
-            "attribute_id": "physical_damage_reduction",
-            "label": "Physical Damage Reduction",
-            "value": 1.4,
-            "formatted_value": "+1.4%"
+            "attribute_id": "headshot_damage_bonus",
+            "label": "Headshot Damage Bonus",
+            "value": 2,
+            "formatted_value": "+2%"
           },
           {
             "attribute_id": "armor_rating",
@@ -1311,22 +1380,74 @@
         ]
       },
       {
-        "listing_id": "23886142",
-        "price": 250,
+        "listing_id": "27496230",
+        "price": 220,
         "similarity": 100,
-        "listed_at": "2026-08-27T10:13:30Z",
+        "listed_at": "2026-09-01T08:46:50Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
             "attribute_id": "agility",
             "label": "Agility",
+            "value": 1,
+            "formatted_value": "+1"
+          },
+          {
+            "attribute_id": "cooldown_reduction_bonus",
+            "label": "Cooldown Reduction Bonus",
+            "value": 2.4,
+            "formatted_value": "+2.4%"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 51,
+            "formatted_value": "+51"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
             "value": 2,
             "formatted_value": "+2"
           },
           {
-            "attribute_id": "magic_penetration",
-            "label": "Magic Penetration",
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27498057",
+        "price": 225,
+        "similarity": 100,
+        "listed_at": "2026-09-01T08:51:00Z",
+        "evidence_type": "observed_listing",
+        "state_source": "observed",
+        "attributes": [
+          {
+            "attribute_id": "agility",
+            "label": "Agility",
+            "value": 1,
+            "formatted_value": "+1"
+          },
+          {
+            "attribute_id": "undead_damage_reduction",
+            "label": "Undead Damage Reduction",
             "value": 2.9,
             "formatted_value": "+2.9%"
           },
@@ -1363,30 +1484,30 @@
         ]
       },
       {
-        "listing_id": "23865314",
-        "price": 80,
+        "listing_id": "27393144",
+        "price": 225,
         "similarity": 100,
-        "listed_at": "2026-08-27T09:33:00Z",
+        "listed_at": "2026-09-01T04:43:50Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "demon_damage_bonus",
-            "label": "Demon Damage Bonus",
-            "value": 2.5,
-            "formatted_value": "+2.5%"
+            "attribute_id": "magic_penetration",
+            "label": "Magic Penetration",
+            "value": 2.2,
+            "formatted_value": "+2.2%"
           },
           {
-            "attribute_id": "magical_power",
-            "label": "Magical Power",
-            "value": 1,
-            "formatted_value": "+1"
+            "attribute_id": "physical_power",
+            "label": "Physical Power",
+            "value": 2,
+            "formatted_value": "+2"
           },
           {
             "attribute_id": "armor_rating",
             "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
+            "value": 50,
+            "formatted_value": "+50"
           },
           {
             "attribute_id": "magic_resistance",
@@ -1415,76 +1536,24 @@
         ]
       },
       {
-        "listing_id": "23863141",
-        "price": 199,
+        "listing_id": "27853385",
+        "price": 230,
         "similarity": 100,
-        "listed_at": "2026-08-27T09:28:40Z",
+        "listed_at": "2026-09-01T20:16:20Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "armor_penetration",
-            "label": "Armor Penetration",
-            "value": 2.6,
-            "formatted_value": "+2.6%"
+            "attribute_id": "luck",
+            "label": "Luck",
+            "value": 24,
+            "formatted_value": "+24"
           },
           {
             "attribute_id": "strength",
             "label": "Strength",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
             "value": 2,
             "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "23848095",
-        "price": 288,
-        "similarity": 100,
-        "listed_at": "2026-08-27T08:57:50Z",
-        "evidence_type": "observed_listing",
-        "state_source": "observed",
-        "attributes": [
-          {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 1,
-            "formatted_value": "+1"
           },
           {
             "attribute_id": "armor_rating",
@@ -1519,186 +1588,30 @@
         ]
       },
       {
-        "listing_id": "23848095",
-        "price": 288,
+        "listing_id": "27600798",
+        "price": 245,
         "similarity": 100,
-        "listed_at": "2026-08-27T08:57:50Z",
+        "listed_at": "2026-09-01T12:23:40Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "strength",
-            "label": "Strength",
-            "value": 1,
-            "formatted_value": "+1"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "23847264",
-        "price": 315,
-        "similarity": 100,
-        "listed_at": "2026-08-27T08:56:10Z",
-        "evidence_type": "observed_listing",
-        "state_source": "observed",
-        "attributes": [
-          {
-            "attribute_id": "buff_duration_bonus",
-            "label": "Buff Duration Bonus",
-            "value": 4,
-            "formatted_value": "+4%"
-          },
-          {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "23847264",
-        "price": 315,
-        "similarity": 100,
-        "listed_at": "2026-08-27T08:56:10Z",
-        "evidence_type": "observed_listing",
-        "state_source": "observed",
-        "attributes": [
-          {
-            "attribute_id": "buff_duration_bonus",
-            "label": "Buff Duration Bonus",
-            "value": 4,
-            "formatted_value": "+4%"
-          },
-          {
-            "attribute_id": "dexterity",
-            "label": "Dexterity",
-            "value": 3,
-            "formatted_value": "+3"
-          },
-          {
-            "attribute_id": "armor_rating",
-            "label": "Armor Rating",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "magic_resistance",
-            "label": "Magic Resistance",
-            "value": 50,
-            "formatted_value": "+50"
-          },
-          {
-            "attribute_id": "move_speed",
-            "label": "Move Speed",
-            "value": -4,
-            "formatted_value": "-4"
-          },
-          {
-            "attribute_id": "vigor",
-            "label": "Vigor",
-            "value": 2,
-            "formatted_value": "+2"
-          },
-          {
-            "attribute_id": "will",
-            "label": "Will",
-            "value": 1,
-            "formatted_value": "+1"
-          }
-        ]
-      },
-      {
-        "listing_id": "23842876",
-        "price": 90,
-        "similarity": 100,
-        "listed_at": "2026-08-27T08:46:40Z",
-        "evidence_type": "observed_listing",
-        "state_source": "observed",
-        "attributes": [
-          {
-            "attribute_id": "regular_interaction_speed",
-            "label": "Regular Interaction Speed",
+            "attribute_id": "debuff_duration_bonus",
+            "label": "Debuff Duration Reduction",
             "value": 3.1,
             "formatted_value": "+3.1%"
           },
           {
-            "attribute_id": "spell_casting_speed",
-            "label": "Spell Casting Speed",
-            "value": 1.8,
-            "formatted_value": "+1.8%"
+            "attribute_id": "strength",
+            "label": "Strength",
+            "value": 2,
+            "formatted_value": "+2"
           },
           {
             "attribute_id": "armor_rating",
             "label": "Armor Rating",
-            "value": 51,
-            "formatted_value": "+51"
+            "value": 50,
+            "formatted_value": "+50"
           },
           {
             "attribute_id": "magic_resistance",
@@ -1727,24 +1640,76 @@
         ]
       },
       {
-        "listing_id": "23836734",
-        "price": 200,
+        "listing_id": "27580870",
+        "price": 250,
         "similarity": 100,
-        "listed_at": "2026-08-27T08:33:30Z",
+        "listed_at": "2026-09-01T11:46:40Z",
         "evidence_type": "observed_listing",
         "state_source": "observed",
         "attributes": [
           {
-            "attribute_id": "action_speed",
-            "label": "Action Speed",
-            "value": 2,
-            "formatted_value": "+2%"
+            "attribute_id": "additional_memory_capacity",
+            "label": "Additional Memory Capacity",
+            "value": 5,
+            "formatted_value": "+5"
           },
           {
-            "attribute_id": "resourcefulness",
-            "label": "Resourcefulness",
-            "value": 3,
-            "formatted_value": "+3"
+            "attribute_id": "strength",
+            "label": "Strength",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "armor_rating",
+            "label": "Armor Rating",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "magic_resistance",
+            "label": "Magic Resistance",
+            "value": 50,
+            "formatted_value": "+50"
+          },
+          {
+            "attribute_id": "move_speed",
+            "label": "Move Speed",
+            "value": -4,
+            "formatted_value": "-4"
+          },
+          {
+            "attribute_id": "vigor",
+            "label": "Vigor",
+            "value": 2,
+            "formatted_value": "+2"
+          },
+          {
+            "attribute_id": "will",
+            "label": "Will",
+            "value": 1,
+            "formatted_value": "+1"
+          }
+        ]
+      },
+      {
+        "listing_id": "27403192",
+        "price": 250,
+        "similarity": 100,
+        "listed_at": "2026-09-01T05:06:20Z",
+        "evidence_type": "observed_listing",
+        "state_source": "observed",
+        "attributes": [
+          {
+            "attribute_id": "agility",
+            "label": "Agility",
+            "value": 1,
+            "formatted_value": "+1"
+          },
+          {
+            "attribute_id": "demon_damage_bonus",
+            "label": "Demon Damage Bonus",
+            "value": 3.2,
+            "formatted_value": "+3.2%"
           },
           {
             "attribute_id": "armor_rating",

@@ -10,9 +10,8 @@ import type { StashPackingMode } from "../domain/stashPacking";
 import type { SpatialContainer, SpatialPlacement } from "../domain/inventoryGeometry";
 import { StashPreviewGrid } from "./StashPreviewGrid";
 import { StashSortSettings } from "./StashSortSettings";
-import { MarketplaceSearchWorkspace } from "./MarketplaceSearchWorkspace";
-import { marketplacePreviewCatalog } from "./marketplacePreviewCatalog";
-import { createMarketplacePreviewCoordinator } from "./marketplacePreviewMarket";
+import { MarketplaceRuntimeWorkspace } from "./MarketplaceRuntimeWorkspace";
+import type { MarketplaceRuntimeStatus } from "./MarketplaceRuntimeWorkspace";
 
 type Tab = "stash" | "marketplaceSearch" | "autoListing";
 
@@ -23,7 +22,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>("stash");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activityCollapsed, setActivityCollapsed] = useState(false);
-  const marketplaceRuntime = useMemo(() => createMarketplacePreviewCoordinator(), []);
+  const [marketplaceRuntimeStatus, setMarketplaceRuntimeStatus] = useState<MarketplaceRuntimeStatus>("not-configured");
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
@@ -52,7 +51,7 @@ export function App() {
           <h1>{t("app.title")}</h1>
         </div>
         <div className="topbar-controls">
-          <StatusStrip />
+          <StatusStrip marketplaceRuntimeStatus={marketplaceRuntimeStatus} />
           <div className="global-actions">
             <button
               type="button"
@@ -110,10 +109,7 @@ export function App() {
           aria-labelledby="tab-marketplaceSearch"
           hidden={activeTab !== "marketplaceSearch"}
         >
-          <MarketplaceSearchWorkspace
-            catalog={marketplacePreviewCatalog}
-            runtime={marketplaceRuntime}
-          />
+          <MarketplaceRuntimeWorkspace onStatusChange={setMarketplaceRuntimeStatus} />
         </section>
         <section
           role="tabpanel"
@@ -140,14 +136,20 @@ export function App() {
   );
 }
 
-function StatusStrip() {
+function StatusStrip(props: { marketplaceRuntimeStatus: MarketplaceRuntimeStatus }) {
   const { t } = useTranslation();
+  const darkerDb = ({
+    "not-configured": [t("status.notConfigured"), "warning"],
+    connecting: [t("status.connecting"), "warning"],
+    connected: [t("status.connected"), "success"],
+    error: [t("status.connectionError"), "danger"]
+  } as const)[props.marketplaceRuntimeStatus];
   const statuses = [
     [t("status.game"), t("status.notDetected"), "danger"],
     [t("status.capture"), t("status.stopped"), "muted"],
     [t("status.character"), t("status.unknown"), "muted"],
     [t("status.snapshot"), t("status.unavailable"), "muted"],
-    [t("status.darkerdb"), t("status.notConfigured"), "warning"],
+    [t("status.darkerdb"), darkerDb[0], darkerDb[1]],
     [t("status.automation"), t("status.idle"), "success"]
   ] as const;
 

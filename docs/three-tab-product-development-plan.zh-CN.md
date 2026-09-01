@@ -1,11 +1,11 @@
 # Dark and Darker Companion 三标签页产品与开发计划
 
-状态：产品/技术计划，不包含本次功能实现  
+状态：产品/技术计划与逐阶段实施记录
 日期：2026-09-01  
 当前分支：`codex/marketplace-search-filter-analysis`  
 实现基线：`codex/complete-stash-sort-offline` @ `5985770cead27cd569c74cd7e91ae2039999b1e2`
 
-实施状态：**Phase P0、Marketplace M1–M4 已完成；下一步完成 Marketplace M5 live 只读验收。之后再进行仓库 operator 产品化集成与 Electron。**
+实施状态：**Phase P0、Marketplace M1–M4 已完成；M5 的真实目录、持钥 localhost runtime 与 live 只读场景已完成工程 checkpoint，等待用户 UI 验收后冻结 Marketplace。之后再进行仓库 operator 产品化集成与 Electron。**
 
 ## 0. 目标与范围
 
@@ -17,7 +17,7 @@
 
 `Settings` 不再是第四个主标签页。语言、DarkerDB、捕获、坐标校准、自动化安全和诊断设置放入全局设置抽屉/页面，通过右上角齿轮进入。
 
-本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。当前优先完整完成 Marketplace Search（M2–M5）。Marketplace 仅需要 DarkerDB HTTP、缓存和本地计算，因此继续使用 React/Vite 浏览器开发与验收，不依赖 Windows operator 或 Electron。完成 Marketplace 后，再把已经通过 live 验证的仓库 Refresh/Preview/Run Sort operator 接入产品外壳，并建立桌面宿主边界。当前仍不启动 live 自动上架。
+本计划统一三个标签页的 UI、共享状态、数据边界、开发顺序和验收标准。当前优先完整完成 Marketplace Search（M2–M5）。Marketplace 使用 React/Vite renderer 加 Node localhost 只读 operator 完成持钥 DarkerDB HTTP、缓存和本地计算，不依赖 Windows 游戏 operator 或 Electron。完成 Marketplace 后，再把已经通过 live 验证的仓库 Refresh/Preview/Run Sort operator 接入产品外壳，并建立桌面宿主边界。当前仍不启动 live 自动上架。
 
 ## 1. 已锁定的产品决定
 
@@ -670,6 +670,8 @@ Electron renderer / React UI
 
 ### Phase M5 — Marketplace live 只读验收
 
+状态（2026-09-01）：**工程与 live API checkpoint 已完成，等待用户 UI 验收。** 已新增 Node 持钥的 localhost operator、真实 en/zh-Hans 目录构建、5 分钟目录缓存、浏览器 runtime bridge、同源限制、取消和连接状态。真实 API 已验证 2,430 variants / 796 families / 10 classes / 58 attributes，并跑通单名多品质、多名、职业/类别/栏位、K=N、K<N、incomplete、cache 和 stale diagnostics。实测修复了 cursor `page/num_pages=null`、attribute 显示文本缺失与 item 缺译名称三项 contract drift。详见 `docs/marketplace-live-operator.zh-CN.md`。
+
 工作：
 
 - 单名多品质、多名、职业/类别/栏位、K=N、K<N；
@@ -819,7 +821,7 @@ Marketplace Search 的完成、Marketplace 只读抓包或此前手动 MKT 录�
 | 桌面宿主 | 约 5%（React renderer 可复用） | 0% | Electron main/preload/IPC、Windows 打包与发布 |
 | 共享 shell | 约 70% | 约 40% | 桌面 runtime、真实 status/Activity、任务 controller 接入 |
 | 仓库整理 | alpha 约 75%；更广 v1 约 50% | 独立 localhost operator 可受控整理；产品 Stash tab 仍是 demo | D1/S0 产品集成；之后是速度、前台/刷新、名称/品质排序和恢复 |
-| Marketplace Search | 约 88% | 约 65% | M5 真实双语目录、API runtime 与 live 只读验收 |
+| Marketplace Search | 约 97% | localhost operator 约 90% | 用户 live UI 验收与小幅 polish；最终桌面承载随 D1/D2 完成 |
 | 自动上架 | 定价/任务基础约 35% | live workflow 低于 15% | owned-item queue、复核 UI、动作/验证、独立 live checkpoint |
 
 这些百分比是用于规划的工程估计，不是按文件数计算。Marketplace 是当前最明确、风险最低、最适合先完成的完整用户工作流。
