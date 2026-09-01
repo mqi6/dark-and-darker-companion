@@ -54,7 +54,11 @@ function fakeAdapter(options: {
 describe("NAV-001 Windows navigation runtime", () => {
   it("uses a freshly validated initial state without repeating focus and classification", async () => {
     const inspectWindow = vi.fn(async () => windowState);
-    const classifyScreen = vi.fn(async () => ({ status: "classified" as const, observation: { screen: "stash" as const } }));
+    const classifyScreen = vi.fn(async () => ({
+      status: "classified" as const,
+      observation: { screen: "stash" as const },
+      window: windowState
+    }));
     const clickForeground = vi.fn(async () => ({ status: "clicked" as const }));
     const oneStepPlan = { ...plan, steps: [plan.steps[0]!] };
     const runner = new WindowsNavigationSequenceRunner(new GameInteractionLease(), { inspectWindow, classifyScreen, clickForeground });
@@ -64,7 +68,7 @@ describe("NAV-001 Windows navigation runtime", () => {
       initialState: { window: windowState, classification: { status: "classified", observation: { screen: oneStepPlan.steps[0]!.requiresScreen } } }
     });
     expect(clickForeground).toHaveBeenCalledOnce();
-    expect(inspectWindow).not.toHaveBeenCalledBefore(clickForeground);
+    expect(inspectWindow).not.toHaveBeenCalled();
     expect(classifyScreen).not.toHaveBeenCalledBefore(clickForeground);
     expect(result.status).not.toBe("blocked");
   });
