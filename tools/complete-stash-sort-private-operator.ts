@@ -110,10 +110,16 @@ class PrivateCompleteController implements CompleteSortHttpController {
   private abort?: AbortController;
   private detail: Record<string, unknown> = {};
   private readonly activity: PrivateSortOperatorLog;
+  private currentStore?: PrivateSortSessionStore;
   constructor(private readonly mapping: StashTabMapping, private readonly window: NavigationWindowState, private readonly refresher: AutomaticPrivateProjectionRefresher, private readonly sessionsRoot: string, private readonly navigation: PowerShellNavigationAdapter) {
     this.activity = new PrivateSortOperatorLog(sessionsRoot);
   }
-  snapshot() { return { phase: this.phase, tabs: this.mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES })), ...this.detail }; }
+  snapshot() { return {
+    phase: this.phase,
+    diagnosticLogPath: resolve(this.sessionsRoot, "latest-sort.sanitized.jsonl"),
+    tabs: this.mapping.entries.map(entry => ({ tabIndex: entry.tabIndex, enabled: true, allowedCategories: STASH_ITEM_CATEGORIES })),
+    ...this.detail
+  }; }
   async focus() {
     const state = await this.navigation.inspectWindow();
     this.detail = { ...this.detail, foreground: { status: "focused", processClass: state.processName.toLowerCase() === "dungeoncrawler" ? "verified-game-process" : "unexpected-process" } };
@@ -144,7 +150,12 @@ class PrivateCompleteController implements CompleteSortHttpController {
         await this.record("preview-blocked", result.diagnosticCode);
         return this.snapshot();
       }
-      const directory = resolve(this.sessionsRoot, `sort-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`), store = new PrivateSortSessionStore(directory);
+      const directory = resolve(this.sessionsRoot, `sort-${new Date().toISOString().replace(/[:.]/g, "-")}-${randomUUID().slice(0, 8)}`);
+      const store = new PrivateSortSessionStore(
+        directory,
+        resolve(this.sessionsRoot, "latest-sort.sanitized.jsonl")
+      );
+      this.currentStore = store;
       await store.create({ initialProjection: result.initialProjection, policies: options.policies, packingMode: options.mode, plan: result.plan, schedule: result.schedule, screenActions: result.screenActions, timing: options.timing });
       const drag = new PowerShellWindowsUiBridge(resolve("tools/windows-supervised-move.ps1"));
       const fixed = new WindowsFixedCoordinateCrossTabAdapter(this.navigation, drag, this.window);
@@ -177,7 +188,22 @@ class PrivateCompleteController implements CompleteSortHttpController {
       return this.snapshot();
     } finally { this.abort = undefined; }
   }
-  async run() { if (!this.prepared || this.phase !== "ready") throw new Error("preview-required"); this.phase = "running"; await this.record("run-start"); const state = await this.prepared.run(); this.phase = state.phase; this.detail = { ...this.detail, progress: state.lastResult }; await this.record("run-result", state.lastResult && "diagnosticCode" in state.lastResult ? state.lastResult.diagnosticCode : undefined); return this.snapshot(); }
+  async run() {
+    if (!this.prepared || this.phase !== "ready") throw new Error("preview-required");
+    this.phase = "running";
+    await this.record("run-start");
+    const state = await this.prepared.run();
+    this.phase = state.phase;
+    this.detail = { ...this.detail, progress: state.lastResult };
+    if (state.lastResult) await this.currentStore?.appendResult(state.lastResult);
+    await this.record(
+      "run-result",
+      state.lastResult && "diagnosticCode" in state.lastResult
+        ? state.lastResult.diagnosticCode
+        : undefined
+    );
+    return this.snapshot();
+  }
   stop() { this.abort?.abort(); this.prepared?.stop(); void this.record("stop-requested"); return this.snapshot(); }
   private record(event: Parameters<PrivateSortOperatorLog["append"]>[0]["event"], diagnosticCode?: string, moveCount?: number, actionCount?: number, dragCount?: number, adapterError?: string) { return this.activity.append({ at: new Date().toISOString(), event, phase: this.phase, ...(diagnosticCode ? { diagnosticCode } : {}), ...(adapterError ? { adapterError } : {}), ...(moveCount === undefined ? {} : { moveCount }), ...(actionCount === undefined ? {} : { actionCount }), ...(dragCount === undefined ? {} : { dragCount }) }); }
 }
