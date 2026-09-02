@@ -154,7 +154,25 @@ export const enUS = {
       kSummary: "At least {{k}} of {{n}} selected attributes must match.",
       possibleRange: "Possible range: {{minimum}}–{{maximum}}{{unit}}",
       minimum: "Minimum",
-      maximum: "Maximum"
+      maximum: "Maximum",
+      percentHint: "Enter the displayed percentage number: use 2.2 for 2.2% (not 22)."
+    },
+    savedFilters: {
+      title: "Saved filter sets",
+      help: "Save this complete draft on this device. Loading a set never calls DarkerDB.",
+      name: "Filter set name",
+      namePlaceholder: "e.g. Warlock casting gear",
+      saved: "Saved sets",
+      choose: "Choose a saved set",
+      save: "Save current draft",
+      load: "Load",
+      delete: "Delete",
+      status: {
+        saved: "Filter set saved on this device.",
+        loaded: "Filter set loaded into the draft; no request was made.",
+        deleted: "Saved filter set deleted.",
+        error: "The filter set could not be saved on this device."
+      }
     },
     actions: {
       explicitOnly: "Requests are explicit",
@@ -272,6 +290,20 @@ export const enUS = {
       matchK: "{{matched}} / {{total}} selected rules matched",
       details: "Show listing attributes",
       noRolls: "No listing attributes",
+      noRandomRolls: "No random rolls",
+      card: {
+        open: "Open {{item}} listing details",
+        itemId: "Canonical item ID",
+        allAttributes: "All listing attributes"
+      },
+      familyFilter: {
+        title: "Show item results",
+        showing: "Showing {{visible}} of {{total}} matching listings",
+        all: "Select all",
+        none: "Clear all",
+        emptyTitle: "No item results are selected",
+        emptyDetail: "Select one or more item names above to show their result cards."
+      },
       attributeGroups: {
         primary: "Primary",
         secondary: "Random",

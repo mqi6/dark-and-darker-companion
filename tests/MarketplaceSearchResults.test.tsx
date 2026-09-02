@@ -136,10 +136,10 @@ describe("Marketplace Search result and state UI", () => {
 
     expect(screen.getByText("The last successful results remain visible and may now be stale.")).toBeInTheDocument();
     expect(screen.getByText("network unavailable")).toBeInTheDocument();
-    expect(screen.getByRole("row", { name: /Occultist Robe/ })).toBeInTheDocument();
+    expect(screen.getByLabelText("Open Occultist Robe listing details")).toBeInTheDocument();
   });
 
-  it("shows unit and total stack prices and copies a manual in-game summary", async () => {
+  it("uses a compact card summary, then shows prices and copies a manual in-game summary", async () => {
     const writeText = vi.fn(async (_value: string) => undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
     render(
@@ -149,12 +149,14 @@ describe("Marketplace Search result and state UI", () => {
       />
     );
 
-    expect(screen.getByRole("cell", { name: "100 gold" })).toBeInTheDocument();
-    expect(screen.getByRole("cell", { name: "300 gold" })).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Show listing attributes"));
+    expect(screen.getByText("Occultist Robe")).toBeInTheDocument();
+    expect(screen.getByText("Rare")).toBeInTheDocument();
+    expect(screen.getByText("Strength 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Open Occultist Robe listing details"));
+    expect(screen.getByText("100 gold")).toBeInTheDocument();
+    expect(screen.getByText("300 gold")).toBeInTheDocument();
     expect(screen.getByText("Primary · primary_armor_rating: 50")).toBeInTheDocument();
     expect(screen.getByText("Random · Strength: 2")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Show search summary"));
     expect(screen.getByText(/Listing reference: 100 gold per unit \/ 300 gold total/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Copy summary" }));
 
@@ -162,12 +164,43 @@ describe("Marketplace Search result and state UI", () => {
     expect(writeText.mock.calls[0]?.[0]).toContain("Item: Occultist Robe");
     expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
   });
+
+  it("filters result cards locally with one checkbox per requested item family", () => {
+    const robe = evaluation(true);
+    const bow = evaluation(true, "longbow");
+    const value = result({
+      evaluated: [robe, bow],
+      matches: [robe, bow],
+      retrievedCount: 2,
+      evaluatedCount: 2,
+      matchedCount: 2,
+      reportedTotal: 2
+    });
+    const spec = parseMarketplaceSearchSpec({
+      version: 1,
+      familyIds: ["id.item.occultist_robe", "id.item.longbow"]
+    });
+    render(
+      <MarketplaceSearchResults
+        catalog={marketplacePreviewCatalog}
+        presentation={presentation(value, spec)}
+      />
+    );
+
+    expect(screen.getByRole("checkbox", { name: "Occultist Robe 1" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Longbow 1" })).toBeChecked();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Longbow 1" }));
+
+    expect(screen.queryByLabelText("Open Longbow listing details")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Open Occultist Robe listing details")).toBeInTheDocument();
+    expect(screen.getByText("Showing 1 of 2 matching listings")).toBeInTheDocument();
+  });
 });
 
 function presentation(
-  value: MarketplaceSearchExecutionResult = result()
+  value: MarketplaceSearchExecutionResult = result(),
+  spec = parseMarketplaceSearchSpec({ version: 1 })
 ): MarketplaceSearchPresentation {
-  const spec = parseMarketplaceSearchSpec({ version: 1 });
   return { spec, sourceSpec: spec, result: value, locallyApplied: false };
 }
 
@@ -203,16 +236,17 @@ function result(
   };
 }
 
-function evaluation(passed: boolean): MarketplaceListingEvaluation {
+function evaluation(passed: boolean, kind: "robe" | "longbow" = "robe"): MarketplaceListingEvaluation {
+  const isBow = kind === "longbow";
   const listing: DarkerDbMarketListing = {
-    id: 900,
-    item_id: "id.item.occultist_robe_4001",
-    archetype: "id.item.occultist_robe",
-    name: "Occultist Robe",
-    icon: "robe.png",
-    icon_url: "https://example.test/robe.png",
-    slot_type: "chest",
-    item_type: "armor",
+    id: isBow ? 901 : 900,
+    item_id: isBow ? "id.item.longbow_4001" : "id.item.occultist_robe_4001",
+    archetype: isBow ? "id.item.longbow" : "id.item.occultist_robe",
+    name: isBow ? "Longbow" : "Occultist Robe",
+    icon: isBow ? "longbow.png" : "robe.png",
+    icon_url: isBow ? "https://example.test/longbow.png" : "https://example.test/robe.png",
+    slot_type: isBow ? "primary" : "chest",
+    item_type: isBow ? "weapon" : "armor",
     rarity: "rare",
     price: 300,
     price_per_unit: 100,

@@ -8,6 +8,7 @@ describe("Marketplace Search filter UI", () => {
   afterEach(cleanup);
 
   beforeEach(async () => {
+    localStorage.clear();
     await i18n.changeLanguage("en-US");
   });
 
@@ -93,6 +94,51 @@ describe("Marketplace Search filter UI", () => {
         })
       ]
     });
+  });
+
+  it("explains that percentage rules use displayed decimal percentage values", () => {
+    render(<MarketplaceSearchPanel catalog={marketplacePreviewCatalog} />);
+
+    fireEvent.change(screen.getByLabelText("Available attributes"), {
+      target: { value: "id.attribute.action_speed" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add attribute" }));
+
+    expect(screen.getByText("Possible range: 0.5–1.5%")).toBeInTheDocument();
+    expect(screen.getByText("Enter the displayed percentage number: use 2.2 for 2.2% (not 22)."))
+      .toBeInTheDocument();
+  });
+
+  it("persists, reloads, and deletes a named filter draft without making a request", () => {
+    const onSearch = vi.fn();
+    const first = render(
+      <MarketplaceSearchPanel catalog={marketplacePreviewCatalog} onSearch={onSearch} />
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: "Occultist Robe" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Rare" }));
+    fireEvent.change(screen.getByLabelText("Filter set name"), {
+      target: { value: "Warlock gear" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save current draft" }));
+    expect(screen.getByText("Filter set saved on this device.")).toBeInTheDocument();
+    expect(onSearch).not.toHaveBeenCalled();
+
+    first.unmount();
+    render(<MarketplaceSearchPanel catalog={marketplacePreviewCatalog} onSearch={onSearch} />);
+    fireEvent.change(screen.getByLabelText("Saved sets"), {
+      target: { value: "Warlock gear" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Load" }));
+
+    expect(screen.getByRole("checkbox", { name: "Occultist Robe" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Rare" })).toBeChecked();
+    expect(screen.getByText("Filter set loaded into the draft; no request was made."))
+      .toBeInTheDocument();
+    expect(onSearch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByText("Saved filter set deleted.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Saved sets")).toHaveValue("");
   });
 
   it("Refresh replays the last submitted spec rather than unsubmitted draft edits", () => {

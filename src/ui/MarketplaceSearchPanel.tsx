@@ -34,6 +34,14 @@ interface MarketplaceDraft {
   requiredMatchCount: number;
 }
 
+interface SavedMarketplaceFilter {
+  version: 1;
+  name: string;
+  draft: MarketplaceDraft;
+}
+
+const SAVED_FILTER_STORAGE_KEY = "dark-and-darker-companion.marketplace-filters.v1";
+
 export interface MarketplaceSearchPanelProps {
   catalog: MarketplaceFilterCatalog;
   hasCandidateSnapshot?: boolean;
@@ -53,6 +61,12 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
   const [attributeQuery, setAttributeQuery] = useState("");
   const [attributeToAdd, setAttributeToAdd] = useState<CanonicalId | "">("");
   const [lastAction, setLastAction] = useState<"search" | "refresh" | "local" | undefined>();
+  const [savedFilters, setSavedFilters] = useState<SavedMarketplaceFilter[]>(readSavedFilters);
+  const [savedFilterName, setSavedFilterName] = useState("");
+  const [selectedSavedFilter, setSelectedSavedFilter] = useState("");
+  const [savedFilterStatus, setSavedFilterStatus] = useState<
+    "saved" | "loaded" | "deleted" | "error" | undefined
+  >();
 
   const validation = useMemo(
     () => validateDraft(draft, (key) => t(key)),
@@ -141,6 +155,44 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
     setLastAction(undefined);
   };
 
+  const saveCurrentFilter = () => {
+    const name = savedFilterName.trim();
+    if (name === "" || !validation.valid) return;
+    const next = [
+      ...savedFilters.filter((saved) => saved.name !== name),
+      { version: 1 as const, name, draft: cloneDraft(draft) }
+    ].sort((left, right) => left.name.localeCompare(right.name, locale));
+    if (!writeSavedFilters(next)) {
+      setSavedFilterStatus("error");
+      return;
+    }
+    setSavedFilters(next);
+    setSelectedSavedFilter(name);
+    setSavedFilterStatus("saved");
+  };
+
+  const loadSelectedFilter = () => {
+    const saved = savedFilters.find((candidate) => candidate.name === selectedSavedFilter);
+    if (saved === undefined) return;
+    setDraft(cloneDraft(saved.draft));
+    setAttributeQuery("");
+    setAttributeToAdd("");
+    setSavedFilterName(saved.name);
+    setSavedFilterStatus("loaded");
+  };
+
+  const deleteSelectedFilter = () => {
+    if (selectedSavedFilter === "") return;
+    const next = savedFilters.filter((candidate) => candidate.name !== selectedSavedFilter);
+    if (!writeSavedFilters(next)) {
+      setSavedFilterStatus("error");
+      return;
+    }
+    setSavedFilters(next);
+    setSelectedSavedFilter("");
+    setSavedFilterStatus("deleted");
+  };
+
   return (
     <div className="marketplace-layout">
       <section className="marketplace-main" aria-labelledby="marketplace-title">
@@ -176,6 +228,70 @@ export function MarketplaceSearchPanel(props: MarketplaceSearchPanelProps) {
           }}
           onClear={reset}
         />
+
+        <section className="saved-filter-manager" aria-labelledby="saved-filter-title">
+          <div>
+            <h3 id="saved-filter-title">{t("search.savedFilters.title")}</h3>
+            <p>{t("search.savedFilters.help")}</p>
+          </div>
+          <div className="saved-filter-controls">
+            <label>
+              {t("search.savedFilters.name")}
+              <input
+                value={savedFilterName}
+                placeholder={t("search.savedFilters.namePlaceholder")}
+                onChange={(event) => {
+                  setSavedFilterName(event.target.value);
+                  setSavedFilterStatus(undefined);
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className="secondary-action"
+              disabled={savedFilterName.trim() === "" || !validation.valid}
+              onClick={saveCurrentFilter}
+            >
+              {t("search.savedFilters.save")}
+            </button>
+            <label>
+              {t("search.savedFilters.saved")}
+              <select
+                value={selectedSavedFilter}
+                onChange={(event) => {
+                  setSelectedSavedFilter(event.target.value);
+                  setSavedFilterStatus(undefined);
+                }}
+              >
+                <option value="">{t("search.savedFilters.choose")}</option>
+                {savedFilters.map((saved) => (
+                  <option value={saved.name} key={saved.name}>{saved.name}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="secondary-action"
+              disabled={selectedSavedFilter === ""}
+              onClick={loadSelectedFilter}
+            >
+              {t("search.savedFilters.load")}
+            </button>
+            <button
+              type="button"
+              className="ghost-action"
+              disabled={selectedSavedFilter === ""}
+              onClick={deleteSelectedFilter}
+            >
+              {t("search.savedFilters.delete")}
+            </button>
+          </div>
+          {savedFilterStatus && (
+            <p className={savedFilterStatus === "error" ? "field-error" : "saved-filter-status"} role="status">
+              {t(`search.savedFilters.status.${savedFilterStatus}`)}
+            </p>
+          )}
+        </section>
 
         <div className="marketplace-filter-grid">
           <FilterSection title={t("search.groups.identity")}>
@@ -481,6 +597,79 @@ const emptyDraft: MarketplaceDraft = {
   requiredMatchCount: 0
 };
 
+function cloneDraft(draft: MarketplaceDraft): MarketplaceDraft {
+  return {
+    ...draft,
+    classIds: [...draft.classIds],
+    familyIds: [...draft.familyIds],
+    itemTypes: [...draft.itemTypes],
+    slotTypes: [...draft.slotTypes],
+    armorTypes: [...draft.armorTypes],
+    weaponTypes: [...draft.weaponTypes],
+    handTypes: [...draft.handTypes],
+    rarities: [...draft.rarities],
+    rules: draft.rules.map((rule) => ({ ...rule }))
+  };
+}
+
+function readSavedFilters(): SavedMarketplaceFilter[] {
+  try {
+    const raw = globalThis.localStorage?.getItem(SAVED_FILTER_STORAGE_KEY);
+    if (raw === null || raw === undefined) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isSavedMarketplaceFilter).map((saved) => ({
+      ...saved,
+      draft: cloneDraft(saved.draft)
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function writeSavedFilters(filters: readonly SavedMarketplaceFilter[]): boolean {
+  try {
+    globalThis.localStorage?.setItem(SAVED_FILTER_STORAGE_KEY, JSON.stringify(filters));
+    return globalThis.localStorage !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+function isSavedMarketplaceFilter(value: unknown): value is SavedMarketplaceFilter {
+  if (typeof value !== "object" || value === null) return false;
+  const saved = value as Partial<SavedMarketplaceFilter>;
+  return saved.version === 1 &&
+    typeof saved.name === "string" &&
+    saved.name.trim() !== "" &&
+    isMarketplaceDraft(saved.draft);
+}
+
+function isMarketplaceDraft(value: unknown): value is MarketplaceDraft {
+  if (typeof value !== "object" || value === null) return false;
+  const draft = value as Partial<MarketplaceDraft>;
+  const stringArrays = [
+    draft.classIds,
+    draft.familyIds,
+    draft.itemTypes,
+    draft.slotTypes,
+    draft.armorTypes,
+    draft.weaponTypes,
+    draft.handTypes,
+    draft.rarities
+  ];
+  return stringArrays.every((items) => Array.isArray(items) && items.every((item) => typeof item === "string")) &&
+    (draft.priceBasis === "unit" || draft.priceBasis === "total") &&
+    typeof draft.minimumPrice === "string" &&
+    typeof draft.maximumPrice === "string" &&
+    Array.isArray(draft.rules) && draft.rules.every((rule) =>
+      typeof rule === "object" && rule !== null &&
+      typeof rule.attributeId === "string" && rule.attributeId.startsWith("id.") &&
+      typeof rule.minimum === "string" && typeof rule.maximum === "string"
+    ) &&
+    typeof draft.requiredMatchCount === "number";
+}
+
 function FilterSection(props: {
   title: string;
   children: React.ReactNode;
@@ -611,6 +800,9 @@ function AttributeRuleEditor(props: {
           />
         </label>
       </div>
+      {props.option?.isPercentage && (
+        <p className="attribute-unit-hint">{t("search.attributes.percentHint")}</p>
+      )}
       {props.error && <p className="field-error" role="alert">{props.error}</p>}
     </article>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MarketplaceSearchExecutionResult } from "../adapters/marketplaceSearch";
 import type { MarketplaceListingEvaluation, MarketplaceSearchSpec } from "../domain/marketplaceSearch";
@@ -142,10 +142,12 @@ export function MarketplaceSearchResults(props: MarketplaceSearchResultsProps) {
           {result.matchedCount === 0 ? (
             <MarketplaceEmptyResult result={result} stale={staleFamilies.length > 0} />
           ) : (
-            <MarketplaceResultTable
+            <MarketplaceResultCards
               catalog={props.catalog}
               matches={result.matches}
               locale={locale}
+              spec={props.presentation!.spec}
+              resultIdentity={result.fetchedAt}
             />
           )}
 
@@ -226,41 +228,107 @@ function MarketplaceEmptyResult(props: {
   return <div className="marketplace-empty-state"><strong>{title}</strong><p>{detail}</p></div>;
 }
 
-function MarketplaceResultTable(props: {
+function MarketplaceResultCards(props: {
   catalog: MarketplaceFilterCatalog;
   matches: readonly MarketplaceListingEvaluation[];
   locale: "en-US" | "zh-CN";
+  spec: MarketplaceSearchSpec;
+  resultIdentity: string;
 }) {
   const { t } = useTranslation();
+  const familyIds = useMemo(() => {
+    const ids = props.spec.familyIds.length > 0
+      ? props.spec.familyIds
+      : [...new Set(props.matches.map((entry) => entry.listing.archetype))];
+    return [...ids].sort((left, right) => {
+      const leftOption = props.catalog.families.find((option) => option.value === left);
+      const rightOption = props.catalog.families.find((option) => option.value === right);
+      const leftLabel = leftOption ? marketplaceOptionLabel(leftOption, props.locale) : left;
+      const rightLabel = rightOption ? marketplaceOptionLabel(rightOption, props.locale) : right;
+      return leftLabel.localeCompare(rightLabel, props.locale);
+    });
+  }, [props.catalog.families, props.locale, props.matches, props.spec.familyIds]);
+  const familySignature = familyIds.join("|");
+  const [visibleFamilyIds, setVisibleFamilyIds] = useState<Set<string>>(
+    () => new Set(familyIds)
+  );
+
+  useEffect(() => {
+    setVisibleFamilyIds(new Set(familyIds));
+  }, [familySignature, props.resultIdentity]);
+
+  const visibleMatches = props.matches.filter((entry) =>
+    visibleFamilyIds.has(entry.listing.archetype)
+  );
+  const counts = new Map<string, number>();
+  for (const entry of props.matches) {
+    counts.set(entry.listing.archetype, (counts.get(entry.listing.archetype) ?? 0) + 1);
+  }
+
   return (
-    <div className="marketplace-result-table-wrap">
-      <table className="marketplace-result-table">
-        <thead>
-          <tr>
-            <th>{t("search.results.columns.item")}</th>
-            <th>{t("search.results.columns.rolls")}</th>
-            <th>{t("search.results.columns.quantity")}</th>
-            <th>{t("search.results.columns.unitPrice")}</th>
-            <th>{t("search.results.columns.totalPrice")}</th>
-            <th>{t("search.results.columns.manual")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.matches.map((entry) => (
-            <MarketplaceResultRow
+    <div className="marketplace-result-workspace">
+      {familyIds.length > 1 && (
+        <fieldset className="marketplace-result-family-filter">
+          <legend>{t("search.results.familyFilter.title")}</legend>
+          <div className="marketplace-result-family-actions">
+            <span>{t("search.results.familyFilter.showing", {
+              visible: visibleMatches.length,
+              total: props.matches.length
+            })}</span>
+            <button type="button" onClick={() => setVisibleFamilyIds(new Set(familyIds))}>
+              {t("search.results.familyFilter.all")}
+            </button>
+            <button type="button" onClick={() => setVisibleFamilyIds(new Set())}>
+              {t("search.results.familyFilter.none")}
+            </button>
+          </div>
+          <div className="marketplace-result-family-options">
+            {familyIds.map((familyId) => {
+              const option = props.catalog.families.find((candidate) => candidate.value === familyId);
+              const label = option ? marketplaceOptionLabel(option, props.locale) : familyId;
+              return (
+                <label key={familyId}>
+                  <input
+                    type="checkbox"
+                    checked={visibleFamilyIds.has(familyId)}
+                    onChange={() => setVisibleFamilyIds((current) => {
+                      const next = new Set(current);
+                      if (next.has(familyId)) next.delete(familyId);
+                      else next.add(familyId);
+                      return next;
+                    })}
+                  />
+                  <span>{label}</span>
+                  <small>{counts.get(familyId) ?? 0}</small>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {visibleMatches.length === 0 ? (
+        <div className="marketplace-empty-state compact">
+          <strong>{t("search.results.familyFilter.emptyTitle")}</strong>
+          <p>{t("search.results.familyFilter.emptyDetail")}</p>
+        </div>
+      ) : (
+        <div className="marketplace-result-card-grid">
+          {visibleMatches.map((entry) => (
+            <MarketplaceResultCard
               key={entry.listing.id}
               entry={entry}
               catalog={props.catalog}
               locale={props.locale}
             />
           ))}
-        </tbody>
-      </table>
+        </div>
+      )}
     </div>
   );
 }
 
-function MarketplaceResultRow(props: {
+function MarketplaceResultCard(props: {
   entry: MarketplaceListingEvaluation;
   catalog: MarketplaceFilterCatalog;
   locale: "en-US" | "zh-CN";
@@ -273,6 +341,7 @@ function MarketplaceResultRow(props: {
   const itemName = family ? marketplaceOptionLabel(family, props.locale) : listing.name || listing.item_id;
   const rarityName = rarity ? marketplaceOptionLabel(rarity, props.locale) : listing.rarity;
   const listingAttributes = Object.entries(listing.attributes);
+  const randomRolls = props.entry.evaluation.candidate.item.rolls;
   const summary = manualSearchSummary(props.entry, props.catalog, props.locale, {
     item: t("search.results.manual.item"),
     rarity: t("search.results.manual.rarity"),
@@ -293,19 +362,41 @@ function MarketplaceResultRow(props: {
   };
 
   return (
-    <tr>
-      <td data-label={t("search.results.columns.item")}>
-        <strong>{itemName}</strong>
-        <span className={`rarity-label rarity-${listing.rarity}`}>{rarityName}</span>
-        <small>{listing.item_id}</small>
-      </td>
-      <td data-label={t("search.results.columns.rolls")}>
-        <span>{t("search.results.matchK", {
-          matched: props.entry.evaluation.matchCount,
-          total: props.entry.evaluation.enabledRuleCount
-        })}</span>
-        <details>
-          <summary>{t("search.results.details")}</summary>
+    <details className="marketplace-result-card">
+      <summary aria-label={t("search.results.card.open", { item: itemName })}>
+        <div className="marketplace-result-card-identity">
+          <strong>{itemName}</strong>
+          <span className={`rarity-label rarity-${listing.rarity}`}>{rarityName}</span>
+        </div>
+        <div className="marketplace-result-card-rolls">
+          {randomRolls.length === 0 ? (
+            <span className="no-random-rolls">{t("search.results.noRandomRolls")}</span>
+          ) : randomRolls.map((roll) => (
+            <strong key={roll.attributeId}>{formatRoll(
+              roll.attributeId,
+              roll.value,
+              props.catalog,
+              props.locale
+            )}</strong>
+          ))}
+        </div>
+        <span className="marketplace-card-chevron" aria-hidden="true">⌄</span>
+      </summary>
+      <div className="marketplace-result-card-details">
+        <div className="marketplace-result-price-grid">
+          <div><span>{t("search.results.columns.quantity")}</span><strong>{listing.quantity}</strong></div>
+          <div><span>{t("search.results.columns.unitPrice")}</span><strong>{listing.price_per_unit} {t("auction.gold")}</strong></div>
+          <div><span>{t("search.results.columns.totalPrice")}</span><strong>{listing.price} {t("auction.gold")}</strong></div>
+          <div><span>{t("search.results.card.itemId")}</span><small>{listing.item_id}</small></div>
+        </div>
+        {props.entry.evaluation.enabledRuleCount > 0 && (
+          <p className="marketplace-card-match-count">{t("search.results.matchK", {
+            matched: props.entry.evaluation.matchCount,
+            total: props.entry.evaluation.enabledRuleCount
+          })}</p>
+        )}
+        <section className="marketplace-card-all-attributes">
+          <h4>{t("search.results.card.allAttributes")}</h4>
           <ul>
             {listingAttributes.length === 0 ? <li>{t("search.results.noRolls")}</li> : listingAttributes.map(([key, value]) => {
               const slug = key.replace(/^(primary|secondary)_/, "");
@@ -321,14 +412,9 @@ function MarketplaceResultRow(props: {
               return <li key={key}>{group} · {label}: {value}{option?.isPercentage ? "%" : ""}</li>;
             })}
           </ul>
-        </details>
-      </td>
-      <td data-label={t("search.results.columns.quantity")}>{listing.quantity}</td>
-      <td data-label={t("search.results.columns.unitPrice")}><strong>{listing.price_per_unit}</strong> {t("auction.gold")}</td>
-      <td data-label={t("search.results.columns.totalPrice")}><strong>{listing.price}</strong> {t("auction.gold")}</td>
-      <td data-label={t("search.results.columns.manual")}>
-        <details className="manual-search-details">
-          <summary>{t("search.results.manual.open")}</summary>
+        </section>
+        <section className="manual-search-details">
+          <h4>{t("search.results.manual.open")}</h4>
           <pre>{summary}</pre>
           <button type="button" className="secondary-action" onClick={() => void copy()}>
             {copyState === "copied"
@@ -337,10 +423,21 @@ function MarketplaceResultRow(props: {
                 ? t("search.results.manual.copyFailed")
                 : t("search.results.manual.copy")}
           </button>
-        </details>
-      </td>
-    </tr>
+        </section>
+      </div>
+    </details>
   );
+}
+
+function formatRoll(
+  attributeId: string,
+  value: number,
+  catalog: MarketplaceFilterCatalog,
+  locale: "en-US" | "zh-CN"
+): string {
+  const option = catalog.attributes.find((attribute) => attribute.value === attributeId);
+  const label = option ? marketplaceOptionLabel(option, locale) : attributeId;
+  return `${label} ${value}${option?.isPercentage ? "%" : ""}`;
 }
 
 export function manualSearchSummary(

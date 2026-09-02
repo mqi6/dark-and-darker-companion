@@ -154,7 +154,25 @@ export const zhCN = {
       kSummary: "所选 {{n}} 条词条中至少需要 {{k}} 条匹配。",
       possibleRange: "可能范围：{{minimum}}–{{maximum}}{{unit}}",
       minimum: "最低值",
-      maximum: "最高值"
+      maximum: "最高值",
+      percentHint: "请输入游戏显示的百分比数字：2.2% 填 2.2，不要填 22。"
+    },
+    savedFilters: {
+      title: "已保存的筛选方案",
+      help: "把当前完整草稿保存在本机；加载方案不会调用 DarkerDB。",
+      name: "方案名称",
+      namePlaceholder: "例如：术士施法装备",
+      saved: "已保存方案",
+      choose: "选择一个已保存方案",
+      save: "保存当前草稿",
+      load: "加载",
+      delete: "删除",
+      status: {
+        saved: "筛选方案已保存在本机。",
+        loaded: "筛选方案已载入草稿，没有发送 API 请求。",
+        deleted: "已删除筛选方案。",
+        error: "无法在本机保存筛选方案。"
+      }
     },
     actions: {
       explicitOnly: "请求只由明确操作触发",
@@ -272,6 +290,20 @@ export const zhCN = {
       matchK: "所选规则匹配 {{matched}} / {{total}}",
       details: "查看 listing 词条",
       noRolls: "没有 listing 词条",
+      noRandomRolls: "没有随机词条",
+      card: {
+        open: "展开{{item}} listing 详情",
+        itemId: "Canonical 物品 ID",
+        allAttributes: "全部 listing 属性"
+      },
+      familyFilter: {
+        title: "选择要显示的物品结果",
+        showing: "正在显示 {{visible}} / {{total}} 条匹配 listing",
+        all: "全选",
+        none: "全部取消",
+        emptyTitle: "当前没有选择任何物品结果",
+        emptyDetail: "请在上方勾选一个或多个物品名称，以显示对应的结果卡片。"
+      },
       attributeGroups: {
         primary: "主要属性",
         secondary: "随机词条",

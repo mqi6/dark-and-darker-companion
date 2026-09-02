@@ -1,5 +1,15 @@
 # Development Progress
 
+## Marketplace M6 result-card and saved-filter checkpoint — 2026-09-02
+
+- Clarified percentage input units at the point of entry. Percentage rules use the same displayed decimal-percent unit as normalized Market and Price Check data: a visible `2.2%` is entered as `2.2`, not `22`; each percentage rule shows this example beside its inclusive min/max controls.
+- Added versioned, device-local named filter sets for the complete Marketplace draft: identity, equipment, rarity, price, attribute ranges, and K. Stored selections retain canonical IDs rather than localized labels. Save, load, and delete are local-only actions and never call DarkerDB.
+- Replaced the dense result listing table with expandable cards. A collapsed card emphasizes localized item name, rarity, and random rolls in large type; expansion reveals quantity, unit and total prices, canonical item ID, all reported attributes, match count, and the copyable manual in-game search summary.
+- Added a result-only item-family checkbox bar for multi-name searches. Each requested family shows its current matched count, all families start selected, and Select all/Clear all or individual toggles only change visible cards without querying DarkerDB or changing the evaluated result counts.
+- Added English/Simplified Chinese parity, responsive layouts, persistence and result-filter tests. Full regression verification now covers 75 test files and 394 tests.
+
+Next checkpoint: live user review of percentage entry, saved filter persistence after restarting the operator, multi-family result toggles, and collapsed/expanded cards. No stash-sort, Electron, automatic buying, or live listing work was added.
+
 ## Marketplace M5 live-runtime checkpoint — 2026-09-01
 
 - Added a localhost read-only Marketplace operator. The Node process owns `DARKERDB_API_KEY`, the pinned DarkerDB client, catalog cache, query coordinator, and cancellation; the browser receives no key and can call only same-origin catalog/search/refresh/cancel endpoints.
