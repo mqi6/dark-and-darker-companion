@@ -32,9 +32,18 @@ npm run marketplace:operator -- --open false
 
 退出时在 PowerShell 按 `Ctrl+C`。最终独立客户端仍在后续 Electron 阶段；当前 localhost 页面是安全的过渡宿主。
 
+## 24 小时目录缓存
+
+- 首次启动需要分页获取英文/中文 Items、Attributes、Classes 和 Facets，通常约消耗 100 DarkerDB credits。
+- 成功取得的规范化双语目录会写入本机磁盘并保留 24 小时；期间关闭并重新启动 operator 会直接读取磁盘缓存，通常消耗 0 个目录 credits。
+- Windows 默认缓存位置：`%LOCALAPPDATA%\DarkAndDarkerCompanion\cache\marketplace-catalog-v1.json`。
+- API contract 或中文 locale 配置改变时，旧缓存不会被错误复用。损坏、过期或无法读取的缓存会安全回退到 live 目录，不会被当作空目录。
+- 如需明确绕过缓存：`npm run marketplace:operator -- --refresh-catalog true`。这会重新消耗完整目录请求 credits 并覆盖缓存。
+- 可通过环境变量 `DARKERDB_CATALOG_CACHE_PATH` 指定其他缓存文件位置。
+
 ## 请求边界
 
-- 启动时读取 Items、Attributes、Classes 和 Facets 静态目录；这不是 listing 搜索。
+- 启动时优先读取 24 小时磁盘目录缓存；首次、过期或明确刷新时才请求 Items、Attributes、Classes 和 Facets。这不是 listing 搜索。
 - 只有点击“搜索”“刷新上次搜索”或“加载更多”才请求 `/v2/market`。
 - 改过滤器、切语言、展开结果、复制游戏内搜索摘要均不请求 Market。
 - 结果行不调用 Price Check。

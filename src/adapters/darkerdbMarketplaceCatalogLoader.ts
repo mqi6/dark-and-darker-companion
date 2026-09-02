@@ -14,7 +14,17 @@ import {
 } from "./darkerdbMarketplaceFilterCatalog";
 import { VERIFIED_DARKERDB_SIMPLIFIED_CHINESE_LOCALE } from "../domain/localizedCatalog";
 
-export const MARKETPLACE_CATALOG_CACHE_TTL_MILLISECONDS = 300_000;
+export const MARKETPLACE_CATALOG_CACHE_TTL_MILLISECONDS = 24 * 60 * 60 * 1_000;
+
+export interface MarketplaceCatalogCacheEntry {
+  snapshot: DarkerDbMarketplaceCatalogSnapshot;
+  storedAt: number;
+}
+
+export interface MarketplaceCatalogPersistentCache {
+  load(): Promise<MarketplaceCatalogCacheEntry | undefined>;
+  save(entry: MarketplaceCatalogCacheEntry): Promise<void>;
+}
 
 export class DarkerDbMarketplaceCatalogLoader {
   private cached: { snapshot: DarkerDbMarketplaceCatalogSnapshot; storedAt: number } | undefined;
@@ -28,6 +38,7 @@ export class DarkerDbMarketplaceCatalogLoader {
     private readonly options: {
       maxAgeMilliseconds?: number;
       now?: () => number;
+      persistentCache?: MarketplaceCatalogPersistentCache;
       simplifiedChineseLocale?: string;
     } = {}
   ) {}
@@ -43,11 +54,10 @@ export class DarkerDbMarketplaceCatalogLoader {
     }
     if (!parameters.refresh && this.inFlight) return this.inFlight;
 
-    const promise = this.fetchSnapshot(parameters.signal);
+    const promise = this.loadSnapshot(parameters);
     this.inFlight = promise;
     try {
       const snapshot = await promise;
-      this.cached = { snapshot, storedAt: (this.options.now ?? Date.now)() };
       return snapshot;
     } finally {
       if (this.inFlight === promise) this.inFlight = undefined;
@@ -56,6 +66,38 @@ export class DarkerDbMarketplaceCatalogLoader {
 
   clear(): void {
     this.cached = undefined;
+  }
+
+  private async loadSnapshot(parameters: {
+    refresh?: boolean;
+    signal?: AbortSignal;
+  }): Promise<DarkerDbMarketplaceCatalogSnapshot> {
+    const now = (this.options.now ?? Date.now)();
+    const maxAge = this.options.maxAgeMilliseconds ?? MARKETPLACE_CATALOG_CACHE_TTL_MILLISECONDS;
+    if (!parameters.refresh && this.options.persistentCache !== undefined) {
+      try {
+        const stored = await this.options.persistentCache.load();
+        const age = stored === undefined ? undefined : now - stored.storedAt;
+        if (stored !== undefined && age !== undefined && age >= 0 && age < maxAge) {
+          this.cached = stored;
+          return withCacheSource(stored.snapshot);
+        }
+      } catch {
+        // A missing, unreadable, or obsolete local cache must never block a live catalog load.
+      }
+    }
+
+    const snapshot = await this.fetchSnapshot(parameters.signal);
+    const entry = { snapshot, storedAt: (this.options.now ?? Date.now)() };
+    this.cached = entry;
+    if (this.options.persistentCache !== undefined) {
+      try {
+        await this.options.persistentCache.save(entry);
+      } catch {
+        // Live catalog data remains usable even when the local cache directory is read-only.
+      }
+    }
+    return snapshot;
   }
 
   private async fetchSnapshot(signal?: AbortSignal): Promise<DarkerDbMarketplaceCatalogSnapshot> {
@@ -88,6 +130,13 @@ export class DarkerDbMarketplaceCatalogLoader {
       source: "darkerdb-live"
     });
   }
+}
+
+function withCacheSource(snapshot: DarkerDbMarketplaceCatalogSnapshot): DarkerDbMarketplaceCatalogSnapshot {
+  return {
+    ...snapshot,
+    catalog: { ...snapshot.catalog, source: "darkerdb-cache" }
+  };
 }
 
 type CursorMethod<T> = (

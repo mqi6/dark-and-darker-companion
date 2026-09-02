@@ -1,5 +1,14 @@
 # Development Progress
 
+## Marketplace M6.1 persistent catalog cache — 2026-09-02
+
+- Replaced the five-minute process-only Marketplace catalog cache with a 24-hour persistent disk cache. A valid cache survives operator and browser restarts, so ordinary launches within the window do not repeat the roughly 100-credit bilingual Items/Attributes/Classes/Facets collection.
+- The cache stores only normalized public catalog data, never the DarkerDB API key. Windows uses `%LOCALAPPDATA%\DarkAndDarkerCompanion\cache\marketplace-catalog-v1.json`; `DARKERDB_CATALOG_CACHE_PATH` can override it.
+- Cache files are versioned and isolated by pinned API contract and Simplified Chinese locale. Corrupt, obsolete, future-dated, expired, missing, or unwritable cache state safely falls back to live loading without being treated as an empty catalog.
+- Added `--refresh-catalog true` as an explicit cache bypass. Ordinary Search/Refresh/Load more behavior and the rule that listing queries require a user action remain unchanged.
+
+The three M6 UI features live only on `codex/marketplace-search-filter-analysis`; pulling `main` or `codex/complete-stash-sort-offline` cannot retrieve them. The verified remote M6 head before this cache change was `ae23f25`.
+
 ## Marketplace M6 result-card and saved-filter checkpoint — 2026-09-02
 
 - Clarified percentage input units at the point of entry. Percentage rules use the same displayed decimal-percent unit as normalized Market and Price Check data: a visible `2.2%` is entered as `2.2`, not `22`; each percentage rule shows this example beside its inclusive min/max controls.

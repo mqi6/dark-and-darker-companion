@@ -6,7 +6,12 @@ import { pathToFileURL } from "node:url";
 import { DarkerDbClient, PINNED_DARKERDB_API_VERSION } from "../src/adapters/darkerdb";
 import { DarkerDbMarketplaceCatalogLoader } from "../src/adapters/darkerdbMarketplaceCatalogLoader";
 import { MarketplaceLiveController } from "../src/adapters/marketplaceLiveController";
+import { VERIFIED_DARKERDB_SIMPLIFIED_CHINESE_LOCALE } from "../src/domain/localizedCatalog";
 import type { MarketplaceSearchSpecInput } from "../src/domain/marketplaceSearch";
+import {
+  MarketplaceCatalogDiskCache,
+  defaultMarketplaceCatalogCachePath
+} from "./marketplaceCatalogDiskCache";
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const apiKey = process.env.DARKERDB_API_KEY;
@@ -89,24 +94,30 @@ async function main(apiKey: string) {
   const distDirectory = resolve(args.dist ?? "dist");
   const origin = `http://127.0.0.1:${port}`;
   const localhostOrigin = `http://localhost:${port}`;
+  const apiVersion = process.env.DARKERDB_API_VERSION ?? PINNED_DARKERDB_API_VERSION;
+  const simplifiedChineseLocale = process.env.DARKERDB_ZH_LOCALE ??
+    VERIFIED_DARKERDB_SIMPLIFIED_CHINESE_LOCALE;
   const client = new DarkerDbClient({
     apiKey,
-    apiVersion: process.env.DARKERDB_API_VERSION ?? PINNED_DARKERDB_API_VERSION,
+    apiVersion,
     ...(process.env.DARKERDB_BASE_URL === undefined
       ? {}
       : { baseUrl: process.env.DARKERDB_BASE_URL })
   });
+  const persistentCache = new MarketplaceCatalogDiskCache(
+    defaultMarketplaceCatalogCachePath(),
+    JSON.stringify({ apiVersion, simplifiedChineseLocale })
+  );
   const loader = new DarkerDbMarketplaceCatalogLoader(client, {
-    ...(process.env.DARKERDB_ZH_LOCALE === undefined
-      ? {}
-      : { simplifiedChineseLocale: process.env.DARKERDB_ZH_LOCALE })
+    persistentCache,
+    simplifiedChineseLocale
   });
   const controller = new MarketplaceLiveController(client, loader);
 
   process.stdout.write("Loading the canonical English and Simplified Chinese DarkerDB catalogs...\n");
-  const catalog = await controller.catalog();
+  const catalog = await controller.catalog({ refresh: args["refresh-catalog"] === "true" });
   process.stdout.write(
-    `Catalog ready: ${catalog.items.length} variants, ${catalog.families.length} item names, ${catalog.attributes.length} attributes.\n`
+    `Catalog ready (${catalog.source}): ${catalog.items.length} variants, ${catalog.families.length} item names, ${catalog.attributes.length} attributes.\n`
   );
   const server = await createMarketplaceLiveOperator({
     controller,
